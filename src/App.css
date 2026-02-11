@@ -41,6 +41,11 @@ button {
   font: inherit;
 }
 
+.mobile-menu-toggle,
+.mobile-menu-overlay {
+  display: none;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -1114,13 +1119,59 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .mobile-menu-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 86px;
+    min-height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: linear-gradient(130deg, var(--accent), var(--accent-strong));
+    color: #f3ffff;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow: 0 10px 24px rgba(9, 109, 112, 0.36);
+  }
+
+  .mobile-menu-toggle.is-open {
+    background: linear-gradient(130deg, #ad2525, #cf4343);
+    box-shadow: 0 10px 24px rgba(173, 37, 37, 0.35);
+  }
+
+  .mobile-menu-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    border: 0;
+    background: rgba(8, 14, 16, 0.56);
+    backdrop-filter: blur(3px);
+  }
+
   .sidebar {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 18;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
+    left: 0;
+    bottom: 0;
+    z-index: 35;
+    width: min(86vw, 340px);
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
     padding: 14px;
+    transform: translateX(calc(-100% - 16px));
+    transition: transform 210ms ease;
+    pointer-events: none;
+  }
+
+  .app-shell.mobile-menu-open .sidebar {
+    transform: translateX(0);
+    pointer-events: auto;
   }
 
   .sidebar-footer {
@@ -1128,12 +1179,16 @@ button {
     margin-top: 14px;
   }
 
+  .main-content {
+    padding-top: 72px;
+  }
+
   .menu-list {
-    grid-template-columns: repeat(3, minmax(130px, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .menu-item {
-    text-align: center;
+    text-align: left;
     min-height: 44px;
   }
 
@@ -1149,6 +1204,7 @@ button {
 @media (max-width: 900px) {
   .main-content {
     padding: 12px;
+    padding-top: 72px;
   }
 
   .sidebar {
@@ -1157,7 +1213,7 @@ button {
 
   .menu-list {
     margin-top: 14px;
-    grid-template-columns: repeat(2, minmax(130px, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .first-choice-grid,

@@ -65,6 +65,7 @@ const ROLL_DURATION_BY_SPEED = {
 const COOKIE_DAYS = 365;
 const COOKIE_HISTORY_SIZE_LIMIT = 3300;
 const MIN_AUDIO_THRESHOLD = 0.001;
+const MOBILE_MENU_BREAKPOINT = 1200;
 
 const GENSHIN_BACKGROUND_TRACK =
   "https://raw.githubusercontent.com/Escartem/GenshinAudio/master/GeneratedSoundBanks/Game/Streamed/Streamed2/Streamed2_52.mp3";
@@ -1550,6 +1551,10 @@ function App() {
   const [theme, setTheme] = useState(boot.theme);
   const [settings, setSettings] = useState(boot.settings);
   const [activeSection, setActiveSection] = useState(boot.activeSection);
+  const [isMobileLayout, setIsMobileLayout] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= MOBILE_MENU_BREAKPOINT : false
+  );
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1582,6 +1587,45 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleViewportResize = () => {
+      setIsMobileLayout(window.innerWidth <= MOBILE_MENU_BREAKPOINT);
+    };
+
+    handleViewportResize();
+    window.addEventListener("resize", handleViewportResize);
+    return () => {
+      window.removeEventListener("resize", handleViewportResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileLayout && isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isMobileLayout, isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const handleEscapeClose = (event) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscapeClose);
+    return () => {
+      window.removeEventListener("keydown", handleEscapeClose);
+    };
+  }, [isMobileMenuOpen]);
 
   useEffect(
     () => () => {
@@ -2023,6 +2067,13 @@ function App() {
     { id: "settings", label: t.settingsMenu },
   ];
 
+  const handleMenuItemClick = (sectionId) => {
+    setActiveSection(sectionId);
+    if (isMobileLayout) {
+      setIsMobileMenuOpen(false);
+    }
+  };
+
   const firstStage = rollOrder === "characters" ? "characters" : "bosses";
 
   const renderRollSummary = (title, item) => (
@@ -2118,15 +2169,26 @@ function App() {
   };
 
   return (
-    <div className="app-shell" onClickCapture={handleGlobalClickCapture}>
-      <aside className="sidebar">
+    <div className={`app-shell ${isMobileMenuOpen ? "mobile-menu-open" : ""}`} onClickCapture={handleGlobalClickCapture}>
+      <button
+        type="button"
+        className={`mobile-menu-toggle ${isMobileMenuOpen ? "is-open" : ""}`}
+        onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+        aria-controls="app-sidebar"
+        aria-expanded={isMobileMenuOpen}
+        aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+      >
+        {isMobileMenuOpen ? "Close" : "Menu"}
+      </button>
+
+      <aside id="app-sidebar" className="sidebar">
         <div className="brand">
-          <img
+          {/* <img
             src={`${process.env.PUBLIC_URL}/site-icon.svg`}
             alt=""
             aria-hidden="true"
             className="brand-icon"
-          />
+          /> */}
           <h1>{t.appTitle}</h1>
           <p>{t.appSubtitle}</p>
         </div>
@@ -2137,7 +2199,7 @@ function App() {
               key={item.id}
               type="button"
               className={`menu-item ${activeSection === item.id ? "active" : ""}`}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => handleMenuItemClick(item.id)}
             >
               {item.label}
             </button>
@@ -2148,6 +2210,15 @@ function App() {
           <p>{t.useMenuHint}</p>
         </div>
       </aside>
+
+      {isMobileLayout && isMobileMenuOpen ? (
+        <button
+          type="button"
+          className="mobile-menu-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-label="Close navigation menu"
+        />
+      ) : null}
 
       <main className="main-content">
         <div className="bg-layer bg-layer-1" />
