@@ -2121,6 +2121,12 @@ function App() {
     <div className="app-shell" onClickCapture={handleGlobalClickCapture}>
       <aside className="sidebar">
         <div className="brand">
+          <img
+            src={`${process.env.PUBLIC_URL}/site-icon.svg`}
+            alt=""
+            aria-hidden="true"
+            className="brand-icon"
+          />
           <h1>{t.appTitle}</h1>
           <p>{t.appSubtitle}</p>
         </div>
@@ -2322,4 +2328,3 @@ function App() {
 }
 
 export default App;
-
