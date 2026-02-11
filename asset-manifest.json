@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/my-app-two_genshin/static/css/main.21c48d59.css",
-    "main.js": "/my-app-two_genshin/static/js/main.531f7ca3.js",
+    "main.css": "/my-app-two_genshin/static/css/main.7e28a5a2.css",
+    "main.js": "/my-app-two_genshin/static/js/main.e65d97b4.js",
     "static/js/453.e2e37e3f.chunk.js": "/my-app-two_genshin/static/js/453.e2e37e3f.chunk.js",
     "index.html": "/my-app-two_genshin/index.html",
-    "main.21c48d59.css.map": "/my-app-two_genshin/static/css/main.21c48d59.css.map",
-    "main.531f7ca3.js.map": "/my-app-two_genshin/static/js/main.531f7ca3.js.map",
+    "main.7e28a5a2.css.map": "/my-app-two_genshin/static/css/main.7e28a5a2.css.map",
+    "main.e65d97b4.js.map": "/my-app-two_genshin/static/js/main.e65d97b4.js.map",
     "453.e2e37e3f.chunk.js.map": "/my-app-two_genshin/static/js/453.e2e37e3f.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.21c48d59.css",
-    "static/js/main.531f7ca3.js"
+    "static/css/main.7e28a5a2.css",
+    "static/js/main.e65d97b4.js"
   ]
 }
