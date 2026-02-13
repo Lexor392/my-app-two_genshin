@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "https://lexor392.github.io/my-app-two_genshin/static/css/main.55bebfd9.css",
-    "main.js": "https://lexor392.github.io/my-app-two_genshin/static/js/main.7b9fcc31.js",
+    "main.css": "https://lexor392.github.io/my-app-two_genshin/static/css/main.0266f544.css",
+    "main.js": "https://lexor392.github.io/my-app-two_genshin/static/js/main.b071bb9e.js",
     "static/js/453.e2e37e3f.chunk.js": "https://lexor392.github.io/my-app-two_genshin/static/js/453.e2e37e3f.chunk.js",
     "index.html": "https://lexor392.github.io/my-app-two_genshin/index.html",
-    "main.55bebfd9.css.map": "https://lexor392.github.io/my-app-two_genshin/static/css/main.55bebfd9.css.map",
-    "main.7b9fcc31.js.map": "https://lexor392.github.io/my-app-two_genshin/static/js/main.7b9fcc31.js.map",
+    "main.0266f544.css.map": "https://lexor392.github.io/my-app-two_genshin/static/css/main.0266f544.css.map",
+    "main.b071bb9e.js.map": "https://lexor392.github.io/my-app-two_genshin/static/js/main.b071bb9e.js.map",
     "453.e2e37e3f.chunk.js.map": "https://lexor392.github.io/my-app-two_genshin/static/js/453.e2e37e3f.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.55bebfd9.css",
-    "static/js/main.7b9fcc31.js"
+    "static/css/main.0266f544.css",
+    "static/js/main.b071bb9e.js"
   ]
 }
