@@ -4,8 +4,28 @@ const STORE_NAME = "images";
 const MEMORY_URLS = new Map();
 const MEMORY_SOURCES = new Map();
 const IMAGE_TIMEOUT_MS = 6500;
+const CATALOG_STORAGE_KEY = "teyvat-random-lab:catalog:v1";
 
 let databasePromise;
+
+export const readCatalogSnapshot = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CATALOG_STORAGE_KEY) || "null");
+    const catalog = parsed?.catalog;
+    return Array.isArray(catalog?.characters) && Array.isArray(catalog?.bosses?.all) ? catalog : null;
+  } catch {
+    return null;
+  }
+};
+
+export const saveCatalogSnapshot = (catalog) => {
+  try {
+    localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), catalog }));
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const openDatabase = () => {
   if (typeof indexedDB === "undefined") return Promise.resolve(null);

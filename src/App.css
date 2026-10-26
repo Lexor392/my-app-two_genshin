@@ -2337,3 +2337,88 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 @media (prefers-reduced-motion: reduce) {
   .state-screen, .stage-panel, .splash-backdrop, .splash-modal, .preloader-orbit, .preloader-emblem::after, .preloader-stars span { animation: none; }
 }
+
+/* Fresh roulette modes share one deterministic reel engine. */
+.roulette-engine .roulette-shell { padding: 16px; }
+.roulette-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--roulette-lanes, 1), minmax(0, 1fr));
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.roulette-engine-lane { min-width: 0; position: relative; }
+.reel-viewport {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(219, 196, 144, .7);
+  background: radial-gradient(ellipse at center, rgba(213, 193, 151, .12), rgba(5, 14, 19, .9) 76%);
+  box-shadow: inset 0 0 0 3px rgba(230, 208, 157, .07), inset 0 16px 28px rgba(0, 0, 0, .2);
+}
+.reel-viewport.is-vertical { height: clamp(300px, 48vh, 470px); }
+.reel-viewport.is-horizontal { height: 220px; }
+.reel-track { position: absolute; top: 0; left: 0; display: flex; align-items: center; will-change: transform; backface-visibility: hidden; }
+.reel-track.is-vertical { flex-direction: column; width: 100%; padding: 0; }
+.reel-track.is-horizontal { flex-direction: row; height: 100%; padding: 0; }
+.reel-track .roulette-card { overflow: hidden; border-radius: 3px; }
+.reel-track.is-vertical .roulette-card { flex: 0 0 auto; }
+.reel-track.is-horizontal .roulette-card { flex: 0 0 auto; height: 190px !important; }
+.reel-pointer { position: absolute; z-index: 4; pointer-events: none; }
+.reel-viewport.is-vertical .reel-pointer { left: 0; right: 0; top: 50%; height: 204px; transform: translateY(-50%); border-block: 2px solid #e4c579; background: linear-gradient(90deg, rgba(228, 197, 121, .1), rgba(228, 197, 121, .025), rgba(228, 197, 121, .1)); box-shadow: 0 0 18px rgba(228, 197, 121, .12); }
+.reel-viewport.is-horizontal .reel-pointer { top: 0; bottom: 0; left: 50%; width: 144px; transform: translateX(-50%); border-inline: 2px solid #e4c579; background: linear-gradient(180deg, rgba(228, 197, 121, .1), rgba(228, 197, 121, .025), rgba(228, 197, 121, .1)); }
+.roulette-mode-picker { display: flex; justify-content: center; gap: 9px; flex-wrap: wrap; margin: 14px auto 0; }
+.roulette-mode-button { min-width: 146px; min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 8px 15px; color: var(--text-main); background: rgba(21, 35, 43, .75); border: 1px solid var(--line); border-radius: 3px; cursor: pointer; transition: color .2s ease, background .2s ease, border-color .2s ease, transform .2s ease; }
+.roulette-mode-button svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.roulette-mode-button:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--teyvat-gold); }
+.roulette-mode-button.is-active { color: #182a35; background: linear-gradient(135deg, #ead7a7, #c6a866); border-color: #f0d899; box-shadow: 0 0 0 2px rgba(226, 196, 129, .18); }
+.roulette-mode-button:disabled { opacity: .6; cursor: default; }
+.roulette-lane-picker { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px; margin: 0 auto 12px; color: var(--text-muted); font-size: .85rem; }
+.roulette-lane-picker button { min-width: 36px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 2px; background: var(--bg-soft); color: var(--text-main); cursor: pointer; }
+.roulette-lane-picker button.is-active { color: #162b37; background: #d8c28f; border-color: #ead7a7; }
+.roulette-winner-label, .roulette-lane-label { text-align: center; margin: 10px 0 0; min-height: 1.25em; color: var(--text-main); font-weight: 700; }
+.wheel-viewport { position: relative; width: min(100%, 430px); aspect-ratio: 1; margin: 4px auto; display: grid; place-items: center; }
+.wheel-disc { position: absolute; inset: 5%; border-radius: 50%; border: 5px solid #d5bb7e; box-shadow: 0 0 0 7px rgba(213, 187, 126, .11), 0 20px 55px rgba(0, 0, 0, .44), inset 0 0 0 2px rgba(255,255,255,.22); will-change: transform; }
+.wheel-rim { position: absolute; inset: 4%; border: 1px solid rgba(255, 242, 200, .68); border-radius: inherit; }
+.wheel-pointer { position: absolute; z-index: 3; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 17px solid transparent; border-right: 17px solid transparent; border-top: 0; border-bottom: 32px solid #f3d588; filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
+.wheel-center { position: absolute; z-index: 2; width: 28%; aspect-ratio: 1; overflow: hidden; display: grid; place-items: center; border: 4px solid #e8d29e; border-radius: 50%; background: #172a34; box-shadow: 0 0 0 6px rgba(9,19,25,.7), 0 5px 20px rgba(0,0,0,.5); }
+.wheel-center img, .wheel-center .image-fallback { width: 100%; height: 100%; object-fit: cover; }
+.traveler-duo-portrait { position: relative; isolation: isolate; display: block; overflow: hidden; width: 100%; aspect-ratio: 1 / 1.08; min-height: 0; background: linear-gradient(145deg, rgba(23, 43, 53, .95), rgba(41, 56, 61, .82)); }
+.traveler-duo-portrait > img, .traveler-duo-portrait > .image-fallback { position: absolute; z-index: 1; inset: 2% 0 0; width: 100%; height: 98%; object-fit: contain; object-position: center bottom; }
+.traveler-duo-portrait::before { content: ""; position: absolute; z-index: 0; inset: 15%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, currentColor 28%, transparent), transparent 70%); opacity: .8; }
+.traveler-element-sigil { position: absolute; z-index: 0; right: 3%; top: 4%; width: 74%; height: 74%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: .32; filter: drop-shadow(0 0 9px currentColor); }
+.traveler-duo-portrait.element-anemo { color: #74dfb7; }
+.traveler-duo-portrait.element-geo { color: #efbd63; }
+.traveler-duo-portrait.element-hydro { color: #5ac9f4; }
+.traveler-duo-portrait.element-electro { color: #c793ff; }
+.traveler-duo-portrait.element-pyro { color: #ff865f; }
+.traveler-duo-portrait.element-cryo { color: #9ee9f5; }
+.traveler-duo-portrait.element-dendro { color: #9fdf77; }
+.option-card .traveler-duo-portrait { aspect-ratio: 6 / 7; border-radius: 2px; }
+.roulette-card .traveler-duo-portrait { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; }
+.wheel-center .traveler-duo-portrait { aspect-ratio: 1; }
+.traveler-pair-image { display: flex; overflow: hidden; width: 100%; aspect-ratio: 1 / 1.08; background: #203543; }
+.traveler-pair-image img { width: 50%; height: 100%; object-fit: cover; }
+.reel-track.is-horizontal .traveler-duo-portrait { height: 100%; }
+.roulette-engine .roulette-actions { margin-bottom: 2px; }
+@media (max-width: 900px) {
+  .roulette-engine-grid { grid-template-columns: repeat(min(2, var(--roulette-lanes, 1)), minmax(0, 1fr)); }
+  .wheel-viewport { max-width: min(82vw, 400px); }
+}
+@media (max-width: 560px) {
+  .roulette-engine .roulette-shell { padding: 8px; }
+  .roulette-engine-grid { grid-template-columns: minmax(0, 1fr); }
+  .reel-viewport.is-vertical { height: 340px; }
+  .reel-viewport.is-horizontal { height: 194px; }
+  .reel-track.is-horizontal .roulette-card { height: 166px !important; width: 128px !important; }
+  .reel-viewport.is-horizontal .reel-pointer { width: 128px; }
+  .roulette-mode-button { min-width: min(30%, 145px); flex: 1 1 28%; padding: 7px; font-size: .78rem; }
+  .roulette-mode-button svg { width: 22px; height: 22px; }
+  .roulette-lane-picker { font-size: .76rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .roulette-mode-button, .roulette-engine .roulette-card img { transition: none; }
+}

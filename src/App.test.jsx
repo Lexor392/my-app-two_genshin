@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import App from "./App";
+import App, { buildTravelerDuoCharacters } from "./App";
 
 vi.mock("./services/genshinApi", () => ({
   fetchFallbackImage: vi.fn().mockResolvedValue(null),
@@ -34,4 +34,30 @@ test("renders app shell", async () => {
   expect(screen.getByRole("option", { name: "中文" })).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "日本語" })).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "한국어" })).toBeInTheDocument();
+});
+
+test("combines both Travelers into one API-driven card for every available element", () => {
+  const catalog = buildTravelerDuoCharacters([
+    { id: "aether", name: "Aether", image: "aether.png" },
+    { id: "lumine", name: "Lumine", image: "lumine.png" },
+    { id: "xiao", name: "Xiao", element: "ANEMO" },
+    { id: "zhongli", name: "Zhongli", element: "GEO" },
+    { id: "citlali", name: "Citlali", element: "CRYO" },
+  ]);
+  const reloadedCatalog = buildTravelerDuoCharacters(catalog);
+
+  expect(catalog.some((item) => item.id === "aether" || item.id === "lumine")).toBe(false);
+  expect(catalog.filter((item) => item.id.startsWith("traveler-duo-")).map((item) => item.element)).toEqual([
+    "ANEMO", "GEO", "CRYO",
+  ]);
+  expect(catalog.find((item) => item.id === "traveler-duo-cryo")).toMatchObject({
+    duoArtwork: expect.stringContaining("traveler-twins.webp"),
+    travelerImages: expect.arrayContaining([
+      expect.objectContaining({ id: "aether" }),
+      expect.objectContaining({ id: "lumine" }),
+    ]),
+  });
+  expect(reloadedCatalog.filter((item) => item.id.startsWith("traveler-duo-")).map((item) => item.id)).toEqual([
+    "traveler-duo-anemo", "traveler-duo-geo", "traveler-duo-cryo",
+  ]);
 });

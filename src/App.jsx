@@ -2,8 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { translations } from "./i18n/translations";
 import { fetchFallbackImage, fetchGenshinData } from "./services/genshinApi";
-import { cacheImageAsset, getCachedImageSource } from "./services/imageCache";
+import { cacheImageAsset, getCachedImageSource, readCatalogSnapshot, saveCatalogSnapshot } from "./services/imageCache";
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
+import {
+  buildRollSequence,
+  easeOutQuint as easeRouletteProgress,
+  getCenteredReelPosition,
+  getWheelTargetRotation,
+  pickUniqueWinners,
+  ROULETTE_MODES,
+  ROULETTE_SEQUENCE_LENGTH,
+  ROULETTE_WINNER_INDEX,
+} from "./utils/rouletteEngine";
 
 const LANGS = ["ru", "en", "zh", "ja", "ko"];
 const EXTRA_LABELS = {
@@ -33,6 +43,10 @@ const EXTRA_LABELS = {
   openMenu: { ru: "Открыть меню", en: "Open menu", zh: "打开菜单", ja: "メニューを開く", ko: "메뉴 열기" },
   closeMenu: { ru: "Закрыть меню", en: "Close menu", zh: "关闭菜单", ja: "メニューを閉じる", ko: "메뉴 닫기" },
   spinCount: { ru: "Количество рулеток", en: "Spin count", zh: "转盘数量", ja: "ルーレット数", ko: "룰렛 개수" },
+  rouletteModes: { ru: "Выбери способ розыгрыша", en: "Choose a roulette style", zh: "选择抽取方式", ja: "ルーレットの形式を選択", ko: "룰렛 방식 선택" },
+  rouletteVertical: { ru: "Вертикальная", en: "Vertical", zh: "垂直卷轴", ja: "縦型", ko: "세로형" },
+  rouletteHorizontal: { ru: "Кейсы", en: "Case roll", zh: "横向卷轴", ja: "ケースロール", ko: "케이스 롤" },
+  rouletteWheel: { ru: "Колесо", en: "Wheel", zh: "幸运转盘", ja: "ルーレット", ko: "룰렛 휠" },
   needLanes: { ru: "В пуле должно быть не менее {count} разных персонажей для {count} рулеток.", en: "Add at least {count} different characters to spin {count} lanes.", zh: "角色池至少需要 {count} 名不同角色才能转动 {count} 个转盘。", ja: "{count} 個のルーレットを回すには、異なるキャラクターが {count} 人以上必要です。", ko: "룰렛 {count}개를 돌리려면 서로 다른 캐릭터가 {count}명 이상 필요합니다." },
   catalogUpdated: { ru: "Каталог обновлён", en: "Catalog updated", zh: "目录更新", ja: "カタログ更新", ko: "목록 업데이트" },
 };
@@ -95,11 +109,6 @@ const ROLL_DURATION_BY_SPEED = {
   long: 9200,
   epic: 11200,
 };
-const CHARACTER_ROULETTE_COUNT = 4;
-const CHARACTER_ROULETTE_CARD_WIDTH = 176;
-const CHARACTER_ROULETTE_CARD_HEIGHT = 252;
-const CHARACTER_ROULETTE_GAP = 16;
-const CHARACTER_ROULETTE_VISIBLE_CARDS = 3;
 
 const COOKIE_DAYS = 365;
 const COOKIE_HISTORY_SIZE_LIMIT = 3300;
@@ -141,7 +150,6 @@ const BOSS_TYPE_LABELS = {
   localLegend: { ru: "Местная легенда", en: "Local Legend", zh: "地方传奇", ja: "地方伝説", ko: "지역 전설" },
 };
 
-const easeOutQuint = (x) => 1 - Math.pow(1 - x, 5);
 const mediaQueryMatches = (query) =>
   typeof window !== "undefined" && typeof window.matchMedia === "function" ? window.matchMedia(query).matches : false;
 
@@ -231,10 +239,10 @@ const getTravelerDuoBaseName = (lang) => {
   }
   return "Aether & Lumine";
 };
-const TRAVELER_SOURCE_IDS = new Set(["playerboy", "playergirl"]);
-const TRAVELER_DUO_ELEMENTS = ["ANEMO", "GEO", "HYDRO", "ELECTRO", "PYRO", "DENDRO", "ANEMO"];
-const TRAVELER_DUO_IMAGE =
-  "https://genshin-impact.fandom.com/wiki/Special:FilePath/Character%20Aether%20Lumine%20Paimon%20Genshin%20FES%202023.png";
+const TRAVELER_SOURCE_IDS = new Set(["aether", "lumine"]);
+const TRAVELER_ELEMENT_ORDER = ["ANEMO", "GEO", "HYDRO", "ELECTRO", "PYRO", "DENDRO", "CRYO"];
+const TRAVELER_DUO_ARTWORK = `${import.meta.env.BASE_URL}assets/traveler-twins.webp`;
+const EMPTY_IMAGE_FALLBACKS = Object.freeze([]);
 const WEAPON_ICONS = {
   WEAPON_SWORD_ONE_HAND: "⚔",
   WEAPON_CLAYMORE: "🗡",
@@ -263,6 +271,16 @@ const PRELOADER_COPY = {
 
 const PRELOAD_TIMEOUT_MS = 9000;
 const PRELOAD_CONCURRENCY = 8;
+const prioritizeImageCandidates = (candidates) => Array.from(new Set(candidates.filter(Boolean)))
+  .map((url, index) => ({ url, index }))
+  .sort((left, right) => {
+    const rank = (url) => url.includes("upload-os-bbs.mihoyo.com") ? 0
+      : url.includes("hoyowiki.com") ? 1
+        : url.includes("static.wikia.nocookie.net") ? 2
+          : url.includes("api.ambr.top") || url.includes("api.hakush.in") ? 4 : 3;
+    return rank(left.url) - rank(right.url) || left.index - right.index;
+  })
+  .map(({ url }) => url);
 
 const loadImageAsset = (url, signal) => new Promise((resolve, reject) => {
   if (!url || signal?.aborted) {
@@ -310,7 +328,7 @@ const preloadCatalogImages = async (catalog, { signal, onProgress }) => {
     while (nextIndex < allItems.length && !signal?.aborted) {
       const index = nextIndex++;
       const item = allItems[index];
-      const candidates = Array.from(new Set([item.image, ...(item.imageFallbacks || [])].filter(Boolean)));
+      const candidates = prioritizeImageCandidates([item.duoArtwork, item.image, ...(item.imageFallbacks || [])]);
       let workingImage = "";
 
       for (const candidate of candidates) {
@@ -331,11 +349,30 @@ const preloadCatalogImages = async (catalog, { signal, onProgress }) => {
         }
       }
 
+      const travelerImages = [];
+      for (const traveler of item.travelerImages || []) {
+        const travelerCandidates = prioritizeImageCandidates([traveler.image, ...(traveler.imageFallbacks || [])]);
+        let travelerImage = "";
+        for (const candidate of travelerCandidates) {
+          try {
+            travelerImage = await loadImageAsset(candidate, signal);
+            break;
+          } catch {
+            if (signal?.aborted) break;
+          }
+        }
+        travelerImages.push({
+          image: travelerImage,
+          imageFallbacks: travelerCandidates.filter((candidate) => candidate !== travelerImage),
+        });
+      }
+
       if (!workingImage) failed += 1;
       ready[index] = {
         ...item,
         image: workingImage,
         imageFallbacks: candidates.filter((candidate) => candidate !== workingImage),
+        travelerImages,
       };
       completed += 1;
       onProgress?.({ completed, total: allItems.length, failed });
@@ -361,20 +398,6 @@ const preloadCatalogImages = async (catalog, { signal, onProgress }) => {
   };
 };
 
-const makeRepeatedItems = (pool) => {
-  if (!pool.length) {
-    return [];
-  }
-
-  const repeats = Math.max(6, Math.ceil(48 / pool.length));
-  const sequence = [];
-
-  for (let i = 0; i < repeats; i += 1) {
-    sequence.push(...pool);
-  }
-
-  return sequence;
-};
 const shuffleArray = (list) => {
   const next = [...list];
   for (let index = next.length - 1; index > 0; index -= 1) {
@@ -397,7 +420,12 @@ const toSnapshotMember = (item) => ({
   weapon: item.weapon || "WEAPON_SWORD_ONE_HAND",
   element: item.element || "NONE",
   image: item.image || "",
+  duoArtwork: item.duoArtwork || "",
   imageFallbacks: Array.isArray(item.imageFallbacks) ? item.imageFallbacks.slice(0, 2) : [],
+  travelerImages: Array.isArray(item.travelerImages) ? item.travelerImages.map((entry) => ({
+    image: entry.image || "",
+    imageFallbacks: Array.isArray(entry.imageFallbacks) ? entry.imageFallbacks.slice(0, 2) : [],
+  })) : [],
 });
 
 const normalizeSavedSquads = (value) => {
@@ -445,39 +473,40 @@ const trimSavedSquadsForCookie = (entries) => {
   return [];
 };
 
-const buildTravelerDuoCharacters = (characters) => {
+export const buildTravelerDuoCharacters = (characters) => {
   if (!Array.isArray(characters) || !characters.length) {
     return [];
   }
 
   const travelers = characters.filter((item) => TRAVELER_SOURCE_IDS.has(String(item.id || "").toLowerCase()));
-  const filtered = characters.filter((item) => !TRAVELER_SOURCE_IDS.has(String(item.id || "").toLowerCase()));
-
-  const sharedImage =
-    TRAVELER_DUO_IMAGE ||
-    travelers.find((item) => item.splash)?.splash ||
-    travelers.find((item) => item.image)?.image ||
-    filtered.find((item) => item.image)?.image ||
-    "";
-
-  const sharedFallbacks = Array.from(
-    new Set(
-      travelers.flatMap((item) => [
-        ...(Array.isArray(item.splashFallbacks) ? item.splashFallbacks : []),
-        ...(Array.isArray(item.imageFallbacks) ? item.imageFallbacks : []),
-      ])
-    )
+  const previousDuoCards = characters.filter((item) => String(item.id || "").startsWith("traveler-duo-"));
+  const filtered = characters.filter((item) =>
+    !TRAVELER_SOURCE_IDS.has(String(item.id || "").toLowerCase()) &&
+    !String(item.id || "").startsWith("traveler-duo-")
   );
 
-  const elementCounts = {};
-  const duoCards = TRAVELER_DUO_ELEMENTS.map((element) => {
-    const count = (elementCounts[element] || 0) + 1;
-    elementCounts[element] = count;
-    const suffix = count > 1 ? `-${count}` : "";
+  const travelerImages = travelers.length ? travelers.map((item) => ({
+    id: item.id,
+    image: item.image || item.imageFallbacks?.[0] || "",
+    imageFallbacks: Array.from(new Set([...(item.imageFallbacks || []), item.splash, ...(item.splashFallbacks || [])].filter(Boolean))),
+  })) : (previousDuoCards[0]?.travelerImages || []).map((item, index) => ({
+    id: item.id || `traveler-${index}`,
+    image: item.image || "",
+    imageFallbacks: Array.isArray(item.imageFallbacks) ? item.imageFallbacks : [],
+  }));
+  const sharedImage = travelerImages.find((entry) => entry.image)?.image || "";
+  const sharedFallbacks = Array.from(new Set(travelerImages.flatMap((entry) => [entry.image, ...entry.imageFallbacks]).filter(Boolean)));
+  const apiElements = new Set(filtered.map((item) => item.element).filter((element) => element && element !== "NONE" && ELEMENT_LABELS[element]));
+  const elements = [
+    ...TRAVELER_ELEMENT_ORDER.filter((element) => apiElements.has(element)),
+    ...Array.from(apiElements).filter((element) => !TRAVELER_ELEMENT_ORDER.includes(element)).sort(),
+  ];
+
+  const duoCards = elements.map((element) => {
 
     return {
-      id: `traveler-duo-${String(element).toLowerCase()}${suffix}`,
-      slug: `traveler-duo-${String(element).toLowerCase()}${suffix}`,
+      id: `traveler-duo-${String(element).toLowerCase()}`,
+      slug: `traveler-duo-${String(element).toLowerCase()}`,
       name: `${getTravelerDuoBaseName("en")} (${ELEMENT_LABELS[element]?.en || element})`,
       nameRu: `${getTravelerDuoBaseName("ru")} (${ELEMENT_LABELS[element]?.ru || element})`,
       nameZh: `${getTravelerDuoBaseName("zh")} (${ELEMENT_LABELS[element]?.zh || element})`,
@@ -488,18 +517,59 @@ const buildTravelerDuoCharacters = (characters) => {
       weapon: "WEAPON_SWORD_ONE_HAND",
       image: sharedImage,
       imageFallbacks: sharedFallbacks,
+      duoArtwork: TRAVELER_DUO_ARTWORK,
       splash: sharedImage,
       splashFallbacks: sharedFallbacks,
+      travelerImages,
     };
   });
 
   return [...filtered, ...duoCards];
 };
 
-const buildRollItems = (pool, finalIndex, winner) =>
-  Array.from({ length: Math.max(52, finalIndex + 10) }, (_, index) =>
-    index === finalIndex ? winner : pickRandom(pool)
-  );
+const ItemImage = ({ item, alt, className, loading = "lazy" }) => {
+  if (item?.duoArtwork) {
+    return (
+      <span className={`traveler-duo-portrait element-${String(item.element || "anemo").toLowerCase()} ${className || ""}`} role="img" aria-label={alt}>
+        <ElementSigil element={item.element} />
+        <ImageWithFallback src={item.duoArtwork} alt="" loading={loading} />
+      </span>
+    );
+  }
+  const pair = (item?.travelerImages || []).filter((entry) => entry.image);
+  if (pair.length >= 2) {
+    return (
+      <span className={`traveler-pair-image ${className || ""}`} role="img" aria-label={alt}>
+        {pair.slice(0, 2).map((traveler, index) => (
+          <ImageWithFallback
+            key={`${traveler.id || index}-${traveler.image}`}
+            src={traveler.image}
+            fallbackSrcs={traveler.imageFallbacks}
+            alt=""
+            loading={loading}
+          />
+        ))}
+      </span>
+    );
+  }
+  return <ImageWithFallback src={item?.image} fallbackSrcs={item?.imageFallbacks} alt={alt} className={className} loading={loading} />;
+};
+
+const ELEMENT_SIGIL_PATHS = {
+  ANEMO: "M16 3c-4 1-7 4-8 8 4 0 7-2 9-5 3 5 1 11-5 14 8 0 13-6 11-13-2 1-4 1-7 0M7 11c-3 1-4 4-4 7 3-1 5-3 5-6",
+  GEO: "M16 2 27 10 23 24 9 28 2 16 7 5ZM9 8l11 1 4 9-8 7-9-7ZM12 12l6 1 2 5-5 4-4-5Z",
+  HYDRO: "M16 2C12 8 6 14 6 20a10 10 0 0 0 20 0C26 14 20 8 16 2ZM11 20a5 5 0 0 0 5 5",
+  ELECTRO: "M18 2 6 17h8l-2 13 14-18h-9l1-10Z",
+  PYRO: "M17 2c1 7-5 8-3 13 1-3 4-4 6-7 5 6 7 12 3 18a10 10 0 0 1-18-5c0-5 3-9 8-13-1 5 0 7 2 8 2-5 2-9 2-14Z",
+  CRYO: "M16 2v28M4 9l24 14M4 23 28 9M12 5l4 4 4-4M12 27l4-4 4 4M5 13l5-1-1-5M27 19l-5 1 1 5M10 26l-1-5-5 1M22 6l1 5 5-1",
+  DENDRO: "M27 4C13 3 5 8 5 17c0 7 6 10 12 8 8-3 11-12 10-21ZM4 28c4-7 9-12 17-17M10 20l-1-6 6 1m-1 10 1-6 6 1",
+};
+
+const ElementSigil = ({ element }) => (
+  <svg className="traveler-element-sigil" viewBox="0 0 32 32" aria-hidden="true">
+    <path d={ELEMENT_SIGIL_PATHS[element] || ELEMENT_SIGIL_PATHS.ANEMO} />
+  </svg>
+);
 
 const safeJsonParse = (value, fallback) => {
   try {
@@ -756,6 +826,7 @@ const loadInitialState = () => {
     settings,
     activeSection: SECTION_IDS.includes(uiCookie.activeSection) ? uiCookie.activeSection : "dashboard",
     isSidebarCollapsed: Boolean(uiCookie.isSidebarCollapsed),
+    rouletteMode: ROULETTE_MODES.includes(uiCookie.rouletteMode) ? uiCookie.rouletteMode : "vertical",
     characterFilters,
     bossFilters,
     selectedCharacters: uniqueStringArray(selectedCookie.characters),
@@ -809,17 +880,14 @@ const ItemBadge = ({ text }) => <span className="item-badge">{text}</span>;
 
 const ImageWithFallback = ({
   src,
-  fallbackSrcs = [],
+  fallbackSrcs = EMPTY_IMAGE_FALLBACKS,
   alt,
   className,
   loading = "lazy",
   onError,
   onLoad,
 }) => {
-  const sources = useMemo(() => {
-    const list = [src, ...fallbackSrcs].filter(Boolean);
-    return Array.from(new Set(list));
-  }, [src, fallbackSrcs]);
+  const sources = useMemo(() => prioritizeImageCandidates([src, ...fallbackSrcs]), [src, fallbackSrcs]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
   const [displaySource, setDisplaySource] = useState("");
@@ -883,12 +951,7 @@ const CharacterOption = ({ item, lang, selected, onToggle, viewMode }) => {
       aria-pressed={selected}
       onClick={() => onToggle(item.id)}
     >
-      <ImageWithFallback
-        src={item.image}
-        fallbackSrcs={item.imageFallbacks}
-        alt={getItemName(item, lang)}
-        loading="lazy"
-      />
+      <ItemImage item={item} alt={getItemName(item, lang)} loading="eager" />
       <div className="option-content">
         <p>{getItemName(item, lang)}</p>
         <div className="option-badges">
@@ -916,7 +979,7 @@ const BossOption = ({ item, lang, selected, onToggle, viewMode, t }) => {
         src={item.image}
         fallbackSrcs={item.imageFallbacks}
         alt={getItemName(item, lang)}
-        loading="lazy"
+        loading="eager"
       />
       <div className="option-content">
         <p>{getItemName(item, lang)}</p>
@@ -1596,12 +1659,7 @@ const HistoryPanel = ({
           return (
             <article key={entry.id} className="history-item">
               {preview ? (
-                <ImageWithFallback
-                  src={preview}
-                  fallbackSrcs={knownItem?.imageFallbacks}
-                  alt={displayName}
-                  loading="lazy"
-                />
+                knownItem ? <ItemImage item={knownItem} alt={displayName} loading="lazy" /> : <ImageWithFallback src={preview} alt={displayName} loading="lazy" />
               ) : (
                 <div className="history-fallback">?</div>
               )}
@@ -1710,12 +1768,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
           <div className="squad-grid">
             {squad.map((member, index) => (
               <article key={`${member.id}-${index}`} className="squad-card">
-                <ImageWithFallback
-                  src={member.image}
-                  fallbackSrcs={member.imageFallbacks}
-                  alt={getItemName(member, lang)}
-                  loading="lazy"
-                />
+                <ItemImage item={member} alt={getItemName(member, lang)} loading="lazy" />
                 <div className="squad-card-body">
                   <p className="squad-name">{getItemName(member, lang)}</p>
                   <div className="squad-chip-row">
@@ -1746,12 +1799,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
         ) : (
           <div className="squad-grid single-item">
             <article className="squad-card">
-              <ImageWithFallback
-                src={item.image}
-                fallbackSrcs={item.imageFallbacks}
-                alt={getItemName(item, lang)}
-                loading="lazy"
-              />
+              <ItemImage item={item} alt={getItemName(item, lang)} loading="lazy" />
               <div className="squad-card-body">
                 <p className="squad-name">{getItemName(item, lang)}</p>
                 <div className="squad-chip-row">
@@ -1789,9 +1837,23 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
   );
 };
 
-const CharacterRoulette = ({
+const RouletteModeIcon = ({ mode }) => {
+  if (mode === "wheel") {
+    return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" /><path d="M16 6v11l8 8M12 3h8M16 3v3" /><path d="m16 7 2.4 8.7 7-5.7" /></svg>;
+  }
+  if (mode === "horizontal") {
+    return <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="26" height="18" rx="2" /><path d="m11 7 3 18m5-18 3 18M7 16h18" /></svg>;
+  }
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="3" width="18" height="26" rx="2" /><path d="m7 11 18 3m-18 5 18 3M16 3v26" /></svg>;
+};
+
+const RouletteEngine = ({
   items,
+  selectedItem,
   setSelectedItem,
+  mode,
+  setMode,
+  maxLanes = 1,
   t,
   lang,
   rollingLabel,
@@ -1800,871 +1862,318 @@ const CharacterRoulette = ({
   onTick,
   externalRollTrigger = 0,
 }) => {
-  const viewportRefs = useRef(Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => null));
-  const laneTranslateValuesRef = useRef(Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => 0));
-  const frameRefs = useRef(Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => 0));
-  const tickRefs = useRef(Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => null));
-  const laneResolveRefs = useRef(Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => null));
-  const idleFrameRef = useRef(0);
-  const rollSessionRef = useRef(0);
-  const stopRequestedRef = useRef(false);
-  const externalTriggerRef = useRef(externalRollTrigger);
-  const laneStartTimeoutRefs = useRef(Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => 0));
-
+  const [laneCount, setLaneCount] = useState(maxLanes);
   const [isRolling, setIsRolling] = useState(false);
-  const [activeLaneIndexesState, setActiveLaneIndexesState] = useState([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [isMobileView, setIsMobileView] = useState(() =>
-    mediaQueryMatches("(max-width: 760px)")
-  );
-  const [mobileRollingStep, setMobileRollingStep] = useState(0);
-  const [laneEnabledByIndex, setLaneEnabledByIndex] = useState(() =>
-    Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => true)
-  );
-  const [displayItemsByLane, setDisplayItemsByLane] = useState(() =>
-    Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => [])
-  );
-  const [translateYByLane, setTranslateYByLane] = useState(() =>
-    Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => 0)
-  );
+  const [spinPlan, setSpinPlan] = useState(null);
+  const [lastWinners, setLastWinners] = useState([]);
+  const viewportRefs = useRef([]);
+  const trackRefs = useRef([]);
+  const wheelRefs = useRef([]);
+  const reelPositionRefs = useRef(Array.from({ length: maxLanes }, () => 0));
+  const wheelRotationRefs = useRef(Array.from({ length: maxLanes }, () => 0));
+  const frameRef = useRef(0);
+  const sessionRef = useRef(0);
+  const rollingRef = useRef(false);
+  const externalTriggerRef = useRef(0);
+  const lastTickRefs = useRef(Array.from({ length: maxLanes }, () => null));
 
   const uniqueItems = useMemo(() => {
     const seen = new Set();
     return items.filter((item) => {
-      if (!item?.id || seen.has(item.id)) {
-        return false;
-      }
+      if (!item?.id || seen.has(item.id)) return false;
       seen.add(item.id);
       return true;
     });
   }, [items]);
 
-  const activeLaneIndexes = useMemo(
-    () => laneEnabledByIndex.map((enabled, index) => (enabled ? index : -1)).filter((index) => index >= 0),
-    [laneEnabledByIndex]
-  );
-  const activeLaneCount = activeLaneIndexes.length;
-  const canRoll = activeLaneCount > 0 && uniqueItems.length >= activeLaneCount;
-  const overlapBeforeEndMs = 1000;
-  const laneStartStepMs = Math.max(320, rollDurationMs - overlapBeforeEndMs);
-  const unit = CHARACTER_ROULETTE_CARD_HEIGHT + CHARACTER_ROULETTE_GAP;
-  const viewportFallbackHeight =
-    CHARACTER_ROULETTE_CARD_HEIGHT * CHARACTER_ROULETTE_VISIBLE_CARDS +
-    CHARACTER_ROULETTE_GAP * (CHARACTER_ROULETTE_VISIBLE_CARDS - 1);
+  const safeLaneCount = Math.max(1, Math.min(maxLanes, laneCount));
+  const canRoll = uniqueItems.length >= safeLaneCount;
+  const vertical = mode === "vertical";
+  const cardWidth = vertical ? 152 : 144;
+  const cardHeight = vertical ? 204 : 190;
+  const gap = 10;
+  const unit = (vertical ? cardHeight : cardWidth) + gap;
+  const idleItemsByLane = useMemo(() => Array.from({ length: safeLaneCount }, () => {
+    if (!uniqueItems.length) return [];
+    const ordered = shuffleArray(uniqueItems);
+    const tailLength = Math.min(3, ordered.length);
+    const tail = Array.from({ length: 3 }, (_, index) => ordered[index % tailLength]);
+    return [...ordered, ...tail];
+  }), [safeLaneCount, uniqueItems]);
+  const wheelBackground = useMemo(() => {
+    if (!uniqueItems.length) return "conic-gradient(#6d7774 0deg 360deg)";
+    const segment = 360 / uniqueItems.length;
+    const colors = ["#a88956", "#465c62", "#758477", "#334752"];
+    return `conic-gradient(${uniqueItems.map((_, index) => `${colors[index % colors.length]} ${index * segment}deg ${(index + 1) * segment}deg`).join(",")})`;
+  }, [uniqueItems]);
+  const winnerById = useMemo(() => new Map(lastWinners.map((winner) => [winner.id, winner])), [lastWinners]);
 
-  const setLaneTranslate = useCallback((laneIndex, value) => {
-    laneTranslateValuesRef.current[laneIndex] = value;
-    const track = viewportRefs.current[laneIndex]?.querySelector(".character-roulette-track");
-    if (track) track.style.transform = `translate3d(0, ${value}px, 0)`;
-  }, []);
+  const setTrackPosition = useCallback((index, value) => {
+    reelPositionRefs.current[index] = value;
+    const track = trackRefs.current[index];
+    if (!track) return;
+    track.style.transform = vertical ? `translate3d(0, ${value}px, 0)` : `translate3d(${value}px, 0, 0)`;
+  }, [vertical]);
 
-  const setLaneItems = useCallback((laneIndex, laneItems) => {
-    setDisplayItemsByLane((prev) => {
-      const next = [...prev];
-      next[laneIndex] = laneItems;
-      return next;
-    });
-  }, []);
-
-  useEffect(() => {
-    const repeatedItems = makeRepeatedItems(uniqueItems);
-    const laneItems = Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => shuffleArray(repeatedItems));
-
-    setDisplayItemsByLane(laneItems);
-    const initialPositions = Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => {
-        if (!repeatedItems.length) {
-          return 0;
-        }
-        const randomCardOffset = Math.floor(Math.random() * Math.min(12, repeatedItems.length));
-        return -(randomCardOffset * unit);
-      });
-    laneTranslateValuesRef.current = initialPositions;
-    setTranslateYByLane(initialPositions);
-  }, [uniqueItems, unit]);
-
-  useEffect(() => () => {
-    if (idleFrameRef.current) {
-      window.cancelAnimationFrame(idleFrameRef.current);
-      idleFrameRef.current = 0;
-    }
-
-    laneResolveRefs.current.forEach((resolve) => {
-      if (resolve) {
-        resolve(null);
-      }
-    });
-    laneResolveRefs.current = Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => null);
-
-    frameRefs.current.forEach((frameId) => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-    });
-
-    laneStartTimeoutRefs.current.forEach((timeoutId) => {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-    });
-    laneStartTimeoutRefs.current = Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => 0);
-  }, []);
-
-  const setLaneCount = useCallback((count) => {
-    const safeCount = Math.min(CHARACTER_ROULETTE_COUNT, Math.max(1, Number(count) || 1));
-    setLaneEnabledByIndex(Array.from({ length: CHARACTER_ROULETTE_COUNT }, (_, index) => index < safeCount));
+  const setWheelRotation = useCallback((index, value) => {
+    wheelRotationRefs.current[index] = value;
+    const wheel = wheelRefs.current[index];
+    if (wheel) wheel.style.transform = `rotate(${value}deg)`;
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return undefined;
-    }
-
-    const mediaQuery = window.matchMedia("(max-width: 760px)");
-    const applyMatch = (matches) => {
-      setIsMobileView(matches);
-    };
-
-    applyMatch(mediaQuery.matches);
-
-    const handler = (event) => applyMatch(event.matches);
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handler);
-      return () => mediaQuery.removeEventListener("change", handler);
-    }
-    mediaQuery.addListener(handler);
-    return () => mediaQuery.removeListener(handler);
-  }, []);
+    setLaneCount((current) => Math.max(1, Math.min(maxLanes, current)));
+    reelPositionRefs.current = Array.from({ length: maxLanes }, (_, index) => reelPositionRefs.current[index] || 0);
+    wheelRotationRefs.current = Array.from({ length: maxLanes }, (_, index) => wheelRotationRefs.current[index] || 0);
+  }, [maxLanes]);
 
   useEffect(() => {
-    if (!isMobileView) {
-      return;
-    }
-    setIsEditMode(false);
-    setLaneEnabledByIndex((prev) => {
-      const count = Math.min(
-        CHARACTER_ROULETTE_COUNT,
-        Math.max(1, prev.filter(Boolean).length)
-      );
-      const normalized = Array.from({ length: CHARACTER_ROULETTE_COUNT }, (_, index) => index < count);
-      const isSame = prev.every((value, index) => value === normalized[index]);
-      return isSame ? prev : normalized;
-    });
-  }, [isMobileView]);
-
-  useEffect(() => {
-    if (laneEnabledByIndex.some(Boolean)) {
-      return;
-    }
-    setLaneCount(1);
-  }, [laneEnabledByIndex, setLaneCount]);
-
-  useEffect(() => {
-    if (isRolling || !uniqueItems.length) {
-      return undefined;
-    }
-
-    const cycleHeight = uniqueItems.length * unit;
-    if (!cycleHeight) {
-      return undefined;
-    }
-
+    if (isRolling || mode === "wheel" || !uniqueItems.length) return undefined;
     let lastTime = 0;
-    const idleBaseSpeedPxPerSecond = 23;
-    const laneDelayStepMs = 140;
-    const laneElapsedMs = Array.from({ length: CHARACTER_ROULETTE_COUNT }, () => 0);
-
-    const animateIdle = (now) => {
-      if (!lastTime) {
-        lastTime = now;
-      }
-
-      const delta = now - lastTime;
+    const cycleDistance = uniqueItems.length * unit;
+    const idleSpeed = mode === "vertical" ? 8 : 11;
+    for (let laneIndex = 0; laneIndex < safeLaneCount; laneIndex += 1) {
+      const start = mode === "vertical" ? -cycleDistance : 0;
+      reelPositionRefs.current[laneIndex] = start;
+      setTrackPosition(laneIndex, start);
+    }
+    const animate = (now) => {
+      if (!lastTime) lastTime = now;
+      const delta = Math.min(40, now - lastTime);
       lastTime = now;
-
-      laneTranslateValuesRef.current = laneTranslateValuesRef.current.map((value, laneIndex) => {
-          const delayForLane = laneIndex * laneDelayStepMs;
-          laneElapsedMs[laneIndex] += delta;
-          if (laneElapsedMs[laneIndex] < delayForLane) {
-            return value;
-          }
-
-          const laneSpeed = idleBaseSpeedPxPerSecond + laneIndex * 0.85;
-          let next = value - (delta / 1000) * laneSpeed;
-
-          if (next <= -cycleHeight) {
-            next += cycleHeight;
-          }
-
-          const track = viewportRefs.current[laneIndex]?.querySelector(".character-roulette-track");
-          if (track) track.style.transform = `translate3d(0, ${next}px, 0)`;
-
-          return next;
-        });
-
-      idleFrameRef.current = window.requestAnimationFrame(animateIdle);
+      for (let laneIndex = 0; laneIndex < safeLaneCount; laneIndex += 1) {
+        let next = reelPositionRefs.current[laneIndex] + (mode === "vertical" ? 1 : -1) * (delta / 1000) * idleSpeed;
+        if (mode === "vertical" && next >= 0) next -= cycleDistance;
+        if (mode === "horizontal" && next <= -cycleDistance) next += cycleDistance;
+        setTrackPosition(laneIndex, next);
+      }
+      frameRef.current = window.requestAnimationFrame(animate);
     };
-
-    idleFrameRef.current = window.requestAnimationFrame(animateIdle);
-
+    frameRef.current = window.requestAnimationFrame(animate);
     return () => {
-      if (idleFrameRef.current) {
-        window.cancelAnimationFrame(idleFrameRef.current);
-        idleFrameRef.current = 0;
-      }
+      if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
     };
-  }, [isRolling, uniqueItems.length, unit]);
+  }, [isRolling, mode, safeLaneCount, setTrackPosition, uniqueItems.length, unit]);
 
-  const setLaneRollingState = useCallback((laneIndex, isActive) => {
-    setActiveLaneIndexesState((prev) => {
-      const hasLane = prev.includes(laneIndex);
-      if (isActive) {
-        if (hasLane) {
-          return prev;
-        }
-        return [...prev, laneIndex];
+  useEffect(() => {
+    if (isRolling || mode !== "wheel" || !uniqueItems.length) return undefined;
+    let lastTime = 0;
+    const animate = (now) => {
+      if (!lastTime) lastTime = now;
+      const delta = Math.min(40, now - lastTime);
+      lastTime = now;
+      for (let laneIndex = 0; laneIndex < safeLaneCount; laneIndex += 1) {
+        setWheelRotation(laneIndex, (wheelRotationRefs.current[laneIndex] + delta * 2.8) % 360);
       }
-      if (!hasLane) {
-        return prev;
-      }
-      return prev.filter((index) => index !== laneIndex);
-    });
-  }, []);
+      frameRef.current = window.requestAnimationFrame(animate);
+    };
+    frameRef.current = window.requestAnimationFrame(animate);
+    return () => {
+      if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    };
+  }, [isRolling, mode, safeLaneCount, setWheelRotation, uniqueItems.length]);
 
-  const rollSingleLane = useCallback(
-    (laneIndex, pool, forcedWinner, sessionId) =>
-      new Promise((resolve) => {
-        const winner = forcedWinner || pickRandom(pool);
-        const finalIndex = 44 + Math.floor(Math.random() * 8);
-        const rollItems = buildRollItems(pool, finalIndex, winner);
-        let settled = false;
+  const roll = useCallback(() => {
+    if (!canRoll || rollingRef.current) return;
+    const winners = pickUniqueWinners(uniqueItems, safeLaneCount);
+    if (!winners.length) return;
 
-        const finish = (value) => {
-          if (settled) {
-            return;
-          }
-          settled = true;
-          laneResolveRefs.current[laneIndex] = null;
-          tickRefs.current[laneIndex] = null;
-          if (frameRefs.current[laneIndex]) {
-            window.cancelAnimationFrame(frameRefs.current[laneIndex]);
-            frameRefs.current[laneIndex] = 0;
-          }
-          resolve(value);
-        };
-
-        laneResolveRefs.current[laneIndex] = finish;
-
-        setLaneItems(laneIndex, rollItems);
-
-        const viewportHeight = viewportRefs.current[laneIndex]?.clientHeight || viewportFallbackHeight;
-        const centerY = viewportHeight / 2;
-        const centerOnIndex = (index) => centerY - (index * unit + CHARACTER_ROULETTE_CARD_HEIGHT / 2);
-
-        const currentTranslate = laneTranslateValuesRef.current[laneIndex];
-        const startValue = Number.isFinite(currentTranslate) ? currentTranslate : centerOnIndex(1);
-        const targetValue = centerOnIndex(finalIndex);
-
-        if (frameRefs.current[laneIndex]) {
-          window.cancelAnimationFrame(frameRefs.current[laneIndex]);
-        }
-
-        setLaneTranslate(laneIndex, startValue);
-        tickRefs.current[laneIndex] = null;
-        const startedAt = performance.now();
-
-        const animate = (now) => {
-          const elapsed = now - startedAt;
-          const progress = Math.min(1, elapsed / rollDurationMs);
-          const eased = easeOutQuint(progress);
-
-          if (stopRequestedRef.current || rollSessionRef.current !== sessionId) {
-            finish(null);
-            return;
-          }
-
-          const currentValue = startValue + (targetValue - startValue) * eased;
-          setLaneTranslate(laneIndex, currentValue);
-
-          const pointerTrackPosition = viewportHeight / 2 - currentValue - CHARACTER_ROULETTE_CARD_HEIGHT / 2;
-          const tickIndex = Math.floor(pointerTrackPosition / unit);
-
-          if (tickRefs.current[laneIndex] === null) {
-            tickRefs.current[laneIndex] = tickIndex;
-          } else if (tickIndex !== tickRefs.current[laneIndex]) {
-            tickRefs.current[laneIndex] = tickIndex;
-            if (onTick) {
-              onTick();
-            }
-          }
-
-          if (progress < 1) {
-            frameRefs.current[laneIndex] = window.requestAnimationFrame(animate);
-            return;
-          }
-
-          finish(winner);
-        };
-
-        frameRefs.current[laneIndex] = window.requestAnimationFrame(animate);
-      }),
-    [onTick, rollDurationMs, setLaneItems, setLaneTranslate, unit, viewportFallbackHeight]
-  );
-
-  const removeLane = useCallback(
-    (laneIndex) => {
-      if (isRolling) {
-        return;
-      }
-
-      setLaneEnabledByIndex((prev) => {
-        const enabledCount = prev.filter(Boolean).length;
-        if (enabledCount <= 1 || !prev[laneIndex]) {
-          return prev;
-        }
-        const next = [...prev];
-        next[laneIndex] = false;
-        return next;
-      });
-
-      setLaneRollingState(laneIndex, false);
-    },
-    [isRolling, setLaneRollingState]
-  );
-
-  const addLane = useCallback((laneIndex) => {
-    setLaneEnabledByIndex((prev) => {
-      if (prev[laneIndex]) {
-        return prev;
-      }
-      const next = [...prev];
-      next[laneIndex] = true;
-      return next;
-    });
-  }, []);
-
-  const toggleEditMode = useCallback(() => {
-    if (isRolling || isMobileView) {
-      return;
-    }
-    setIsEditMode((prev) => !prev);
-  }, [isMobileView, isRolling]);
-
-  const roll = useCallback(async () => {
-    if (!canRoll || isRolling) {
-      return;
-    }
-
-    const currentSession = rollSessionRef.current + 1;
-    rollSessionRef.current = currentSession;
-    stopRequestedRef.current = false;
-
+    const id = sessionRef.current + 1;
+    sessionRef.current = id;
+    rollingRef.current = true;
     setIsRolling(true);
     setSelectedItem(null);
-    setActiveLaneIndexesState([]);
-    setMobileRollingStep(0);
-
-    if (isMobileView) {
-      const winners = [];
-      const remainingPool = [...uniqueItems];
-      const plannedWinners = [];
-
-      for (let index = 0; index < activeLaneCount; index += 1) {
-        if (!remainingPool.length) {
-          break;
-        }
-        const winner = pickRandom(remainingPool);
-        plannedWinners.push(winner);
-        const winnerIndex = remainingPool.findIndex((entry) => entry.id === winner.id);
-        if (winnerIndex >= 0) {
-          remainingPool.splice(winnerIndex, 1);
-        }
+    setLastWinners([]);
+    const lanes = winners.map((winner, index) => {
+      if (mode === "wheel") {
+        const segmentIndex = uniqueItems.findIndex((item) => item.id === winner.id);
+        const fromRotation = wheelRotationRefs.current[index] || 0;
+        return {
+          winner,
+          segmentIndex,
+          fromRotation,
+          toRotation: getWheelTargetRotation(segmentIndex, uniqueItems.length, fromRotation, 6),
+          delay: index * 150,
+        };
       }
-
-      let aborted = false;
-      for (let step = 0; step < plannedWinners.length; step += 1) {
-        if (stopRequestedRef.current || rollSessionRef.current !== currentSession) {
-          aborted = true;
-          break;
-        }
-
-        setMobileRollingStep(step + 1);
-        setLaneRollingState(0, true);
-        const result = await rollSingleLane(0, uniqueItems, plannedWinners[step], currentSession);
-        setLaneRollingState(0, false);
-
-        if (!result) {
-          aborted = true;
-          break;
-        }
-        winners.push(result);
-      }
-
-      if (rollSessionRef.current !== currentSession) {
-        return;
-      }
-
-      setActiveLaneIndexesState([]);
-      setMobileRollingStep(0);
-      setIsRolling(false);
-
-      if (!aborted && winners.length) {
-        setSelectedItem(winners[0]);
-        if (onRollComplete) {
-          onRollComplete(winners);
-        }
-      }
-      return;
-    }
-
-    const remainingPool = [...uniqueItems];
-    const plannedLanes = [];
-    activeLaneIndexes.forEach((laneIndex) => {
-      if (!remainingPool.length) {
-        return;
-      }
-      const winner = pickRandom(remainingPool);
-      plannedLanes.push({ laneIndex, winner });
-      const winnerIndex = remainingPool.findIndex((entry) => entry.id === winner.id);
-      if (winnerIndex >= 0) {
-        remainingPool.splice(winnerIndex, 1);
-      }
+      const cards = buildRollSequence(uniqueItems, winner);
+      const viewport = viewportRefs.current[index];
+      const viewportSize = (vertical ? viewport?.clientHeight : viewport?.clientWidth) || (vertical ? 430 : 760);
+      const finalIndex = ROULETTE_WINNER_INDEX;
+      const fromIndex = vertical ? finalIndex + 9 : finalIndex - 9;
+      return {
+        winner,
+        cards,
+        fromIndex,
+        finalIndex,
+        fromPosition: getCenteredReelPosition(fromIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
+        toPosition: getCenteredReelPosition(finalIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
+        delay: index * 150,
+      };
     });
+    const plan = { id, mode, lanes, startedAt: 0 };
+    setSpinPlan(plan);
+  }, [canRoll, cardHeight, cardWidth, gap, mode, safeLaneCount, setSelectedItem, uniqueItems, vertical]);
 
-    let aborted = false;
-    const laneTasks = plannedLanes.map(({ laneIndex, winner }, orderIndex) =>
-      new Promise((resolve) => {
-        const beginLane = () => {
-          laneStartTimeoutRefs.current[laneIndex] = 0;
-          if (stopRequestedRef.current || rollSessionRef.current !== currentSession) {
-            aborted = true;
-            resolve(null);
+  useEffect(() => {
+    if (!spinPlan) return undefined;
+    let alive = true;
+    let frame = 0;
+    frame = window.requestAnimationFrame((startTime) => {
+      if (!alive || spinPlan.id !== sessionRef.current) return;
+      spinPlan.lanes.forEach((lane, index) => {
+        if (spinPlan.mode === "wheel") setWheelRotation(index, lane.fromRotation);
+        else setTrackPosition(index, lane.fromPosition);
+        lastTickRefs.current[index] = lane.fromIndex ?? null;
+      });
+
+      const animate = (now) => {
+        if (!alive || spinPlan.id !== sessionRef.current) return;
+        let allDone = true;
+        spinPlan.lanes.forEach((lane, index) => {
+          const elapsed = now - startTime - lane.delay;
+          if (elapsed < 0) {
+            allDone = false;
             return;
           }
-
-          setLaneRollingState(laneIndex, true);
-          rollSingleLane(laneIndex, uniqueItems, winner, currentSession).then((result) => {
-            setLaneRollingState(laneIndex, false);
-            if (!result) {
-              aborted = true;
-              resolve(null);
-              return;
+          const progress = Math.min(1, elapsed / rollDurationMs);
+          const eased = easeRouletteProgress(progress);
+          if (spinPlan.mode === "wheel") {
+            setWheelRotation(index, lane.fromRotation + (lane.toRotation - lane.fromRotation) * eased);
+          } else {
+            const position = lane.fromPosition + (lane.toPosition - lane.fromPosition) * eased;
+            setTrackPosition(index, position);
+            const viewportSize = (spinPlan.mode === "vertical" ? viewportRefs.current[index]?.clientHeight : viewportRefs.current[index]?.clientWidth) || 430;
+            const size = spinPlan.mode === "vertical" ? cardHeight : cardWidth;
+            const tickIndex = Math.floor((viewportSize / 2 - position - size / 2) / (size + gap));
+            if (tickIndex !== lastTickRefs.current[index]) {
+              lastTickRefs.current[index] = tickIndex;
+              onTick?.();
             }
-            resolve(result);
-          });
-        };
+          }
+          if (progress < 1) allDone = false;
+        });
 
-        const delayMs = orderIndex * laneStartStepMs;
-        if (!delayMs) {
-          beginLane();
+        if (allDone) {
+          const winners = spinPlan.lanes.map((lane) => lane.winner);
+          rollingRef.current = false;
+          setIsRolling(false);
+          setSpinPlan(null);
+          setLastWinners(winners);
+          if (spinPlan.mode !== "wheel") {
+            for (let index = 0; index < winners.length; index += 1) setTrackPosition(index, 0);
+          }
+          setSelectedItem(winners[0]);
+          onRollComplete?.(maxLanes > 1 ? winners : winners[0]);
           return;
         }
-
-        const timeoutId = window.setTimeout(beginLane, delayMs);
-        laneStartTimeoutRefs.current[laneIndex] = timeoutId;
-      })
-    );
-
-    const winners = (await Promise.all(laneTasks)).filter(Boolean);
-    if (rollSessionRef.current !== currentSession) {
-      return;
-    }
-
-    setActiveLaneIndexesState([]);
-    setMobileRollingStep(0);
-    setIsRolling(false);
-
-    if (!aborted && winners.length) {
-      setSelectedItem(winners[0]);
-      if (onRollComplete) {
-        onRollComplete(winners);
-      }
-    }
-  }, [
-    canRoll,
-    isRolling,
-    setSelectedItem,
-    uniqueItems,
-    rollSingleLane,
-    onRollComplete,
-    activeLaneIndexes,
-    activeLaneCount,
-    isMobileView,
-    laneStartStepMs,
-    setLaneRollingState,
-  ]);
+        frame = window.requestAnimationFrame(animate);
+      };
+      frame = window.requestAnimationFrame(animate);
+    });
+    return () => {
+      alive = false;
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [cardHeight, cardWidth, gap, maxLanes, onRollComplete, onTick, rollDurationMs, setSelectedItem, setTrackPosition, setWheelRotation, spinPlan]);
 
   const stopRoll = useCallback(() => {
-    if (!isRolling) {
-      return;
-    }
-
-    stopRequestedRef.current = true;
-    rollSessionRef.current += 1;
-
-    frameRefs.current.forEach((frameId, laneIndex) => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-        frameRefs.current[laneIndex] = 0;
-      }
-    });
-
-    laneResolveRefs.current.forEach((resolve, laneIndex) => {
-      if (resolve) {
-        resolve(null);
-        laneResolveRefs.current[laneIndex] = null;
-      }
-    });
-
-    laneStartTimeoutRefs.current.forEach((timeoutId, laneIndex) => {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-        laneStartTimeoutRefs.current[laneIndex] = 0;
-      }
-    });
-
-    setActiveLaneIndexesState([]);
-    setMobileRollingStep(0);
+    if (!rollingRef.current) return;
+    rollingRef.current = false;
+    sessionRef.current += 1;
+    if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+    frameRef.current = 0;
+    setSpinPlan(null);
     setIsRolling(false);
     setSelectedItem(null);
-  }, [isRolling, setSelectedItem]);
+  }, [setSelectedItem]);
 
   useEffect(() => {
-    if (externalRollTrigger === externalTriggerRef.current) {
-      return;
-    }
+    if (externalRollTrigger === externalTriggerRef.current) return;
     externalTriggerRef.current = externalRollTrigger;
-    if (!isRolling && canRoll) {
-      roll();
-    }
-  }, [externalRollTrigger, isRolling, canRoll, roll]);
-
-  const notEnoughItemsLabel = getExtraLabel("needLanes", lang).replaceAll("{count}", activeLaneCount);
-  const stopLabel = getExtraLabel("stop", lang);
-  const visibleLaneIndexes = isMobileView ? [0] : Array.from({ length: CHARACTER_ROULETTE_COUNT }, (_, index) => index);
-  const rollButtonLabel =
-    isRolling && isMobileView && activeLaneCount > 0 ? `${mobileRollingStep}/${activeLaneCount}` : isRolling ? rollingLabel : t.letsGo;
-
-  return (
-    <div className="roulette-block">
-      <div className="roulette-shell">
-        {!isMobileView ? (
-          <div className="character-roulette-toolbar">
-            <button
-              type="button"
-              className={`roulette-edit-toggle ${isEditMode ? "is-active" : ""}`}
-              onClick={toggleEditMode}
-              disabled={isRolling}
-              aria-label={getExtraLabel("editRoulette", lang)}
-              title={getExtraLabel("editRoulette", lang)}
-            >
-              <span aria-hidden="true">{isEditMode ? "✓" : "✎"}</span>
-            </button>
-          </div>
-        ) : (
-          <div className="mobile-spin-selector" aria-label={getExtraLabel("spinCount", lang)}>
-            {Array.from({ length: CHARACTER_ROULETTE_COUNT }, (_, index) => index + 1).map((count) => (
-              <button
-                key={`mobile-spin-count-${count}`}
-                type="button"
-                className={`mobile-spin-chip ${activeLaneCount === count ? "is-active" : ""}`}
-                onClick={() => setLaneCount(count)}
-                disabled={isRolling}
-              >
-                x{count}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className={`character-roulette-grid ${isEditMode ? "is-editing" : ""} ${isMobileView ? "is-mobile" : ""}`}>
-          <div className="character-roulette-grid-inner">
-            {!isEditMode ? <div className="character-roulette-center-rect" aria-hidden="true" /> : null}
-            {visibleLaneIndexes.map((laneIndex) => (
-              laneEnabledByIndex[laneIndex] ? (
-                <div
-                  key={`character-roulette-${laneIndex}`}
-                  className={`character-roulette-lane ${activeLaneIndexesState.includes(laneIndex) ? "is-active" : ""}`}
-                >
-                  {isEditMode && !isMobileView ? (
-                    <button
-                      type="button"
-                      className="lane-remove-button"
-                      onClick={() => removeLane(laneIndex)}
-                      disabled={activeLaneCount <= 1 || isRolling}
-                      aria-label={getExtraLabel("removeRoulette", lang)}
-                      title={getExtraLabel("removeRoulette", lang)}
-                    >
-                      <span aria-hidden="true">✕</span>
-                    </button>
-                  ) : null}
-
-                  <div className="character-roulette-window" ref={(node) => (viewportRefs.current[laneIndex] = node)}>
-                    <div
-                      className="character-roulette-track"
-                      style={{
-                        transform: `translate3d(0, ${laneTranslateValuesRef.current[laneIndex] ?? translateYByLane[laneIndex]}px, 0)`,
-                        gap: `${CHARACTER_ROULETTE_GAP}px`,
-                      }}
-                    >
-                      {displayItemsByLane[laneIndex].map((item, index) => (
-                        <article
-                          key={`${item.id}-${laneIndex}-${index}`}
-                          className={`roulette-card ${item.rarity === 5 ? "rarity-5" : item.rarity === 4 ? "rarity-4" : ""} ${
-                            isSpecialMagentaCharacter(item) ? "special-magenta" : ""
-                          }`}
-                          style={{
-                            width: `${CHARACTER_ROULETTE_CARD_WIDTH}px`,
-                            height: `${CHARACTER_ROULETTE_CARD_HEIGHT}px`,
-                          }}
-                        >
-                          <ImageWithFallback
-                            src={item.image}
-                            fallbackSrcs={item.imageFallbacks}
-                            alt={getItemName(item, lang)}
-                            loading="lazy"
-                          />
-                          <div className="roulette-card-overlay" />
-                          <div className="roulette-card-meta">
-                            <p>{getItemName(item, lang)}</p>
-                            {item.group ? <span className="type-chip">{formatBossType(item.group, lang)}</span> : null}
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : isEditMode && !isMobileView ? (
-                <div key={`character-roulette-${laneIndex}`} className="character-roulette-placeholder">
-                  <button
-                    type="button"
-                    className="lane-add-button"
-                    onClick={() => addLane(laneIndex)}
-                    disabled={isRolling}
-                    aria-label={getExtraLabel("addRoulette", lang)}
-                    title={getExtraLabel("addRoulette", lang)}
-                  >
-                    <span aria-hidden="true">＋</span>
-                  </button>
-                </div>
-              ) : null
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="roulette-actions">
-        <button type="button" className="btn-primary" onClick={roll} disabled={!canRoll || isRolling}>
-          {rollButtonLabel}
-        </button>
-        {isRolling ? (
-          <button type="button" className="btn-secondary" onClick={stopRoll}>
-            {stopLabel}
-          </button>
-        ) : null}
-      </div>
-
-      {!canRoll ? <p className="roulette-hint">{notEnoughItemsLabel}</p> : null}
-    </div>
-  );
-};
-
-const Roulette = ({
-  items,
-  selectedItem,
-  setSelectedItem,
-  t,
-  lang,
-  rollingLabel,
-  rollDurationMs,
-  onRollComplete,
-  onTick,
-}) => {
-  const viewportRef = useRef(null);
-  const frameRef = useRef(0);
-  const sessionRef = useRef(0);
-  const translateXRef = useRef(0);
-  const [cardWidth, setCardWidth] = useState(172);
-  const [gap] = useState(14);
-  const [isRolling, setIsRolling] = useState(false);
-  const [displayItems, setDisplayItems] = useState([]);
-  const lastTickIndexRef = useRef(null);
-
-  const unit = cardWidth + gap;
-
-  useEffect(() => {
-    const resize = () => {
-      if (!viewportRef.current) {
-        return;
-      }
-
-      const viewportWidth = viewportRef.current.clientWidth;
-      const nextWidth = Math.max(108, Math.min(212, (viewportWidth - gap * 3) / 4));
-      setCardWidth(nextWidth);
-    };
-
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, [gap]);
-
-  useEffect(() => {
-    setDisplayItems(makeRepeatedItems(items));
-    translateXRef.current = 0;
-    const track = viewportRef.current?.querySelector(".roulette-track");
-    if (track) track.style.transform = "translate3d(0, 0, 0)";
-  }, [items]);
+    roll();
+  }, [externalRollTrigger, roll]);
 
   useEffect(() => () => {
+    rollingRef.current = false;
     sessionRef.current += 1;
     if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
   }, []);
 
-  useEffect(() => {
-    if (!items.length || isRolling || selectedItem) {
-      return undefined;
-    }
-
-    const repeatedItems = makeRepeatedItems(items);
-    setDisplayItems(repeatedItems);
-
-    if (!repeatedItems.length) {
-      return undefined;
-    }
-
-    const cycleWidth = items.length * unit;
-    let rafId = 0;
-    let lastTime = 0;
-    let localOffset = 0;
-
-    const tick = (timestamp) => {
-      if (!lastTime) {
-        lastTime = timestamp;
-      }
-
-      const delta = timestamp - lastTime;
-      lastTime = timestamp;
-      localOffset -= (delta / 1000) * 26;
-
-      if (localOffset <= -cycleWidth) {
-        localOffset += cycleWidth;
-      }
-
-      translateXRef.current = localOffset;
-      const track = viewportRef.current?.querySelector(".roulette-track");
-      if (track) track.style.transform = `translate3d(${localOffset}px, 0, 0)`;
-      rafId = window.requestAnimationFrame(tick);
-    };
-
-    rafId = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(rafId);
-  }, [items, isRolling, selectedItem, unit]);
-
-  const roll = useCallback(() => {
-    if (!items.length || isRolling) {
-      return;
-    }
-
-    const winner = pickRandom(items);
-    const finalIndex = 44 + Math.floor(Math.random() * 8);
-    const rollItems = buildRollItems(items, finalIndex, winner);
-
-    setDisplayItems(rollItems);
-
-    const viewportWidth = viewportRef.current?.clientWidth || unit * 4 - gap * 3;
-    const centerX = viewportWidth / 2;
-    const centerOnIndex = (index) => centerX - (index * unit + cardWidth / 2);
-
-    const startValue = Number.isFinite(translateXRef.current) ? translateXRef.current : centerOnIndex(2);
-    const targetValue = centerOnIndex(finalIndex);
-
-    translateXRef.current = startValue;
-    const session = sessionRef.current + 1;
-    sessionRef.current = session;
-    if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
-    setSelectedItem(null);
-    setIsRolling(true);
-    lastTickIndexRef.current = null;
-    const track = viewportRef.current?.querySelector(".roulette-track");
-    if (track) track.style.transform = `translate3d(${startValue}px, 0, 0)`;
-
-    const startedAt = performance.now();
-
-    const animate = (now) => {
-      if (sessionRef.current !== session) return;
-      const elapsed = now - startedAt;
-      const progress = Math.min(1, elapsed / rollDurationMs);
-      const eased = easeOutQuint(progress);
-      const nextValue = startValue + (targetValue - startValue) * eased;
-      translateXRef.current = nextValue;
-      const activeTrack = viewportRef.current?.querySelector(".roulette-track");
-      if (activeTrack) activeTrack.style.transform = `translate3d(${nextValue}px, 0, 0)`;
-
-      const pointerTrackPosition = (viewportRef.current?.clientWidth || 0) / 2 - nextValue - cardWidth / 2;
-      const tickIndex = Math.floor(pointerTrackPosition / unit);
-      if (lastTickIndexRef.current === null) lastTickIndexRef.current = tickIndex;
-      else if (tickIndex !== lastTickIndexRef.current) {
-        lastTickIndexRef.current = tickIndex;
-        onTick?.();
-      }
-
-      if (progress < 1) {
-        frameRef.current = window.requestAnimationFrame(animate);
-      } else {
-        frameRef.current = 0;
-        setIsRolling(false);
-        lastTickIndexRef.current = null;
-        setSelectedItem(winner);
-        if (onRollComplete) {
-          onRollComplete(winner);
-        }
-      }
-    };
-
-    window.requestAnimationFrame(animate);
-  }, [items, isRolling, unit, gap, cardWidth, setSelectedItem, rollDurationMs, onRollComplete, onTick]);
+  const modeLabels = {
+    vertical: getExtraLabel("rouletteVertical", lang),
+    horizontal: getExtraLabel("rouletteHorizontal", lang),
+    wheel: getExtraLabel("rouletteWheel", lang),
+  };
 
   return (
-    <div className="roulette-block">
+    <div className={`roulette-block roulette-engine roulette-mode-${mode}`}>
       <div className="roulette-shell">
-        <div className="roulette-window" ref={viewportRef}>
-          <div className="roulette-arrow roulette-arrow-top" />
-          <div className="roulette-arrow roulette-arrow-bottom" />
-
-          <div
-            className="roulette-track"
-            style={{
-              transform: `translate3d(${translateXRef.current}px, 0, 0)`,
-              gap: `${gap}px`,
-            }}
-          >
-            {displayItems.map((item, index) => (
-              <article
-                key={`${item.id}-${index}`}
-                className={`roulette-card ${item.rarity === 5 ? "rarity-5" : item.rarity === 4 ? "rarity-4" : ""}`}
-                style={{ width: `${cardWidth}px` }}
-              >
-                <ImageWithFallback
-                  src={item.image}
-                  fallbackSrcs={item.imageFallbacks}
-                  alt={getItemName(item, lang)}
-                  loading="lazy"
-                />
-                <div className="roulette-card-overlay" />
-                <div className="roulette-card-meta">
-                  <p>{getItemName(item, lang)}</p>
-                  {item.group ? <span className="type-chip">{formatBossType(item.group, lang)}</span> : null}
-                </div>
-              </article>
+        {maxLanes > 1 ? (
+          <div className="roulette-lane-picker" role="group" aria-label={getExtraLabel("spinCount", lang)}>
+            <span>{getExtraLabel("spinCount", lang)}</span>
+            {Array.from({ length: maxLanes }, (_, index) => index + 1).map((count) => (
+              <button key={count} type="button" className={safeLaneCount === count ? "is-active" : ""} onClick={() => setLaneCount(count)} disabled={isRolling} aria-pressed={safeLaneCount === count}>
+                ×{count}
+              </button>
             ))}
           </div>
+        ) : null}
+
+        <div className={`roulette-engine-grid ${mode === "wheel" ? "is-wheel" : mode === "horizontal" ? "is-horizontal" : "is-vertical"}`} style={{ "--roulette-lanes": safeLaneCount }}>
+          {Array.from({ length: safeLaneCount }, (_, laneIndex) => {
+            const spinLane = spinPlan?.lanes[laneIndex];
+            const displayItems = spinLane?.cards || idleItemsByLane[laneIndex] || [];
+            const winner = winnerById.get(spinLane?.winner?.id) || winnerById.get(lastWinners[laneIndex]?.id);
+            return (
+              <div key={`roulette-engine-lane-${laneIndex}`} className={`roulette-engine-lane ${isRolling ? "is-spinning" : ""}`}>
+                {mode === "wheel" ? (
+                  <div className="wheel-viewport" ref={(node) => (viewportRefs.current[laneIndex] = node)}>
+                    <div className="wheel-pointer" aria-hidden="true" />
+                    <div className="wheel-disc" ref={(node) => (wheelRefs.current[laneIndex] = node)} style={{ background: wheelBackground, transform: `rotate(${wheelRotationRefs.current[laneIndex] || 0}deg)` }}>
+                      <div className="wheel-rim" />
+                    </div>
+                    <div className="wheel-center" aria-hidden="true">
+                      {winner ? <ItemImage item={winner} alt={getItemName(winner, lang)} loading="eager" /> : <span>✦</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`reel-viewport ${mode === "horizontal" ? "is-horizontal" : "is-vertical"}`} ref={(node) => (viewportRefs.current[laneIndex] = node)}>
+                    <div className="reel-pointer" aria-hidden="true" />
+                    <div className={`reel-track ${mode === "horizontal" ? "is-horizontal" : "is-vertical"}`} ref={(node) => (trackRefs.current[laneIndex] = node)} style={{ gap: `${gap}px`, transform: vertical ? `translate3d(0, ${reelPositionRefs.current[laneIndex] || 0}px, 0)` : `translate3d(${reelPositionRefs.current[laneIndex] || 0}px, 0, 0)` }}>
+                      {displayItems.map((item, index) => (
+                        <article key={`${item.id}-${laneIndex}-${index}`} className={`roulette-card ${item.rarity === 5 ? "rarity-5" : item.rarity === 4 ? "rarity-4" : ""} ${isSpecialMagentaCharacter(item) ? "special-magenta" : ""}`} style={{ width: cardWidth, height: cardHeight }}>
+                          <ItemImage item={item} alt={getItemName(item, lang)} loading="eager" />
+                          <div className="roulette-card-overlay" />
+                          <div className="roulette-card-meta"><p>{getItemName(item, lang)}</p></div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {winner ? <p className="roulette-winner-label">{getItemName(winner, lang)}</p> : <p className="roulette-lane-label">{modeLabels[mode]} {safeLaneCount > 1 ? `· ${laneIndex + 1}` : ""}</p>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="roulette-actions">
-        <button type="button" className="btn-primary" onClick={roll} disabled={!items.length || isRolling}>
-          {isRolling ? rollingLabel : t.letsGo}
-        </button>
+      <div className="roulette-mode-picker" role="group" aria-label={getExtraLabel("rouletteModes", lang)}>
+        {ROULETTE_MODES.map((rouletteMode) => (
+          <button key={rouletteMode} type="button" className={`roulette-mode-button ${mode === rouletteMode ? "is-active" : ""}`} onClick={() => setMode(rouletteMode)} disabled={isRolling} aria-pressed={mode === rouletteMode}>
+            <RouletteModeIcon mode={rouletteMode} />
+            <span>{modeLabels[rouletteMode]}</span>
+          </button>
+        ))}
       </div>
+
+      <div className="roulette-actions">
+        <button type="button" className="btn-primary" onClick={roll} disabled={!canRoll || isRolling}>{isRolling ? rollingLabel : t.letsGo}</button>
+        {isRolling ? <button type="button" className="btn-secondary" onClick={stopRoll}>{getExtraLabel("stop", lang)}</button> : null}
+      </div>
+      {!canRoll ? <p className="roulette-hint">{getExtraLabel("needLanes", lang).replaceAll("{count}", safeLaneCount)}</p> : null}
     </div>
   );
 };
@@ -2697,15 +2206,21 @@ function App() {
   const [settings, setSettings] = useState(boot.settings);
   const [activeSection, setActiveSection] = useState(boot.activeSection);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(boot.isSidebarCollapsed);
+  const [rouletteMode, setRouletteMode] = useState(boot.rouletteMode || "vertical");
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     mediaQueryMatches("(max-width: 900px)")
   );
 
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => {
+    const snapshot = readCatalogSnapshot();
+    return snapshot ? { ...snapshot, characters: buildTravelerDuoCharacters(snapshot.characters) } : null;
+  });
+  const dataRef = useRef(data);
+  const hasCatalogRef = useRef(Boolean(data));
+  const [loading, setLoading] = useState(() => !data);
   const [loadingPhase, setLoadingPhase] = useState("data");
   const [loadingProgress, setLoadingProgress] = useState({ completed: 0, total: 0, failed: 0 });
   const [error, setError] = useState("");
-  const [data, setData] = useState(null);
 
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [selectedBoss, setSelectedBoss] = useState(null);
@@ -2777,13 +2292,16 @@ function App() {
   );
 
   const loadData = useCallback(async () => {
+    const showBlockingLoader = !hasCatalogRef.current;
     loadControllerRef.current?.abort();
     const controller = new AbortController();
     loadControllerRef.current = controller;
     try {
-      setLoading(true);
-      setLoadingPhase("data");
-      setLoadingProgress({ completed: 0, total: 0, failed: 0 });
+      if (showBlockingLoader) {
+        setLoading(true);
+        setLoadingPhase("data");
+        setLoadingProgress({ completed: 0, total: 0, failed: 0 });
+      }
       setError("");
       const payload = await fetchGenshinData({ signal: controller.signal });
       const safeCharacters = Array.isArray(payload?.characters) ? buildTravelerDuoCharacters(payload.characters) : [];
@@ -2801,10 +2319,10 @@ function App() {
         meta: payload?.meta || {},
       };
 
-      setLoadingPhase("images");
+      if (showBlockingLoader) setLoadingPhase("images");
       const preloaded = await preloadCatalogImages(safePayload, {
         signal: controller.signal,
-        onProgress: setLoadingProgress,
+        onProgress: showBlockingLoader ? setLoadingProgress : undefined,
       });
 
       if (controller.signal.aborted) return;
@@ -2816,6 +2334,9 @@ function App() {
         meta: { ...safePayload.meta, failedImages: preloaded.failedImages },
       };
 
+      dataRef.current = readyPayload;
+      hasCatalogRef.current = true;
+      saveCatalogSnapshot(readyPayload);
       setData(readyPayload);
 
       setSelectedCharacterIds((prev) => {
@@ -2835,7 +2356,7 @@ function App() {
       });
     } catch (loadError) {
       if (controller.signal.aborted) return;
-      setError(loadError?.message || "Failed to load API data");
+      if (!hasCatalogRef.current) setError(loadError?.message || "Failed to load API data");
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -3185,8 +2706,9 @@ function App() {
     setCookieJson(COOKIE_KEYS.ui, {
       activeSection,
       isSidebarCollapsed,
+      rouletteMode,
     });
-  }, [activeSection, isSidebarCollapsed]);
+  }, [activeSection, isSidebarCollapsed, rouletteMode]);
 
   useEffect(() => {
     setCookieJson(COOKIE_KEYS.characterFilters, characterFilters);
@@ -3289,29 +2811,21 @@ function App() {
 
         {!pool.length ? (
           <p className="empty-hint">{t.noPoolItems}</p>
-        ) : isCharacterStage ? (
-          <CharacterRoulette
-            items={pool}
-            setSelectedItem={setSelectedItem}
-            t={t}
-            lang={lang}
-            rollingLabel={t.rolling}
-            rollDurationMs={rollDurationMs}
-            onRollComplete={(winner) => handleRollComplete(stage, winner)}
-            onTick={playRollTickSound}
-            externalRollTrigger={characterRerollTrigger}
-          />
         ) : (
-          <Roulette
+          <RouletteEngine
             items={pool}
             selectedItem={selectedItem}
             setSelectedItem={setSelectedItem}
+            mode={rouletteMode}
+            setMode={setRouletteMode}
+            maxLanes={isCharacterStage ? 4 : 1}
             t={t}
             lang={lang}
             rollingLabel={t.rolling}
             rollDurationMs={rollDurationMs}
             onRollComplete={(winner) => handleRollComplete(stage, winner)}
             onTick={playRollTickSound}
+            externalRollTrigger={isCharacterStage ? characterRerollTrigger : 0}
           />
         )}
 
@@ -3497,12 +3011,7 @@ function App() {
                           <div className="saved-squad-members">
                             {entry.members.map((member, index) => (
                               <div key={`${entry.id}-${member.id}-${index}`} className="saved-squad-member">
-                                <ImageWithFallback
-                                  src={member.image}
-                                  fallbackSrcs={member.imageFallbacks}
-                                  alt={getItemName(member, lang)}
-                                  loading="lazy"
-                                />
+                                <ItemImage item={member} alt={getItemName(member, lang)} loading="lazy" />
                                 <div>
                                   <p>{getItemName(member, lang)}</p>
                                   <span className="type-chip">

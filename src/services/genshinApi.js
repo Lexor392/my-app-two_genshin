@@ -186,6 +186,9 @@ const toSlug = (value = "") =>
 const buildHakushImage = (filename) => (filename ? `${HAKUSH_UI_BASE}/${filename}.webp` : "");
 const buildHakushPng = (filename) => (filename ? `${HAKUSH_UI_BASE}/${filename}.png` : "");
 const buildAmbrImage = (filename) => (filename ? `${AMBR_UI_BASE}/${filename}.png` : "");
+const buildMihoyoIcon = (filename) => filename
+  ? `https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/${String(filename).replace(/\.(png|webp)$/i, "")}.png`
+  : "";
 export const repairWikiImageUrl = (url = "") =>
   url.replace("static.wikia.nocookie.net/gensin-impact/", "static.wikia.nocookie.net/genshin-impact/");
 const uniqueUrls = (list) => Array.from(new Set(list.filter(Boolean)));
@@ -241,18 +244,12 @@ const dedupeById = (items) => {
 
 export const getCharacterImageCandidates = (entry = {}) =>
   uniqueUrls([
-    buildAmbrImage(entry.filename_icon),
-    buildHakushImage(entry.filename_icon),
-    buildAmbrImage(entry.filename_iconCard),
-    buildHakushImage(entry.filename_iconCard),
-    buildAmbrImage(entry.filename_icon),
-    buildHakushPng(entry.filename_icon),
-    buildHakushPng(entry.filename_iconCard),
+    buildMihoyoIcon(entry.filename_icon),
+    entry.mihoyo_icon,
+    entry.hoyowiki_icon,
     repairWikiImageUrl(entry.card),
     repairWikiImageUrl(entry.image),
     repairWikiImageUrl(entry.portrait),
-    entry.mihoyo_icon,
-    entry.hoyowiki_icon,
   ]);
 
 const getCharacterSplashCandidates = (entry = {}) =>
@@ -275,27 +272,44 @@ const getCharacterSplashCandidates = (entry = {}) =>
 
 export const getEnemyImageCandidates = (entry = {}) =>
   uniqueUrls([
-    buildAmbrImage(entry.filename_icon),
-    buildAmbrImage(entry.filename_investigationIcon),
-    buildHakushImage(entry.filename_icon),
-    buildHakushImage(entry.filename_investigationIcon),
-    buildHakushPng(entry.filename_icon),
-    buildHakushPng(entry.filename_investigationIcon),
+    entry.image,
+    entry.mihoyo_icon,
+    entry.hoyowiki_icon,
+    repairWikiImageUrl(entry.portrait),
   ]);
 
 const getEnemySplashCandidates = (entry = {}) =>
   uniqueUrls([
-    buildAmbrImage(entry.filename_iconBig),
-    buildHakushImage(entry.filename_iconBig),
-    buildAmbrImage(entry.filename_investigationIcon),
-    buildHakushPng(entry.filename_iconBig),
-    buildHakushImage(entry.filename_investigationIcon),
-    buildHakushPng(entry.filename_investigationIcon),
-    buildHakushImage(entry.filename_icon),
-    buildHakushPng(entry.filename_icon),
-    buildAmbrImage(entry.filename_icon),
+    entry.image,
+    entry.mihoyo_icon,
+    entry.hoyowiki_icon,
+    repairWikiImageUrl(entry.portrait),
     ...getEnemyImageCandidates(entry),
   ]);
+
+const fetchPageImageMap = async (items, signal) => {
+  const titles = Array.from(new Set(items.map((item) => item.name).filter(Boolean)));
+  const titleMap = new Map();
+  const chunkSize = 45;
+
+  for (let index = 0; index < titles.length; index += chunkSize) {
+    const chunk = titles.slice(index, index + chunkSize);
+    const result = await fetchJson(
+      `${FANDOM_API}?action=query&titles=${encodeURIComponent(chunk.join("|"))}&prop=pageimages&piprop=thumbnail&pithumbsize=512&format=json&origin=*`,
+      2,
+      signal
+    );
+    Object.values(result?.query?.pages || {}).forEach((page) => {
+      if (page?.title && page?.thumbnail?.source) {
+        const image = repairWikiImageUrl(page.thumbnail.source);
+        if (image) titleMap.set(keyify(page.title), image);
+      }
+    });
+  }
+
+  return titleMap;
+};
+
 
 const extractCharacterMeta = (indexData) => {
   const map = {};
@@ -634,14 +648,27 @@ export const fetchGenshinData = async ({ signal } = {}) => {
   const bossPool = dedupeById([...weeklyBosses, ...ascensionBosses, ...localLegends]).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
+  let bossImages = new Map();
+  try {
+    bossImages = await fetchPageImageMap(bossPool, signal);
+  } catch {
+    // Per-item Fandom lookup is retried during the initial image preparation.
+  }
+  const resolvedBossPool = bossPool.map((boss) => {
+    const image = bossImages.get(keyify(boss.name)) || "";
+    return image
+      ? { ...boss, image, imageFallbacks: [...(boss.imageFallbacks || [])], splash: image, splashFallbacks: [...(boss.splashFallbacks || [])] }
+      : boss;
+  });
+  const bossById = new Map(resolvedBossPool.map((boss) => [boss.id, boss]));
 
   return {
     characters,
     bosses: {
-      all: bossPool,
-      weekly: weeklyBosses,
-      ascension: ascensionBosses,
-      localLegends,
+      all: resolvedBossPool,
+      weekly: weeklyBosses.map((boss) => bossById.get(boss.id) || boss),
+      ascension: ascensionBosses.map((boss) => bossById.get(boss.id) || boss),
+      localLegends: localLegends.map((boss) => bossById.get(boss.id) || boss),
     },
     meta: {
       fetchedAt: new Date().toISOString(),
