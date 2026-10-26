@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildRollSequence,
   getCenteredReelPosition,
+  getRollProgress,
   getWheelTargetRotation,
   pickUniqueWinners,
   ROULETTE_SEQUENCE_LENGTH,
@@ -42,5 +43,15 @@ describe("roulette engine math", () => {
     const targetRemainder = (360 - ((chosenSegment + 0.5) * 360) / totalSegments + 360) % 360;
     expect(end).toBeGreaterThan(start);
     expect(end % 360).toBeCloseTo(targetRemainder, 8);
+  });
+
+  it("uses long, synchronized acceleration and braking ramps around the selected roll duration", () => {
+    const cruise = 5000;
+    const ramp = 1400;
+    expect(getRollProgress(0, cruise, ramp)).toBe(0);
+    expect(getRollProgress(cruise + ramp * 2, cruise, ramp)).toBeCloseTo(1, 8);
+    expect(getRollProgress(100, cruise, ramp)).toBeLessThan(100 / (cruise + ramp * 2));
+    expect(getRollProgress(cruise + ramp * 2 - 100, cruise, ramp)).toBeGreaterThan(1 - 100 / (cruise + ramp * 2));
+    expect(getRollProgress(ramp, cruise, ramp)).toBeCloseTo(ramp / 2 / (cruise + ramp), 8);
   });
 });

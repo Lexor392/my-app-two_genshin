@@ -30,6 +30,9 @@ test("renders app shell", async () => {
   expect((await screen.findAllByText(/fandom api/i)).length).toBeGreaterThan(0);
 
   fireEvent.click(screen.getByRole("button", { name: /настройки/i }));
+  expect(screen.getByRole("button", { name: "5 сек." })).toHaveClass("is-active");
+  fireEvent.click(screen.getByRole("button", { name: "8 сек." }));
+  expect(screen.getByRole("button", { name: "8 сек." })).toHaveClass("is-active");
   expect(screen.getByRole("option", { name: "English" })).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "中文" })).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "日本語" })).toBeInTheDocument();

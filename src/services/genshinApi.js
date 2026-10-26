@@ -7,7 +7,7 @@ const GITHUB_MONSTER_ICON_BASE = "https://raw.githubusercontent.com/CMHopeSunshi
 const DEFAULT_HEADERS = {
   Accept: "application/json",
 };
-const DATA_CACHE_PREFIX = "genshin-random-lab:data:v2:";
+const DATA_CACHE_PREFIX = "genshin-random-lab:data:v3:";
 const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
 
 const LOCAL_LEGEND_PAGE = "Local Legend";
@@ -299,24 +299,26 @@ const getEnemySplashCandidates = (entry = {}) =>
   ]);
 
 const fetchPageImageMap = async (items, signal) => {
-  const titles = Array.from(new Set(items.map((item) => item.name).filter(Boolean)));
+  const titles = Array.from(new Set(items.flatMap((item) => [item.imageLookupTitle, item.name]).filter(Boolean)));
   const titleMap = new Map();
   const chunkSize = 45;
 
-  for (let index = 0; index < titles.length; index += chunkSize) {
-    const chunk = titles.slice(index, index + chunkSize);
-    const result = await fetchJson(
-      `${FANDOM_API}?action=query&titles=${encodeURIComponent(chunk.join("|"))}&prop=pageimages&piprop=thumbnail&pithumbsize=512&format=json&origin=*`,
-      2,
-      signal
-    );
+  const chunks = Array.from({ length: Math.ceil(titles.length / chunkSize) }, (_, index) =>
+    titles.slice(index * chunkSize, (index + 1) * chunkSize)
+  );
+  const results = await Promise.all(chunks.map((chunk) => fetchJson(
+    `${FANDOM_API}?action=query&titles=${encodeURIComponent(chunk.join("|"))}&prop=pageimages&piprop=thumbnail&pithumbsize=512&format=json&origin=*`,
+    2,
+    signal
+  )));
+  results.forEach((result) => {
     Object.values(result?.query?.pages || {}).forEach((page) => {
       if (page?.title && page?.thumbnail?.source) {
         const image = repairWikiImageUrl(page.thumbnail.source);
         if (image) titleMap.set(keyify(page.title), image);
       }
     });
-  }
+  });
 
   return titleMap;
 };
@@ -553,6 +555,7 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
       return {
         id: `local-legend-${enemyIdCandidate}`,
         slug: enemyIdCandidate,
+        imageLookupTitle: getNameFromMap(enemyNameMaps.en, enemyIdCandidate, legend.name),
         group: "localLegend",
         name,
         nameRu:
@@ -574,6 +577,7 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
     return {
       id: `local-legend-${toSlug(name)}`,
       slug: toSlug(name),
+      imageLookupTitle: name,
       group: "localLegend",
       name,
       nameRu: getLocalizedLegendName(name, "ru") || name,
@@ -660,14 +664,15 @@ export const fetchGenshinData = async ({ signal } = {}) => {
     a.name.localeCompare(b.name)
   );
   let bossImages = new Map();
-  const bossesMissingImages = bossPool.filter((boss) => !boss.image && !(boss.imageFallbacks || []).length);
   try {
-    if (bossesMissingImages.length) bossImages = await fetchPageImageMap(bossesMissingImages, signal);
+    // A data record can have an icon URL that exists syntactically but returns 404.
+    // Add wiki thumbnails as fallbacks for every boss so broken asset filenames do not leave blanks.
+    if (bossPool.length) bossImages = await fetchPageImageMap(bossPool, signal);
   } catch {
     // Per-item Fandom lookup is retried during the initial image preparation.
   }
   const resolvedBossPool = bossPool.map((boss) => {
-    const fallbackImage = bossImages.get(keyify(boss.name)) || "";
+    const fallbackImage = bossImages.get(keyify(boss.imageLookupTitle)) || bossImages.get(keyify(boss.name)) || bossImages.get(keyify(boss.nameRu)) || "";
     const image = boss.image || fallbackImage;
     const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), fallbackImage].filter((candidate) => candidate !== image));
     const splash = boss.splash || image;

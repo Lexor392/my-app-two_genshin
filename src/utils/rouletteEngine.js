@@ -43,4 +43,20 @@ export const getWheelTargetRotation = (segmentIndex, segmentCount, currentRotati
   return currentRotation + Math.max(1, fullTurns) * 360 + alignment;
 };
 
-export const easeOutQuint = (progress) => 1 - Math.pow(1 - Math.max(0, Math.min(1, progress)), 5);
+export const getRollProgress = (elapsedMs, cruiseDurationMs, rampDurationMs) => {
+  const cruise = Math.max(0, Number(cruiseDurationMs) || 0);
+  const ramp = Math.max(0, Number(rampDurationMs) || 0);
+  const elapsed = Math.max(0, Math.min(cruise + ramp * 2, Number(elapsedMs) || 0));
+  if (!ramp) return cruise ? elapsed / cruise : 1;
+
+  const smoothRampIntegral = (time) => time ** 3 - 0.5 * time ** 4;
+  const totalDistance = cruise + ramp;
+  if (elapsed <= ramp) {
+    const progress = elapsed / ramp;
+    return (ramp * smoothRampIntegral(progress)) / totalDistance;
+  }
+  if (elapsed <= ramp + cruise) return (ramp / 2 + elapsed - ramp) / totalDistance;
+  const progress = (elapsed - ramp - cruise) / ramp;
+  const decelerationDistance = progress - smoothRampIntegral(progress);
+  return (ramp / 2 + cruise + ramp * decelerationDistance) / totalDistance;
+};

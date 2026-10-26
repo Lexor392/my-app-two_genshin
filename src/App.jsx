@@ -6,8 +6,8 @@ import { cacheImageAsset, getCachedImageSource, readCatalogSnapshot, saveCatalog
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import {
   buildRollSequence,
-  easeOutQuint as easeRouletteProgress,
   getCenteredReelPosition,
+  getRollProgress,
   getWheelTargetRotation,
   pickUniqueWinners,
   ROULETTE_MODES,
@@ -71,7 +71,7 @@ const SECTION_IDS = [
   "history",
   "settings",
 ];
-const ROLL_SPEEDS = ["fast", "normal", "long", "epic"];
+const ROLL_DURATION_OPTIONS = [3, 5, 8, 10];
 const HISTORY_LIMIT_OPTIONS = [30, 60, 90];
 
 const DEFAULT_CHARACTER_FILTERS = {
@@ -101,16 +101,11 @@ const DEFAULT_SETTINGS = {
   tickVolume: 0.5,
   splashEnabled: true,
   splashEffects: true,
-  rollSpeed: "long",
+  rollDurationSeconds: 5,
   historyLimit: 60,
 };
 
-const ROLL_DURATION_BY_SPEED = {
-  fast: 3800,
-  normal: 7400,
-  long: 9200,
-  epic: 11200,
-};
+const ROLL_RAMP_DURATION_MS = 1400;
 
 const COOKIE_DAYS = 365;
 const COOKIE_HISTORY_SIZE_LIMIT = 3300;
@@ -690,7 +685,9 @@ const normalizeSettings = (value) => {
       typeof source.splashEnabled === "boolean" ? source.splashEnabled : DEFAULT_SETTINGS.splashEnabled,
     splashEffects:
       typeof source.splashEffects === "boolean" ? source.splashEffects : DEFAULT_SETTINGS.splashEffects,
-    rollSpeed: ROLL_SPEEDS.includes(source.rollSpeed) ? source.rollSpeed : DEFAULT_SETTINGS.rollSpeed,
+    rollDurationSeconds: ROLL_DURATION_OPTIONS.includes(Number(source.rollDurationSeconds))
+      ? Number(source.rollDurationSeconds)
+      : ({ fast: 3, normal: 5, long: 5, epic: 10 }[source.rollSpeed] || DEFAULT_SETTINGS.rollDurationSeconds),
     historyLimit: clampHistoryLimit(source.historyLimit),
   };
 };
@@ -1546,14 +1543,14 @@ const SettingsPanel = ({ t, lang, setLang, theme, setTheme, settings, setSetting
         <div className="settings-block">
           <p>{t.rollDuration}</p>
           <div className="toggle-row">
-            {ROLL_SPEEDS.map((speed) => (
+            {ROLL_DURATION_OPTIONS.map((seconds) => (
               <button
-                key={speed}
+                key={seconds}
                 type="button"
-                className={settings.rollSpeed === speed ? "is-active" : ""}
-                onClick={() => setSettings((prev) => ({ ...prev, rollSpeed: speed }))}
+                className={settings.rollDurationSeconds === seconds ? "is-active" : ""}
+                onClick={() => setSettings((prev) => ({ ...prev, rollDurationSeconds: seconds }))}
               >
-                {speed === "fast" ? t.rollSpeedFast : speed === "normal" ? t.rollSpeedNormal : speed === "long" ? t.rollSpeedLong : t.rollSpeedEpic}
+                {seconds} {t.seconds}
               </button>
             ))}
           </div>
@@ -1899,7 +1896,6 @@ const RouletteEngine = ({
   const [spinPlan, setSpinPlan] = useState(null);
   const [lastWinners, setLastWinners] = useState([]);
   const [wheelResults, setWheelResults] = useState([]);
-  const [wheelCurrentItem, setWheelCurrentItem] = useState(null);
   const [wheelCountdown, setWheelCountdown] = useState(null);
   const [hoveredWheelItem, setHoveredWheelItem] = useState(null);
   const [wheelHoverPosition, setWheelHoverPosition] = useState({ left: 12, top: 12 });
@@ -1915,7 +1911,6 @@ const RouletteEngine = ({
   const externalTriggerRef = useRef(0);
   const lastTickRefs = useRef(Array.from({ length: maxLanes }, () => null));
   const completedWheelStepRef = useRef(-1);
-  const currentWheelStepRef = useRef(-1);
 
   const uniqueItems = useMemo(() => {
     const seen = new Set();
@@ -1940,7 +1935,7 @@ const RouletteEngine = ({
     const tail = Array.from({ length: 3 }, (_, index) => ordered[index % tailLength]);
     return [...ordered, ...tail];
   }), [safeLaneCount, uniqueItems]);
-  const winnerById = useMemo(() => new Map(lastWinners.map((winner) => [winner.id, winner])), [lastWinners]);
+  const winnerById = useMemo(() => new Map(lastWinners.filter(Boolean).map((winner) => [winner.id, winner])), [lastWinners]);
 
   const setTrackPosition = useCallback((index, value) => {
     reelPositionRefs.current[index] = value;
@@ -2029,9 +2024,16 @@ const RouletteEngine = ({
     };
   }, [isRolling, mode, safeLaneCount, setWheelRotation, uniqueItems.length]);
 
-  const roll = useCallback(() => {
+  const roll = useCallback((requestedLaneIndexes = null) => {
     if (!canRoll || rollingRef.current) return;
-    const winners = pickUniqueWinners(uniqueItems, safeLaneCount);
+    const isFullRoll = mode === "wheel" || !Array.isArray(requestedLaneIndexes) || requestedLaneIndexes.length >= safeLaneCount;
+    const laneIndexes = isFullRoll
+      ? Array.from({ length: safeLaneCount }, (_, index) => index)
+      : requestedLaneIndexes.filter((index) => Number.isInteger(index) && index >= 0 && index < safeLaneCount);
+    const availableItems = isFullRoll
+      ? uniqueItems
+      : uniqueItems.filter((item) => !lastWinners.some((winner, index) => index !== laneIndexes[0] && winner?.id === item.id));
+    const winners = pickUniqueWinners(availableItems, laneIndexes.length);
     if (!winners.length) return;
 
     const id = sessionRef.current + 1;
@@ -2039,15 +2041,13 @@ const RouletteEngine = ({
     rollingRef.current = true;
     setIsRolling(true);
     setSelectedItem(null);
-    setLastWinners([]);
-    setWheelResults([]);
+    if (isFullRoll) setLastWinners([]);
+    if (mode === "wheel") setWheelResults([]);
     setWheelCountdown(null);
     setHoveredWheelItem(null);
     completedWheelStepRef.current = -1;
-    currentWheelStepRef.current = -1;
-    const durationPerStep = Math.max(1200, rollDurationMs / safeLaneCount);
+    const durationPerStep = rollDurationMs;
     if (mode === "wheel") {
-      setWheelCurrentItem(winners[0]);
       setWheelCountdown(3);
       let rotation = wheelRotationRefs.current[0] || 0;
       const steps = winners.map((winner) => {
@@ -2056,28 +2056,30 @@ const RouletteEngine = ({
         rotation = getWheelTargetRotation(segmentIndex, uniqueItems.length, rotation, 6);
         return { winner, segmentIndex, fromRotation, toRotation: rotation };
       });
-      setSpinPlan({ id, mode, steps, durationPerStep, countdownDuration: 3000, stepGap: 0 });
+      setSpinPlan({ id, mode, steps, durationPerStep, rampDuration: ROLL_RAMP_DURATION_MS, countdownDuration: 3000, stepGap: 0 });
       return;
     }
-    const lanes = winners.map((winner, index) => {
+    const lanes = winners.map((winner, slot) => {
+      const index = laneIndexes[slot];
       const cards = buildRollSequence(uniqueItems, winner);
       const viewport = viewportRefs.current[index];
       const viewportSize = (vertical ? viewport?.clientHeight : viewport?.clientWidth) || (vertical ? 430 : 760);
       const finalIndex = ROULETTE_WINNER_INDEX;
       const fromIndex = finalIndex - 9;
       return {
+        index,
         winner,
         cards,
         fromIndex,
         finalIndex,
         fromPosition: getCenteredReelPosition(fromIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
         toPosition: getCenteredReelPosition(finalIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
-        delay: index * (durationPerStep + 180),
+        delay: 0,
       };
     });
-    const plan = { id, mode, lanes, durationPerStep };
+    const plan = { id, mode, lanes, durationPerStep, rampDuration: ROLL_RAMP_DURATION_MS, isFullRoll };
     setSpinPlan(plan);
-  }, [canRoll, cardHeight, gap, mode, rollDurationMs, safeLaneCount, setSelectedItem, uniqueItems]);
+  }, [canRoll, cardHeight, gap, lastWinners, mode, rollDurationMs, safeLaneCount, setSelectedItem, uniqueItems]);
 
   useEffect(() => {
     if (!spinPlan) return undefined;
@@ -2088,17 +2090,14 @@ const RouletteEngine = ({
       if (spinPlan.mode === "wheel") {
         const firstStep = spinPlan.steps[0];
         setWheelRotation(0, firstStep?.fromRotation || 0);
-        const stepStride = spinPlan.durationPerStep + spinPlan.countdownDuration + spinPlan.stepGap;
-        const totalDuration = spinPlan.steps.length * (spinPlan.durationPerStep + spinPlan.countdownDuration) + Math.max(0, spinPlan.steps.length - 1) * spinPlan.stepGap;
+        const movementDuration = spinPlan.durationPerStep + 2 * spinPlan.rampDuration;
+        const stepStride = movementDuration + spinPlan.countdownDuration + spinPlan.stepGap;
+        const totalDuration = spinPlan.steps.length * (movementDuration + spinPlan.countdownDuration) + Math.max(0, spinPlan.steps.length - 1) * spinPlan.stepGap;
         const animateWheel = (now) => {
           if (!alive || spinPlan.id !== sessionRef.current) return;
           const elapsed = Math.max(0, now - startTime);
           const stepIndex = Math.min(spinPlan.steps.length - 1, Math.floor(elapsed / stepStride));
           const step = spinPlan.steps[stepIndex];
-          if (currentWheelStepRef.current !== stepIndex) {
-            currentWheelStepRef.current = stepIndex;
-            setWheelCurrentItem(step.winner);
-          }
           for (let completed = completedWheelStepRef.current + 1; completed < stepIndex; completed += 1) {
             setWheelResults((current) => [...current.slice(0, completed), spinPlan.steps[completed].winner]);
             completedWheelStepRef.current = completed;
@@ -2106,9 +2105,8 @@ const RouletteEngine = ({
           const stepElapsed = elapsed - stepIndex * stepStride;
           const countdownRemaining = Math.max(0, Math.ceil((spinPlan.countdownDuration - stepElapsed) / 1000));
           setWheelCountdown(countdownRemaining || null);
-          const progress = Math.max(0, Math.min(1, (stepElapsed - spinPlan.countdownDuration) / spinPlan.durationPerStep));
-          const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-          const rotation = step.fromRotation + (step.toRotation - step.fromRotation) * eased;
+          const progress = getRollProgress(stepElapsed - spinPlan.countdownDuration, spinPlan.durationPerStep, spinPlan.rampDuration);
+          const rotation = step.fromRotation + (step.toRotation - step.fromRotation) * progress;
           setWheelRotation(0, rotation);
           if (progress >= 1 && completedWheelStepRef.current < stepIndex) {
             setWheelResults((current) => [...current.slice(0, stepIndex), step.winner]);
@@ -2118,7 +2116,6 @@ const RouletteEngine = ({
             const winners = spinPlan.steps.map((entry) => entry.winner);
             setWheelResults(winners);
             setWheelCountdown(null);
-            setWheelCurrentItem(winners.at(-1) || null);
             setWheelRotation(0, spinPlan.steps.at(-1)?.toRotation || 0);
             rollingRef.current = false;
             setIsRolling(false);
@@ -2134,8 +2131,8 @@ const RouletteEngine = ({
         return;
       }
       spinPlan.lanes.forEach((lane, index) => {
-        setTrackPosition(index, lane.fromPosition);
-        lastTickRefs.current[index] = lane.fromIndex ?? null;
+        setTrackPosition(lane.index, lane.fromPosition);
+        lastTickRefs.current[lane.index] = lane.fromIndex ?? null;
       });
 
       const animate = (now) => {
@@ -2147,15 +2144,14 @@ const RouletteEngine = ({
             allDone = false;
             return;
           }
-          const progress = Math.min(1, elapsed / spinPlan.durationPerStep);
-          const eased = easeRouletteProgress(progress);
-          const position = lane.fromPosition + (lane.toPosition - lane.fromPosition) * eased;
-          setTrackPosition(index, position);
-          const viewportSize = (spinPlan.mode === "vertical" ? viewportRefs.current[index]?.clientHeight : viewportRefs.current[index]?.clientWidth) || 430;
+          const progress = getRollProgress(elapsed, spinPlan.durationPerStep, spinPlan.rampDuration);
+          const position = lane.fromPosition + (lane.toPosition - lane.fromPosition) * progress;
+          setTrackPosition(lane.index, position);
+          const viewportSize = (spinPlan.mode === "vertical" ? viewportRefs.current[lane.index]?.clientHeight : viewportRefs.current[lane.index]?.clientWidth) || 430;
           const size = spinPlan.mode === "vertical" ? cardHeight : cardWidth;
           const tickIndex = Math.floor((viewportSize / 2 - position - size / 2) / (size + gap));
-          if (tickIndex !== lastTickRefs.current[index]) {
-            lastTickRefs.current[index] = tickIndex;
+          if (tickIndex !== lastTickRefs.current[lane.index]) {
+            lastTickRefs.current[lane.index] = tickIndex;
             onTick?.();
           }
           if (progress < 1) allDone = false;
@@ -2163,13 +2159,16 @@ const RouletteEngine = ({
 
         if (allDone) {
           const winners = spinPlan.lanes.map((lane) => lane.winner);
+          const mergedWinners = spinPlan.isFullRoll ? [] : [...lastWinners];
+          spinPlan.lanes.forEach((lane) => { mergedWinners[lane.index] = lane.winner; });
+          const completedWinners = mergedWinners;
           rollingRef.current = false;
           setIsRolling(false);
           setSpinPlan(null);
-          setLastWinners(winners);
-          for (let index = 0; index < winners.length; index += 1) setTrackPosition(index, 0);
+          setLastWinners(completedWinners);
+          for (const lane of spinPlan.lanes) setTrackPosition(lane.index, 0);
           setSelectedItem(winners[0]);
-          onRollComplete?.(maxLanes > 1 ? winners : winners[0]);
+          onRollComplete?.(spinPlan.isFullRoll && maxLanes > 1 ? completedWinners : winners[0]);
           return;
         }
         frame = window.requestAnimationFrame(animate);
@@ -2180,7 +2179,7 @@ const RouletteEngine = ({
       alive = false;
       if (frame) window.cancelAnimationFrame(frame);
     };
-  }, [cardHeight, gap, maxLanes, onRollComplete, onTick, setSelectedItem, setTrackPosition, setWheelRotation, spinPlan]);
+  }, [cardHeight, gap, lastWinners, maxLanes, onRollComplete, onTick, setSelectedItem, setTrackPosition, setWheelRotation, spinPlan]);
 
   const stopRoll = useCallback(() => {
     if (!rollingRef.current) return;
@@ -2191,7 +2190,6 @@ const RouletteEngine = ({
     setSpinPlan(null);
     setIsRolling(false);
     setWheelCountdown(null);
-    setWheelCurrentItem(null);
     setSelectedItem(null);
   }, [setSelectedItem]);
 
@@ -2218,6 +2216,11 @@ const RouletteEngine = ({
       <div className="roulette-shell">
         <div className="roulette-toolbar">
           <span>{maxLanes > 1 ? `${getExtraLabel("spinCount", lang)}: ${safeLaneCount}` : modeLabels[mode]}</span>
+          {mode === "wheel" ? (
+            <button type="button" className="roulette-refresh-button" onClick={() => roll()} disabled={!canRoll || isRolling} aria-label={t.reroll} title={t.reroll}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2" /></svg>
+            </button>
+          ) : null}
           {maxLanes > 1 ? (
             <button type="button" className={`roulette-edit-toggle ${isEditingLaneCount ? "is-active" : ""}`} onClick={() => setIsEditingLaneCount((value) => !value)} disabled={isRolling} aria-label={getExtraLabel("editRoulette", lang)} aria-pressed={isEditingLaneCount}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4.2-1 10.2-10.2a2.1 2.1 0 0 0-3-3L5.2 16 4 20Z" /></svg>
@@ -2248,7 +2251,7 @@ const RouletteEngine = ({
                       ))}
                     </svg>
                   </div>
-                  <div className={`wheel-center ${wheelCurrentItem ? "has-current-item" : ""}`} aria-hidden="true">{wheelCurrentItem ? <ItemImage item={wheelCurrentItem} alt={getItemName(wheelCurrentItem, lang)} loading="eager" /> : <span>✦</span>}</div>
+                  <div className="wheel-center" aria-hidden="true"><span>✦</span></div>
                   {wheelCountdown !== null ? <div className="wheel-countdown" aria-live="polite">{wheelCountdown}</div> : null}
                 </div>
                 {hoveredWheelItem ? (
@@ -2274,12 +2277,15 @@ const RouletteEngine = ({
           ) : (
             <div className={`reel-lanes ${mode === "horizontal" ? "is-cases" : "is-vertical"}`}>
               {Array.from({ length: safeLaneCount }, (_, laneIndex) => {
-                const spinLane = spinPlan?.lanes[laneIndex];
+                const spinLane = spinPlan?.lanes.find((lane) => lane.index === laneIndex);
                 const displayItems = spinLane?.cards || idleItemsByLane[laneIndex] || [];
                 const winner = winnerById.get(spinLane?.winner?.id) || winnerById.get(lastWinners[laneIndex]?.id);
                 return (
                   <div key={`roulette-engine-lane-${laneIndex}`} className={`roulette-engine-lane ${isRolling ? "is-spinning" : ""}`}>
                     {isEditingLaneCount && maxLanes > 1 ? <button type="button" className="lane-remove-button" onClick={() => setLaneCount((count) => Math.max(1, count - 1))} disabled={isRolling || safeLaneCount <= 1} aria-label={getExtraLabel("removeRoulette", lang)}>×</button> : null}
+                    <button type="button" className="lane-refresh-button" onClick={() => roll([laneIndex])} disabled={!canRoll || isRolling} aria-label={`${t.reroll} ${laneIndex + 1}`} title={t.reroll}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2" /></svg>
+                    </button>
                     <div className={`reel-viewport ${mode === "horizontal" ? "is-horizontal" : "is-vertical"}`} ref={(node) => (viewportRefs.current[laneIndex] = node)}>
                       <div className="reel-pointer" aria-hidden="true" />
                       <div className={`reel-track ${mode === "horizontal" ? "is-horizontal" : "is-vertical"}`} ref={(node) => (trackRefs.current[laneIndex] = node)} style={{ gap: `${gap}px`, transform: vertical ? `translate3d(0, ${reelPositionRefs.current[laneIndex] || 0}px, 0)` : `translate3d(${reelPositionRefs.current[laneIndex] || 0}px, 0, 0)` }}>
@@ -2386,7 +2392,7 @@ function App() {
   const t = translations[lang] || translations.en;
   const sourceCharacters = data?.meta?.source?.characters || "genshin-db";
   const sourceLegends = data?.meta?.source?.localLegends || "Fandom API";
-  const rollDurationMs = ROLL_DURATION_BY_SPEED[settings.rollSpeed] || ROLL_DURATION_BY_SPEED.long;
+  const rollDurationMs = settings.rollDurationSeconds * 1000;
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
