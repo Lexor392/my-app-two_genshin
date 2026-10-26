@@ -1,4 +1,6 @@
-// Configure these once the project owner has a support inbox and a Donatello page.
+// Configure these once the project owner has a support inbox and creator pages.
 export const SUPPORT_EMAIL = "";
-export const DONATION_URL = "";
-export const DONATION_SIGNUP_URL = "https://donatello.to/";
+export const KOFI_URL = "";
+export const PATREON_URL = "";
+export const KOFI_SIGNUP_URL = "https://ko-fi.com/";
+export const PATREON_SIGNUP_URL = "https://www.patreon.com/create";

@@ -33,4 +33,4 @@ Settings, selected pools, saved squads, and history are stored in browser cookie
 
 ## Support and donations
 
-Before enabling public feedback and donations, set `SUPPORT_EMAIL` and `DONATION_URL` in `src/config/support.js`. Support submissions use the free FormSubmit email form endpoint; its first submission must be confirmed from the receiving inbox. The donation page uses a creator-owned Donatello profile URL. The project owner must create and verify that account and review its current payout, fee, and tax terms before publishing the link.
+Before enabling public feedback and donations, set `SUPPORT_EMAIL`, `KOFI_URL`, and `PATREON_URL` in `src/config/support.js`. Support submissions use the free FormSubmit email form endpoint; its first submission must be confirmed from the receiving inbox. Donation links point to creator-owned Ko-fi and Patreon pages. The project owner must create and verify those accounts and review their current payout and fee terms before publishing the links. No platform guarantees successful payments from every country; payment providers may reject transactions under their country, bank, or sanctions rules.
