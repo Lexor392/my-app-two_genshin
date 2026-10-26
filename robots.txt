@@ -1,4 +1,3 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Disallow:
 Sitemap: https://lexor392.github.io/my-app-two_genshin/sitemap.xml
