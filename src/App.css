@@ -1529,7 +1529,16 @@ h4 {
 .splash-actions {
   display: flex;
   justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.splash-save-confirmation {
+  margin: 2px 0 0;
+  color: #dceacb;
+  text-align: center;
+  font-weight: 700;
 }
 
 .splash-close-icon {
@@ -1613,8 +1622,18 @@ h4 {
 
 .squad-chip-row {
   display: flex;
+  align-items: flex-start;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.squad-chip-row .type-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  width: fit-content;
+  min-height: 0;
+  line-height: 1.25;
 }
 
 .squad-attr {

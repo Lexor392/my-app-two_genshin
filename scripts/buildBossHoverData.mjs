@@ -395,8 +395,7 @@ const workers = Array.from({ length: 5 }, async () => {
           splash: record.image,
           description: await getLocalizedDescription(record, description),
           details: Object.fromEntries(Object.keys(DESCRIPTION_LANGUAGES).map((language) => [language, ""])),
-          location,
-          localizedLocation: await getLocalizedLocation(location),
+          location: await getLocalizedLocation(location),
           map,
           sourcePage: "https://genshin-impact.fandom.com/wiki/Local_Legend",
         };
@@ -422,14 +421,25 @@ const workers = Array.from({ length: 5 }, async () => {
         splash: record.image,
         description: localizedDescription,
         details: Object.fromEntries(Object.keys(DESCRIPTION_LANGUAGES).map((language) => [language, ""])),
-        location,
-        localizedLocation: await getLocalizedLocation(location),
+        location: await getLocalizedLocation(location),
         map,
         sourcePage: `https://genshin-impact.fandom.com/wiki/${encodeURIComponent(page.title.replaceAll(" ", "_"))}`,
       };
       console.log(`${map ? "MAP" : "INFO"} ${record.name}: ${location.region || "?"} / ${location.area || "?"} / ${location.subarea || "?"}${map ? ` → ${map}` : ""}`);
     } catch (error) {
-      output[record.id] = { name: record.name, location: {}, description: "", map: "", sourcePage: "" };
+      output[record.id] = {
+        id: record.id,
+        name: record.name,
+        names: await getLocalizedNames(record),
+        category: record.category,
+        image: record.image || "",
+        splash: record.image || "",
+        description: Object.fromEntries(Object.keys(DESCRIPTION_LANGUAGES).map((language) => [language, ""])),
+        details: Object.fromEntries(Object.keys(DESCRIPTION_LANGUAGES).map((language) => [language, ""])),
+        location: Object.fromEntries(Object.keys(DESCRIPTION_LANGUAGES).map((language) => [language, {}])),
+        map: "",
+        sourcePage: "",
+      };
       console.log(`ERROR ${record.name}: ${error.message}`);
     }
   }

@@ -23,19 +23,40 @@ describe("boss hover details", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it("uses the local translated description and map even when old hover data is cached", async () => {
+    const narwhal = bossDetails.alldevouringnarwhal;
+    localStorage.setItem("genshin-random-lab:hover-details:v3", JSON.stringify({
+      "bosses:ru:AllDevouringNarwhal": {
+        savedAt: Date.now(),
+        value: { description: "", mapImage: "", region: "", area: "" },
+      },
+    }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const details = await fetchHoverDetails(
+      { id: "AllDevouringNarwhal", name: "All-Devouring Narwhal" },
+      "bosses",
+      "ru"
+    );
+
+    expect(details.description).toBe(narwhal.description.ru);
+    expect(details.mapImage).toMatch(/assets\/boss-maps\/alldevouringnarwhal\.png$/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("has useful local details for every boss entry", () => {
     const records = Object.values(bossDetails);
     expect(records).toHaveLength(113);
     expect(records.every((record) => (
       record.description?.ru && record.description?.en && record.description?.zh && record.description?.ja && record.description?.ko
-      && (record.location?.region || record.location?.area || record.map)
+      && (record.location?.en?.region || record.location?.en?.area || record.map)
     ))).toBe(true);
     expect(records.every((record) => (
       record.names?.ru && record.names?.en && record.names?.zh && record.names?.ja && record.names?.ko
       && record.category
       && record.details && ["ru", "en", "zh", "ja", "ko"].every((locale) => Object.hasOwn(record.details, locale))
-      && record.localizedLocation && ["ru", "en", "zh", "ja", "ko"].every((locale) => (
-        Object.values(record.localizedLocation[locale] || {}).some(Boolean)
+      && record.location && ["ru", "en", "zh", "ja", "ko"].every((locale) => (
+        Object.values(record.location[locale] || {}).some(Boolean)
       ))
     ))).toBe(true);
   });
@@ -48,7 +69,7 @@ describe("boss hover details", () => {
     );
 
     expect(andrius.title).toBe(bossDetails.lupusboreasdominatorofwolves.names.ru);
-    expect(andrius.region).toBe(bossDetails.lupusboreasdominatorofwolves.localizedLocation.ru.region);
+    expect(andrius.region).toBe(bossDetails.lupusboreasdominatorofwolves.location.ru.region);
     expect(andrius.additionalInfo).toBe("");
   });
 });

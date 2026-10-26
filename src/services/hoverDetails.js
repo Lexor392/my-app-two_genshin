@@ -1,4 +1,4 @@
-const DETAIL_CACHE_KEY = "genshin-random-lab:hover-details:v2";
+const DETAIL_CACHE_KEY = "genshin-random-lab:hover-details:v4";
 const DETAIL_CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
 const DETAIL_CACHE_LIMIT = 120;
 const GENDATA_API = "https://genshin-db-api.vercel.app/api/v5";
@@ -12,6 +12,20 @@ let bossDetailsPromise;
 const loadBossDetails = () => {
   bossDetailsPromise ||= import("../data/bossDetails.json", { with: { type: "json" } }).then((module) => module.default);
   return bossDetailsPromise;
+};
+
+const normalizeBossKey = (value = "") => String(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+
+const findLocalBoss = (catalog, item) => {
+  const itemId = normalizeBossKey(item?.id);
+  const itemNames = [item?.name, item?.nameRu, item?.nameZh, item?.nameJa, item?.nameKo]
+    .filter(Boolean).map(normalizeBossKey);
+  return catalog[item?.id]
+    || Object.values(catalog).find((record) => {
+      const aliases = [record.id, record.name, ...Object.values(record.names || {})].filter(Boolean).map(normalizeBossKey);
+      return aliases.includes(itemId) || itemNames.some((name) => aliases.includes(name));
+    })
+    || null;
 };
 
 const cleanWikiValue = (value = "") => value
@@ -167,19 +181,20 @@ const fetchBossLocation = async (item, signal) => {
 const loadHoverDetails = async (item, kind, lang, signal) => {
   if (kind === "bosses") {
     const bossDetails = await loadBossDetails();
-    const local = bossDetails[item.id];
+    const local = findLocalBoss(bossDetails, item);
     if (local) {
       const description = typeof local.description === "string"
         ? local.description
         : (local.description?.[lang] || local.description?.en || Object.values(local.description || {}).find(Boolean) || "");
+      const location = local.location?.[lang] || local.localizedLocation?.[lang] || {};
       return {
         title: local.names?.[lang] || local.name || item.name,
         description,
         additionalInfo: local.details?.[lang] || local.details?.en || "",
         affiliation: "",
-        region: local.localizedLocation?.[lang]?.region || local.location?.region || "",
-        area: local.localizedLocation?.[lang]?.area || local.location?.area || "",
-        subarea: local.localizedLocation?.[lang]?.subarea || local.location?.subarea || "",
+        region: location.region || local.location?.region || "",
+        area: location.area || local.location?.area || "",
+        subarea: location.subarea || local.location?.subarea || "",
         constellation: "",
         birthday: "",
         weapon: "",
@@ -211,21 +226,28 @@ const loadHoverDetails = async (item, kind, lang, signal) => {
 export const fetchHoverDetails = (item, kind, lang, signal) => {
   if (!item?.id || !["characters", "bosses"].includes(kind)) return Promise.resolve(null);
   const key = `${kind}:${lang}:${item.id}`;
-  if (memoryCache.has(key)) return Promise.resolve(memoryCache.get(key));
-  const stored = readStoredDetails(key);
-  if (stored) {
-    memoryCache.set(key, stored);
-    return Promise.resolve(stored);
+  const useCache = kind !== "bosses";
+  if (useCache && memoryCache.has(key)) return Promise.resolve(memoryCache.get(key));
+  if (useCache) {
+    const stored = readStoredDetails(key);
+    if (stored) {
+      memoryCache.set(key, stored);
+      return Promise.resolve(stored);
+    }
   }
-  if (pendingRequests.has(key)) return pendingRequests.get(key);
+  if (useCache && pendingRequests.has(key)) return pendingRequests.get(key);
 
   const request = loadHoverDetails(item, kind, lang, signal)
     .then((details) => {
-      memoryCache.set(key, details);
-      saveStoredDetails(key, details);
+      if (useCache) {
+        memoryCache.set(key, details);
+        saveStoredDetails(key, details);
+      }
       return details;
     })
-    .finally(() => pendingRequests.delete(key));
-  pendingRequests.set(key, request);
+    .finally(() => {
+      if (useCache) pendingRequests.delete(key);
+    });
+  if (useCache) pendingRequests.set(key, request);
   return request;
 };

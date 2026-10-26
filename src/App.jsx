@@ -31,6 +31,10 @@ const EXTRA_LABELS = {
   weapon: { ru: "Оружие", en: "Weapon", zh: "武器", ja: "武器", ko: "무기" },
   element: { ru: "Стихия", en: "Element", zh: "元素", ja: "元素", ko: "원소" },
   saveSquad: { ru: "Сохранить отряд", en: "Save squad", zh: "保存队伍", ja: "チームを保存", ko: "파티 저장" },
+  saveRoll: { ru: "Сохранить реролл", en: "Save reroll", zh: "保存本次抽取", ja: "今回の抽選を保存", ko: "이번 뽑기 저장" },
+  characterRollSaved: { ru: "Рерол персонажей сохранён в статистику.", en: "Character reroll saved to statistics.", zh: "角色抽取已保存到统计记录。", ja: "キャラクターの抽選結果を統計に保存しました。", ko: "캐릭터 뽑기 결과를 통계에 저장했습니다." },
+  bossRollSaved: { ru: "Рерол босса сохранён в статистику.", en: "Boss reroll saved to statistics.", zh: "首领抽取已保存到统计记录。", ja: "ボスの抽選結果を統計に保存しました。", ko: "보스 뽑기 결과를 통계에 저장했습니다." },
+  goToHistory: { ru: "Перейти в статистику рероллов", en: "Go to reroll statistics", zh: "查看抽取统计", ja: "抽選統計を見る", ko: "뽑기 통계 보기" },
   reroll: { ru: "Реролл", en: "Reroll", zh: "重新抽取", ja: "もう一度回す", ko: "다시 뽑기" },
   savedSquads: { ru: "Сохранённые отряды", en: "Saved squads", zh: "已保存队伍", ja: "保存済みチーム", ko: "저장된 파티" },
   noSavedSquads: { ru: "Пока нет сохранённых отрядов.", en: "No saved squads yet.", zh: "暂时没有保存的队伍。", ja: "保存されたチームはまだありません。", ko: "저장된 파티가 없습니다." },
@@ -1842,11 +1846,14 @@ const HistoryPanel = ({
   </section>
 );
 
-const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, effectsEnabled }) => {
+const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult, onGoToHistory, onReroll, onHoverDetails, effectsEnabled }) => {
   const modalRef = useRef(null);
   const closeButtonRef = useRef(null);
   const onCloseRef = useRef(onClose);
+  const [savedToHistory, setSavedToHistory] = useState(false);
   onCloseRef.current = onClose;
+
+  useEffect(() => setSavedToHistory(false), [result?.timestamp]);
 
   useEffect(() => {
     if (!result) return undefined;
@@ -1920,7 +1927,16 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
         {hasSquad ? (
           <div className="squad-grid">
             {squad.map((member, index) => (
-              <article key={`${member.id}-${index}`} className="squad-card">
+              <article
+                key={`${member.id}-${index}`}
+                className="squad-card"
+                tabIndex={0}
+                onMouseEnter={(event) => onHoverDetails?.(member, "characters", event)}
+                onMouseMove={(event) => onHoverDetails?.(member, "characters", event)}
+                onMouseLeave={() => onHoverDetails?.(null)}
+                onFocus={(event) => onHoverDetails?.(member, "characters", event)}
+                onBlur={() => onHoverDetails?.(null)}
+              >
                 <ItemImage item={member} alt={getItemName(member, lang)} loading="lazy" />
                 <div className="squad-card-body">
                   <p className="squad-name">{getItemName(member, lang)}</p>
@@ -1951,7 +1967,15 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
           </div>
         ) : (
           <div className="squad-grid single-item">
-            <article className="squad-card">
+            <article
+              className="squad-card"
+              tabIndex={0}
+              onMouseEnter={(event) => onHoverDetails?.(item, result.stage, event)}
+              onMouseMove={(event) => onHoverDetails?.(item, result.stage, event)}
+              onMouseLeave={() => onHoverDetails?.(null)}
+              onFocus={(event) => onHoverDetails?.(item, result.stage, event)}
+              onBlur={() => onHoverDetails?.(null)}
+            >
               <ItemImage item={item} alt={getItemName(item, lang)} loading="lazy" />
               <div className="squad-card-body">
                 <p className="squad-name">{getItemName(item, lang)}</p>
@@ -1964,27 +1988,32 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
           </div>
         )}
 
-        <div className="splash-actions">
-          {hasSquad ? (
-            <>
+        {savedToHistory ? (
+          <>
+            <p className="splash-save-confirmation" role="status">
+              {getExtraLabel(result.stage === "bosses" ? "bossRollSaved" : "characterRollSaved", lang)}
+            </p>
+            <div className="splash-actions">
+              <button type="button" className="btn-primary" onClick={onGoToHistory}>{getExtraLabel("goToHistory", lang)}</button>
+              <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
+            </div>
+          </>
+        ) : (
+          <div className="splash-actions">
+            <button type="button" className="btn-secondary splash-save" onClick={() => { onSaveResult?.(result); setSavedToHistory(true); }}>
+              {getExtraLabel("saveRoll", lang)}
+            </button>
+            {hasSquad ? (
               <button type="button" className="btn-secondary splash-save" onClick={() => onSaveSquad?.(squad)}>
                 {getSaveSquadLabel(lang)}
               </button>
-              <button type="button" className="btn-primary splash-reroll" onClick={onReroll}>
-                {result.stage === "bosses" ? t.rerollBoss : getRerollSquadLabel(lang)}
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="btn-secondary splash-save" onClick={onClose}>
-                {t.close}
-              </button>
-              <button type="button" className="btn-primary splash-reroll" onClick={onReroll}>
-                {result.stage === "bosses" ? t.rerollBoss : getRerollSquadLabel(lang)}
-              </button>
-            </>
-          )}
-        </div>
+            ) : null}
+            <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
+            <button type="button" className="btn-primary splash-reroll" onClick={onReroll}>
+              {result.stage === "bosses" ? t.rerollBoss : getRerollSquadLabel(lang)}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2995,6 +3024,29 @@ function App() {
     [handleRollComplete]
   );
 
+  const saveRollResult = useCallback((result) => {
+    if (!result?.stage || !["characters", "bosses"].includes(result.stage)) return;
+    const results = result.stage === "characters" && Array.isArray(result.squad) && result.squad.length
+      ? result.squad
+      : [result.item].filter(Boolean);
+    const timestamp = result.timestamp || new Date().toISOString();
+    const entries = createRollHistoryEntries(result.stage, results, timestamp);
+    if (!entries.length) return;
+
+    setRollHistory((previous) => {
+      const missing = entries.filter((entry) => !previous.some((saved) => (
+        saved.stage === entry.stage && saved.timestamp === entry.timestamp && saved.itemId === entry.itemId
+      )));
+      return missing.length ? [...missing, ...previous].slice(0, settings.historyLimit) : previous;
+    });
+  }, [settings.historyLimit]);
+
+  const openRollHistory = useCallback(() => {
+    setHoverTarget(null);
+    setSplashResult(null);
+    setActiveSection("history");
+  }, []);
+
   const saveCurrentSquad = useCallback((squad) => {
     if (!Array.isArray(squad) || !squad.length) {
       return;
@@ -3463,7 +3515,10 @@ function App() {
         lang={lang}
         onClose={() => setSplashResult(null)}
         onSaveSquad={saveCurrentSquad}
+        onSaveResult={saveRollResult}
+        onGoToHistory={openRollHistory}
         onReroll={rerollFromSplash}
+        onHoverDetails={handleHoverDetails}
         effectsEnabled={settings.splashEffects}
       />
       <ItemHoverDetail target={hoverTarget} point={hoverPoint} lang={lang} />

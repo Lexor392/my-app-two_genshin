@@ -20,13 +20,8 @@ Each top-level key is the boss ID used by the app. A record has this shape:
   "image": "assets/bosses/lupusboreasdominatorofwolves.webp",
   "splash": "assets/bosses/lupusboreasdominatorofwolves.webp",
   "location": {
-    "region": "Mondstadt",
-    "area": "Windwail Highland",
-    "subarea": "Wolvendom"
-  },
-  "localizedLocation": {
-    "ru": { "region": "Мондштадт", "area": "Вольфендом", "subarea": "Вольфендом" },
     "en": { "region": "Mondstadt", "area": "Windwail Highland", "subarea": "Wolvendom" },
+    "ru": { "region": "Мондштадт", "area": "Вольфендом", "subarea": "Вольфендом" },
     "zh": { "region": "蒙德", "area": "奔狼领", "subarea": "奔狼领" },
     "ja": { "region": "モンド", "area": "奔狼領", "subarea": "奔狼領" },
     "ko": { "region": "몬드", "area": "울프 영지", "subarea": "울프 영지" }
@@ -35,8 +30,8 @@ Each top-level key is the boss ID used by the app. A record has this shape:
 }
 ```
 
-Put portrait files in `public/assets/bosses/` and location maps in `public/assets/boss-maps/`. `image`, `splash`, and `map` paths are relative to `public/`. Keep the locale keys `ru`, `en`, `zh`, `ja`, and `ko`; missing translations fall back to English. The location values shown in the hover card use `localizedLocation`, with `location` as the English source/fallback. `details` is an optional additional paragraph for facts that do not fit the location fields.
+Put portrait files in `public/assets/bosses/` and location maps in `public/assets/boss-maps/`. `image`, `splash`, and `map` paths are relative to `public/`. Keep the locale keys `ru`, `en`, `zh`, `ja`, and `ko` in `description`, `names`, `location`, and `details`. `location` is localized directly for each language. `details` is an optional additional paragraph for facts that do not fit the location fields.
 
-The optional `sourcePage` field records where the original information came from. It is metadata only and is not shown as a button.
+The optional `mapSourcePage` field records the page used to find a local map screenshot. It is metadata only and is not shown in the app. Keep downloaded map files under version control so the hover card works without an external request.
 
 The sync script writes a separate `bossDetails.generated.json` file so it does not overwrite hand-edited `bossDetails.json`.
