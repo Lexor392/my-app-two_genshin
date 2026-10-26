@@ -1,5 +1,3 @@
-import bossDetails from "../data/bossDetails.json" with { type: "json" };
-
 const DETAIL_CACHE_KEY = "genshin-random-lab:hover-details:v2";
 const DETAIL_CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
 const DETAIL_CACHE_LIMIT = 120;
@@ -9,6 +7,12 @@ const APP_BASE_URL = import.meta.env?.BASE_URL || "/";
 const RESULT_LANGUAGES = { ru: "russian", en: "english", zh: "chinese", ja: "japanese", ko: "korean" };
 const memoryCache = new Map();
 const pendingRequests = new Map();
+let bossDetailsPromise;
+
+const loadBossDetails = () => {
+  bossDetailsPromise ||= import("../data/bossDetails.json", { with: { type: "json" } }).then((module) => module.default);
+  return bossDetailsPromise;
+};
 
 const cleanWikiValue = (value = "") => value
   .replace(/<!--.*?-->/gs, "")
@@ -162,6 +166,7 @@ const fetchBossLocation = async (item, signal) => {
 
 const loadHoverDetails = async (item, kind, lang, signal) => {
   if (kind === "bosses") {
+    const bossDetails = await loadBossDetails();
     const local = bossDetails[item.id];
     if (local) {
       const description = typeof local.description === "string"
