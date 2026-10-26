@@ -63,9 +63,9 @@ test("opens the donation page from the sidebar", async () => {
 
   fireEvent.click(await screen.findByRole("button", { name: /поддержать проект/i }));
   expect(screen.getByRole("heading", { name: /поддержать проект/i })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: /открыть donatello/i })).toHaveAttribute("href", "https://donatello.to/MixBrend392");
   expect(screen.getByRole("link", { name: /открыть nowpayments/i })).toHaveAttribute("href", "https://nowpayments.io/donation/alex");
-  expect(screen.getByText(/платежи из рф и от банков под санкциями могут быть отклонены/i)).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /donatello/i })).not.toBeInTheDocument();
+  expect(screen.getByText(/доступность оплаты зависит от страны и ограничений сервиса/i)).toBeInTheDocument();
 });
 
 test("provides support and donation labels in all site languages", () => {
@@ -73,7 +73,6 @@ test("provides support and donation labels in all site languages", () => {
     expect(language.supportMenu).toBeTruthy();
     expect(language.donateMenu).toBeTruthy();
     expect(language.supportSend).toBeTruthy();
-    expect(language.donateDonatello).toBeTruthy();
     expect(language.donateCountryLimit).toBeTruthy();
     expect(language.donateNowpayments).toBeTruthy();
   }

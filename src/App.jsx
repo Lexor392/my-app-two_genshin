@@ -8,7 +8,7 @@ import { countRollSessions, createRollHistoryEntries } from "./services/rollHist
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
 import { fetchHoverDetails, getLocalBossDetails } from "./services/hoverDetails";
-import { DONATELLO_URL, NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
+import { NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
 import {
   buildRollSequence,
   getCenteredReelPosition,
@@ -2604,9 +2604,8 @@ const DonationPage = ({ t }) => (
       <p>{t.donateHint}</p>
     </div>
     <p className="donation-country-note" role="note">{t.donateCountryLimit}</p>
-    <div className="donation-services">
+    <div className="donation-services donation-services-crypto">
       {[
-        { name: "Donatello", description: t.donateDonatello, methods: ["Visa", "Mastercard"], href: DONATELLO_URL, configured: Boolean(DONATELLO_URL), openLabel: t.donateOpenDonatello, createLabel: t.donateOpenDonatello, terms: "https://donatello.me/individuals" },
         { name: "NOWPayments", description: t.donateNowpayments, methods: ["BTC", "ETH", "USDT", t.donateManyCoins], href: NOWPAYMENTS_URL, configured: Boolean(NOWPAYMENTS_URL), openLabel: t.donateOpenNowpayments, createLabel: t.donateOpenNowpayments, terms: "https://nowpayments.io/donation-tools" },
       ].map((service) => (
         <article className="donation-card" key={service.name}>
