@@ -1,6 +1,7 @@
 export const ROULETTE_MODES = ["vertical", "horizontal", "wheel"];
 export const ROULETTE_WINNER_INDEX = 52;
 export const ROULETTE_SEQUENCE_LENGTH = 72;
+export const ROULETTE_TRAVEL_CARDS = 40;
 
 export const pickUniqueWinners = (items, count, random = Math.random) => {
   const pool = [...(Array.isArray(items) ? items : [])];
@@ -33,6 +34,13 @@ export const buildRollSequence = (
 
 export const getCenteredReelPosition = (index, viewportSize, cardSize, gap) =>
   viewportSize / 2 - (index * (cardSize + gap) + cardSize / 2);
+
+export const getSequentialLaneDelay = (laneIndex, accelerationDurationMs, cruiseDurationMs, decelerationDurationMs) =>
+  Math.max(0, Math.floor(Number(laneIndex) || 0)) * (
+    Math.max(0, Number(accelerationDurationMs) || 0)
+    + Math.max(0, Number(cruiseDurationMs) || 0)
+    + Math.max(0, Number(decelerationDurationMs) || 0)
+  );
 
 export const getWheelTargetRotation = (segmentIndex, segmentCount, currentRotation, fullTurns = 6) => {
   if (!segmentCount) return currentRotation;

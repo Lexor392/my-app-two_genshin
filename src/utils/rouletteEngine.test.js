@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildRollSequence,
   getCenteredReelPosition,
+  getSequentialLaneDelay,
   getRollProgress,
   getWheelTargetRotation,
   pickUniqueWinners,
   ROULETTE_SEQUENCE_LENGTH,
+  ROULETTE_TRAVEL_CARDS,
   ROULETTE_WINNER_INDEX,
 } from "./rouletteEngine";
 
@@ -33,6 +35,15 @@ describe("roulette engine math", () => {
     const start = getCenteredReelPosition(62, 420, 200, 12);
     const stop = getCenteredReelPosition(52, 420, 200, 12);
     expect(stop).toBeGreaterThan(start);
+  });
+
+  it("starts reel lanes one at a time and gives each reel a long card run", () => {
+    const laneDuration = 3000 + 5000 + 5000;
+    expect(getSequentialLaneDelay(0, 3000, 5000, 5000)).toBe(0);
+    expect(getSequentialLaneDelay(1, 3000, 5000, 5000)).toBe(laneDuration);
+    expect(getSequentialLaneDelay(3, 3000, 5000, 5000)).toBe(laneDuration * 3);
+    expect(ROULETTE_WINNER_INDEX - ROULETTE_TRAVEL_CARDS).toBe(12);
+    expect(ROULETTE_WINNER_INDEX).toBeLessThan(ROULETTE_SEQUENCE_LENGTH);
   });
 
   it("stops the wheel on the chosen wedge after multiple forward turns", () => {

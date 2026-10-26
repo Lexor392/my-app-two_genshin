@@ -7,11 +7,12 @@ import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import {
   buildRollSequence,
   getCenteredReelPosition,
+  getSequentialLaneDelay,
   getRollProgress,
   getWheelTargetRotation,
   pickUniqueWinners,
   ROULETTE_MODES,
-  ROULETTE_SEQUENCE_LENGTH,
+  ROULETTE_TRAVEL_CARDS,
   ROULETTE_WINNER_INDEX,
 } from "./utils/rouletteEngine";
 
@@ -2075,7 +2076,7 @@ const RouletteEngine = ({
       const viewport = viewportRefs.current[index];
       const viewportSize = (vertical ? viewport?.clientHeight : viewport?.clientWidth) || (vertical ? 430 : 760);
       const finalIndex = ROULETTE_WINNER_INDEX;
-      const fromIndex = finalIndex - 9;
+      const fromIndex = finalIndex - ROULETTE_TRAVEL_CARDS;
       return {
         index,
         winner,
@@ -2084,6 +2085,7 @@ const RouletteEngine = ({
         finalIndex,
         fromPosition: getCenteredReelPosition(fromIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
         toPosition: getCenteredReelPosition(finalIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
+        delay: getSequentialLaneDelay(index, ROLL_ACCELERATION_MS, durationPerStep, ROLL_DECELERATION_MS),
       };
     });
     const plan = { id, mode, lanes, durationPerStep, accelerationDuration: ROLL_ACCELERATION_MS, decelerationDuration: ROLL_DECELERATION_MS };
@@ -2148,7 +2150,7 @@ const RouletteEngine = ({
         if (!alive || spinPlan.id !== sessionRef.current) return;
         let allDone = true;
         spinPlan.lanes.forEach((lane) => {
-          const elapsed = now - startTime;
+          const elapsed = now - startTime - lane.delay;
           if (elapsed < 0) {
             allDone = false;
             return;
