@@ -30,5 +30,25 @@ describe("boss hover details", () => {
       record.description?.ru && record.description?.en && record.description?.zh && record.description?.ja && record.description?.ko
       && (record.location?.region || record.location?.area || record.map)
     ))).toBe(true);
+    expect(records.every((record) => (
+      record.names?.ru && record.names?.en && record.names?.zh && record.names?.ja && record.names?.ko
+      && record.category
+      && record.details && ["ru", "en", "zh", "ja", "ko"].every((locale) => Object.hasOwn(record.details, locale))
+      && record.localizedLocation && ["ru", "en", "zh", "ja", "ko"].every((locale) => (
+        Object.values(record.localizedLocation[locale] || {}).some(Boolean)
+      ))
+    ))).toBe(true);
+  });
+
+  it("uses the selected language for localized boss names and locations", async () => {
+    const andrius = await fetchHoverDetails(
+      { id: "lupusboreasdominatorofwolves", name: "Lupus Boreas, Dominator of Wolves" },
+      "bosses",
+      "ru"
+    );
+
+    expect(andrius.title).toBe(bossDetails.lupusboreasdominatorofwolves.names.ru);
+    expect(andrius.region).toBe(bossDetails.lupusboreasdominatorofwolves.localizedLocation.ru.region);
+    expect(andrius.additionalInfo).toBe("");
   });
 });

@@ -70,6 +70,7 @@ const EXTRA_LABELS = {
   detailBirthday: { ru: "День рождения", en: "Birthday", zh: "生日", ja: "誕生日", ko: "생일" },
   detailWeapon: { ru: "Оружие", en: "Weapon", zh: "武器", ja: "武器", ko: "무기" },
   detailElement: { ru: "Стихия", en: "Element", zh: "元素", ja: "元素", ko: "원소" },
+  detailNotes: { ru: "Дополнительно", en: "Additional details", zh: "补充信息", ja: "追加情報", ko: "추가 정보" },
   detailMap: { ru: "Карта места", en: "Location map", zh: "位置地图", ja: "場所のマップ", ko: "위치 지도" },
   detailMapUnavailable: { ru: "Скриншот карты для этого босса не найден.", en: "No map screenshot was found for this boss.", zh: "未找到该首领的地图截图。", ja: "このボスのマップ画像は見つかりませんでした。", ko: "이 보스의 지도 이미지를 찾지 못했습니다." },
 };
@@ -1114,7 +1115,6 @@ const ItemHoverDetail = ({ target, point, lang }) => {
         <ItemImage item={item} alt={getItemName(item, lang)} loading="eager" />
         <div>
           <strong>{getItemName(item, lang)}</strong>
-          {details?.title ? <span>{details.title}</span> : null}
           <div className="item-hover-badges">
             {item.rarity ? <ItemBadge text={`${item.rarity}★`} /> : null}
             {isBoss && item.group ? <ItemBadge text={formatBossType(item.group, lang)} /> : null}
@@ -1124,6 +1124,12 @@ const ItemHoverDetail = ({ target, point, lang }) => {
 
       <div className="item-hover-detail-content">
         {description ? <p className="item-hover-description">{description}</p> : <p className="item-hover-description is-muted">{getExtraLabel(details ? "detailUnavailable" : "detailLoading", lang)}</p>}
+        {details?.additionalInfo ? (
+          <div className="item-hover-additional-info">
+            <strong>{getExtraLabel("detailNotes", lang)}</strong>
+            <p>{details.additionalInfo}</p>
+          </div>
+        ) : null}
         {rows.length ? (
           <dl className="item-hover-meta">
             {rows.map(([label, value]) => (

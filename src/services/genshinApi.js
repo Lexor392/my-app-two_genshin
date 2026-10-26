@@ -1,5 +1,3 @@
-import bossImageAssets from "../data/bossImageAssets.json" with { type: "json" };
-
 const GITHUB_DATA_BASE = "https://raw.githubusercontent.com/theBowja/genshin-db/main/src/data";
 const FANDOM_API = "https://genshin-impact.fandom.com/api.php";
 const HAKUSH_UI_BASE = "https://api.hakush.in/gi/UI";
@@ -12,6 +10,11 @@ const DEFAULT_HEADERS = {
 };
 const DATA_CACHE_PREFIX = "genshin-random-lab:data:v7:";
 const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
+let bossDetailsPromise;
+const loadBossDetails = () => {
+  bossDetailsPromise ||= import("../data/bossDetails.json", { with: { type: "json" } }).then((module) => module.default);
+  return bossDetailsPromise;
+};
 
 const LOCAL_LEGEND_PAGE = "Local Legend";
 
@@ -517,7 +520,7 @@ const mapWithConcurrency = async (items, mapper, limit = 8) => {
   return results;
 };
 
-const mapBossList = async (ids, nameMaps, imageMap, group, signal) => {
+const mapBossList = async (ids, nameMaps, imageMap, group, bossDetails, signal) => {
   const mapped = await mapWithConcurrency(ids, async (id) => {
     const entry = imageMap[id] || {};
     const imageCandidates = getEnemyImageCandidates(entry);
@@ -536,6 +539,7 @@ const mapBossList = async (ids, nameMaps, imageMap, group, signal) => {
       nameJa: getNameFromMap(nameMaps.ja, id, name),
       nameKo: getNameFromMap(nameMaps.ko, id, name),
       imageLookupTitles: BOSS_IMAGE_LOOKUP_TITLES[name] || [],
+      localAsset: bossDetails[id]?.image || "",
       image,
       imageFallbacks: uniqueUrls([...imageCandidates.slice(1), ...(BOSS_IMAGE_FALLBACKS[name] || [])]),
       splash: splashCandidates[0] || image,
@@ -636,6 +640,7 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
 };
 
 export const fetchGenshinData = async ({ signal } = {}) => {
+  const bossDetailsPromise = loadBossDetails();
   const [
     characterIndexEn,
     characterIndexRu,
@@ -663,6 +668,7 @@ export const fetchGenshinData = async ({ signal } = {}) => {
     fetchJson(`${GITHUB_DATA_BASE}/index/Korean/enemies.json`, 2, signal).catch(() => null),
     fetchJson(`${GITHUB_DATA_BASE}/image/enemies.json`, 3, signal).catch(() => ({})),
   ]);
+  const bossDetails = await bossDetailsPromise;
 
   const characterIndexRuSafe = characterIndexRu || characterIndexEn;
   const characterIndexZhSafe = characterIndexZh || characterIndexEn;
@@ -697,15 +703,15 @@ export const fetchGenshinData = async ({ signal } = {}) => {
   const allBossIds = enemyCategoryMap.BOSS || [];
   const ascensionIds = allBossIds.filter((id) => !weeklySet.has(id));
 
-  const weeklyBosses = await mapBossList(weeklyIds, enemyNameMaps, enemyImages, "weekly", signal);
-  const ascensionBosses = await mapBossList(ascensionIds, enemyNameMaps, enemyImages, "ascension", signal);
+  const weeklyBosses = await mapBossList(weeklyIds, enemyNameMaps, enemyImages, "weekly", bossDetails, signal);
+  const ascensionBosses = await mapBossList(ascensionIds, enemyNameMaps, enemyImages, "ascension", bossDetails, signal);
   const localLegends = await mapLocalLegends(enemyNameMaps, enemyImages, signal).catch(() => []);
 
   const bossPool = dedupeById([...weeklyBosses, ...ascensionBosses, ...localLegends]).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
   const resolvedBossPool = bossPool.map((boss) => {
-    const localAsset = bossImageAssets[boss.id];
+    const localAsset = boss.localAsset || bossDetails[boss.id]?.image || "";
     const image = localAsset ? `${APP_BASE_URL}${localAsset}` : "";
     return { ...boss, image, imageFallbacks: [], splash: image, splashFallbacks: [] };
   });

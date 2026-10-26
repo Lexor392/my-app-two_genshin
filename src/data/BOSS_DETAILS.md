@@ -1,11 +1,12 @@
 # Boss details data
 
-Edit [`bossDetails.json`](./bossDetails.json) to add or correct a boss description, map, or location.
+Edit [`bossDetails.json`](./bossDetails.json) to add or correct a boss name, category, portrait, map, description, location, or extra notes. This is the single source of boss artwork and hover-card information.
 
-Each top-level key is the boss ID used by `bossImageAssets.json`. A record has this shape:
+Each top-level key is the boss ID used by the app. A record has this shape:
 
 ```json
 {
+  "id": "lupusboreasdominatorofwolves",
   "description": {
     "ru": "Описание на русском",
     "en": "Description in English",
@@ -13,16 +14,28 @@ Each top-level key is the boss ID used by `bossImageAssets.json`. A record has t
     "ja": "日本語の説明",
     "ko": "한국어 설명"
   },
+  "details": { "ru": "", "en": "", "zh": "", "ja": "", "ko": "" },
+  "names": { "ru": "Андриус", "en": "Andrius", "zh": "安德留斯", "ja": "アンドリアス", "ko": "안드리우스" },
+  "category": "weekly",
+  "image": "assets/bosses/lupusboreasdominatorofwolves.webp",
+  "splash": "assets/bosses/lupusboreasdominatorofwolves.webp",
   "location": {
     "region": "Mondstadt",
     "area": "Windwail Highland",
     "subarea": "Wolvendom"
   },
+  "localizedLocation": {
+    "ru": { "region": "Мондштадт", "area": "Вольфендом", "subarea": "Вольфендом" },
+    "en": { "region": "Mondstadt", "area": "Windwail Highland", "subarea": "Wolvendom" },
+    "zh": { "region": "蒙德", "area": "奔狼领", "subarea": "奔狼领" },
+    "ja": { "region": "モンド", "area": "奔狼領", "subarea": "奔狼領" },
+    "ko": { "region": "몬드", "area": "울프 영지", "subarea": "울프 영지" }
+  },
   "map": "assets/boss-maps/lupusboreasdominatorofwolves.png"
 }
 ```
 
-Put map files in `public/assets/boss-maps/`; `map` is the path relative to `public/`. The description is selected by the current site language. If one translation is missing, the English text is used. Location labels are translated by the interface; location names are stored as written in the game data.
+Put portrait files in `public/assets/bosses/` and location maps in `public/assets/boss-maps/`. `image`, `splash`, and `map` paths are relative to `public/`. Keep the locale keys `ru`, `en`, `zh`, `ja`, and `ko`; missing translations fall back to English. The location values shown in the hover card use `localizedLocation`, with `location` as the English source/fallback. `details` is an optional additional paragraph for facts that do not fit the location fields.
 
 The optional `sourcePage` field records where the original information came from. It is metadata only and is not shown as a button.
 

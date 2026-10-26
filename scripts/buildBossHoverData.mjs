@@ -11,6 +11,20 @@ const MAP_DIR = path.join(ROOT, "public", "assets", "boss-maps");
 const DATA_FILE = path.join(ROOT, "src", "data", "bossDetails.generated.json");
 const DESCRIPTION_LANGUAGES = { ru: "russian", en: "english", zh: "chinese", ja: "japanese", ko: "korean" };
 const TRANSLATE_LANGUAGES = { ru: "ru", zh: "zh-CN", ja: "ja", ko: "ko" };
+const LOCAL_LEGEND_NAMES = {
+  "Battlegoat and Ironclaw": { ru: "Боевой козёл и Железный Коготь", zh: "战斗山羊与铁爪", ja: "バトルゴートとアイアンクロー", ko: "배틀고트와 아이언클로" },
+  Cocijo: { ru: "Косихо", zh: "科西霍", ja: "コシホ", ko: "코시호" },
+  "Crab Tsar": { ru: "Краб-царь", zh: "蟹王", ja: "クラブツァーリ", ko: "크랩 차르" },
+  "He Never Dies": { ru: "Он никогда не умирает", zh: "他永不死去", ja: "彼は決して死なない", ko: "그는 결코 죽지 않는다" },
+  "Hexadecatonic Mandragora": { ru: "Гексадекатоническая Мандрагора", zh: "十六音曼德拉草", ja: "十六音マンドラゴラ", ko: "헥사데카토닉 맨드라고라" },
+  Hiljetta: { ru: "Хильетта", zh: "希尔耶塔", ja: "ヒルイェッタ", ko: "힐예타" },
+  Liam: { ru: "Лиам", zh: "利亚姆", ja: "リアム", ko: "리암" },
+  "Rocky Avildsen": { ru: "Рокки Авильдсен", zh: "洛奇·阿维尔德森", ja: "ロッキー・アヴィルドセン", ko: "로키 아빌드센" },
+  "The Peak": { ru: "Пик", zh: "巅峰", ja: "ピーク", ko: "더 피크" },
+  "The Homesick Lone Wolf": { ru: "Тоскующий одинокий волк", zh: "思乡孤狼", ja: "望郷の一匹狼", ko: "향수병에 걸린 외로운 늑대" },
+  "The Last Survivor of Tenochtzitoc": { ru: "Последний выживший из Теночцитока", zh: "特诺奇兹托克的最后幸存者", ja: "テノチツトク最後の生存者", ko: "테노치츠토크의 마지막 생존자" },
+  Sigurd: { ru: "Сигурд", zh: "西格德", ja: "シグルド", ko: "시구르드" },
+};
 const aliases = {
   lupusboreasdominatorofwolves: ["Andrius"],
   stormterror: ["Dvalin"],
@@ -32,6 +46,8 @@ const fetchJson = async (url) => {
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${url}`);
   return response.json();
 };
+const translationCache = new Map();
+const locationNameCache = new Map();
 const keyify = (value = "") => value.toLowerCase().replace(/\(local legend\)/g, "").replace(/[^a-z0-9]/g, "").trim();
 const slugify = (value = "") => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 const cleanWiki = (value = "") => value
@@ -138,6 +154,60 @@ const translateDescription = async (text, language) => {
   return (result?.[0] || []).map((part) => part?.[0] || "").join("").trim();
 };
 
+const translateValue = async (text, language) => {
+  if (!text || language === "en") return text || "";
+  const cacheKey = `${language}:${text}`;
+  if (!translationCache.has(cacheKey)) translationCache.set(cacheKey, translateDescription(text, language).catch(() => text));
+  return translationCache.get(cacheKey);
+};
+
+const getLocationNameTranslations = async (name) => {
+  if (!name) return {};
+  if (!locationNameCache.has(name)) {
+    locationNameCache.set(name, (async () => {
+      const translations = {};
+      try {
+        const page = await getPages(name);
+        const languageSection = page?.wikitext.match(/==Other Languages==([\s\S]*?)(?=\n==|$)/i)?.[1] || "";
+        const fieldMap = { ru: "ru", zh: "zhs", ja: "ja", ko: "ko" };
+        for (const [language, field] of Object.entries(fieldMap)) {
+          const match = languageSection.match(new RegExp(`^\\|${field}\\s*=\\s*(.+)$`, "im"));
+          const raw = (match?.[1] || "")
+            .replace(/\{\{Rubi\|([^{}]+)\}\}/gi, (_, content) => content.split("|").filter((_, index) => index % 2 === 0).join(""))
+            .replace(/\{\{(?:tt|ruby)\|([^|{}]+)(?:\|[^{}]*)?\}\}/gi, "$1");
+          const value = cleanWiki(raw);
+          if (value) translations[language] = value;
+        }
+      } catch { /* Fall back to a machine translation for unmatched location pages. */ }
+      return translations;
+    })());
+  }
+  return locationNameCache.get(name);
+};
+
+const getLocalizedLocation = async (location) => {
+  const localized = { en: { ...location } };
+  await Promise.all(Object.keys(DESCRIPTION_LANGUAGES).filter((language) => language !== "en").map(async (language) => {
+    localized[language] = {};
+    await Promise.all(["region", "area", "subarea"].map(async (field) => {
+      const value = location[field] || "";
+      const fromWiki = await getLocationNameTranslations(value);
+      localized[language][field] = fromWiki[language] || await translateValue(value, language);
+    }));
+  }));
+  return localized;
+};
+
+const getLocalizedNames = async (record) => {
+  const names = { en: record.name };
+  await Promise.all(Object.keys(DESCRIPTION_LANGUAGES).filter((language) => language !== "en").map(async (language) => {
+    names[language] = record.names?.[language]
+      || LOCAL_LEGEND_NAMES[record.name]?.[language]
+      || await translateValue(record.name, language);
+  }));
+  return names;
+};
+
 const getLocalizedDescription = async (record, wikiDescription) => {
   let english = wikiDescription || "";
   let officialEnglish = false;
@@ -179,10 +249,36 @@ const chooseMap = (images) => images
   .sort((a, b) => b.score - a.score || a.filename.length - b.filename.length)[0]?.filename || "";
 
 const getBossRecords = async () => {
-  const index = await fetchJson(`${DATA_BASE}/index/English/enemies.json`);
-  const nameMap = index.namemap || {};
-  const ids = [...new Set([...(index.categories?.BOSS || []), ...(index.categories?.["Enemies of Note"] || [])])];
-  const records = ids.map((id) => ({ id, name: nameMap[id] || id, titles: [nameMap[id] || id, ...(aliases[id] || [])] }));
+  const indexLanguages = { en: "English", ru: "Russian", zh: "ChineseSimplified", ja: "Japanese", ko: "Korean" };
+  const indexes = await Promise.all(Object.entries(indexLanguages).map(async ([language, folder]) => [
+    language,
+    await fetchJson(`${DATA_BASE}/index/${folder}/enemies.json`).catch(() => null),
+  ]));
+  const indexMap = Object.fromEntries(indexes);
+  const index = indexMap.en;
+  const nameMaps = Object.fromEntries(Object.entries(indexMap).map(([language, data]) => [language, data?.namemap || index.namemap || {}]));
+  const nameMap = nameMaps.en;
+  const weeklyIds = new Set(index.categories?.["Enemies of Note"] || []);
+  const ids = [...new Set([...(index.categories?.BOSS || []), ...weeklyIds])];
+  const oldDetails = JSON.parse(await readFile(path.join(ROOT, "src", "data", "bossDetails.json"), "utf8"));
+  let legacyImageAssets = {};
+  try {
+    legacyImageAssets = JSON.parse(await readFile(path.join(ROOT, "src", "data", "bossImageAssets.json"), "utf8"));
+  } catch {
+    // Older checkouts kept portraits in a separate file; current data keeps them in bossDetails.json.
+  }
+  const imageAssets = Object.fromEntries(Object.keys(oldDetails).map((id) => [id, oldDetails[id]?.image || legacyImageAssets[id] || ""]));
+  const records = ids.map((id) => {
+    const name = nameMap[id] || id;
+    return {
+      id,
+      name,
+      names: Object.fromEntries(Object.keys(indexLanguages).map((language) => [language, nameMaps[language][id] || name])),
+      category: weeklyIds.has(id) ? "weekly" : "ascension",
+      image: imageAssets[id] || "",
+      titles: [name, ...(aliases[id] || [])],
+    };
+  });
 
   const localLegend = await getPages("Local Legend");
   const localLegendLocations = parseLocalLegendLocations(localLegend?.wikitext || "");
@@ -208,6 +304,9 @@ const getBossRecords = async () => {
       records.push({
         id,
         name,
+        names: Object.fromEntries(Object.keys(indexLanguages).map((language) => [language, LOCAL_LEGEND_NAMES[name]?.[language] || name])),
+        category: "localLegend",
+        image: imageAssets[id] || "",
         titles: [...new Set([linkedName, source, name].filter(Boolean))],
         localLocation: localLegendLocations.get(keyify(name))
           || localLegendLocations.get(keyify(linkedName))
@@ -218,7 +317,6 @@ const getBossRecords = async () => {
   }
 
   // Include any already-shipped local legend assets as a safeguard for new entries in the app catalog.
-  const imageAssets = JSON.parse(await readFile(path.join(ROOT, "src", "data", "bossImageAssets.json"), "utf8"));
   for (const id of Object.keys(imageAssets)) {
     if (records.some((record) => record.id === id)) continue;
     const baseId = id.replace(/^local-legend-/, "");
@@ -226,6 +324,9 @@ const getBossRecords = async () => {
     records.push({
       id,
       name,
+      names: Object.fromEntries(Object.keys(indexLanguages).map((language) => [language, LOCAL_LEGEND_NAMES[name]?.[language] || name])),
+      category: "localLegend",
+      image: imageAssets[id] || "",
       titles: [name],
       localLocation: localLegendLocations.get(keyify(name))
         || localLegendLocations.get(keyify(baseId))
@@ -285,7 +386,20 @@ const workers = Array.from({ length: 5 }, async () => {
         };
         const map = await saveMap(record.id, record.localLocation?.mapFilename);
         const description = await fetchDatabaseDescription(record);
-        output[record.id] = { name: record.name, location, description: await getLocalizedDescription(record, description), map, sourcePage: "https://genshin-impact.fandom.com/wiki/Local_Legend" };
+        output[record.id] = {
+          id: record.id,
+          name: record.name,
+          names: await getLocalizedNames(record),
+          category: record.category,
+          image: record.image,
+          splash: record.image,
+          description: await getLocalizedDescription(record, description),
+          details: Object.fromEntries(Object.keys(DESCRIPTION_LANGUAGES).map((language) => [language, ""])),
+          location,
+          localizedLocation: await getLocalizedLocation(location),
+          map,
+          sourcePage: "https://genshin-impact.fandom.com/wiki/Local_Legend",
+        };
         console.log(`${map ? "MAP" : "INFO"} ${record.name}: ${location.region || "?"} / ${location.area || "?"}${map ? ` → ${map}` : ""}`);
         continue;
       }
@@ -299,7 +413,20 @@ const workers = Array.from({ length: 5 }, async () => {
       const map = await saveMap(record.id, record.localLocation?.mapFilename || chooseMap(page.images));
       const description = extractDescription(page.wikitext) || await fetchDatabaseDescription(record);
       const localizedDescription = await getLocalizedDescription(record, description);
-      output[record.id] = { name: record.name, location, description: localizedDescription, map, sourcePage: `https://genshin-impact.fandom.com/wiki/${encodeURIComponent(page.title.replaceAll(" ", "_"))}` };
+      output[record.id] = {
+        id: record.id,
+        name: record.name,
+        names: await getLocalizedNames(record),
+        category: record.category,
+        image: record.image,
+        splash: record.image,
+        description: localizedDescription,
+        details: Object.fromEntries(Object.keys(DESCRIPTION_LANGUAGES).map((language) => [language, ""])),
+        location,
+        localizedLocation: await getLocalizedLocation(location),
+        map,
+        sourcePage: `https://genshin-impact.fandom.com/wiki/${encodeURIComponent(page.title.replaceAll(" ", "_"))}`,
+      };
       console.log(`${map ? "MAP" : "INFO"} ${record.name}: ${location.region || "?"} / ${location.area || "?"} / ${location.subarea || "?"}${map ? ` → ${map}` : ""}`);
     } catch (error) {
       output[record.id] = { name: record.name, location: {}, description: "", map: "", sourcePage: "" };

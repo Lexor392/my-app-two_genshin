@@ -173,12 +173,13 @@ const loadHoverDetails = async (item, kind, lang, signal) => {
         ? local.description
         : (local.description?.[lang] || local.description?.en || Object.values(local.description || {}).find(Boolean) || "");
       return {
-        title: local.name || item.name,
+        title: local.names?.[lang] || local.name || item.name,
         description,
+        additionalInfo: local.details?.[lang] || local.details?.en || "",
         affiliation: "",
-        region: local.location?.region || "",
-        area: local.location?.area || "",
-        subarea: local.location?.subarea || "",
+        region: local.localizedLocation?.[lang]?.region || local.location?.region || "",
+        area: local.localizedLocation?.[lang]?.area || local.location?.area || "",
+        subarea: local.localizedLocation?.[lang]?.subarea || local.location?.subarea || "",
         constellation: "",
         birthday: "",
         weapon: "",
