@@ -203,6 +203,7 @@ h4 {
   cursor: pointer;
   transition: 180ms ease;
   font-weight: 600;
+  text-decoration: none;
 }
 
 .menu-item-icon {

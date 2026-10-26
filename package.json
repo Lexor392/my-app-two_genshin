@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generateSeoPages.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "test": "vitest run"

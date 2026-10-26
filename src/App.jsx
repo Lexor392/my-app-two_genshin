@@ -9,6 +9,7 @@ import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
 import { fetchHoverDetails, getLocalBossDetails } from "./services/hoverDetails";
 import { claimSupportSubmission, isSupportHoneypotFilled } from "./services/supportProtection";
+import { sectionFromPath, sectionPath, updateSectionMetadata } from "./services/seo.mjs";
 import { NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
 import {
   buildRollSequence,
@@ -97,6 +98,7 @@ const SECTION_IDS = [
   "bossPool",
   "history",
   "settings",
+  "donate",
 ];
 const ROLL_DURATION_OPTIONS = [3, 5, 8, 10];
 const HISTORY_LIMIT_OPTIONS = [30, 60, 90];
@@ -856,7 +858,7 @@ const loadInitialState = () => {
     languageMode,
     theme: "dark",
     settings,
-    activeSection: SECTION_IDS.includes(uiCookie.activeSection) ? uiCookie.activeSection : "dashboard",
+    activeSection: sectionFromPath(window.location.pathname) || (SECTION_IDS.includes(uiCookie.activeSection) ? uiCookie.activeSection : "dashboard"),
     isSidebarCollapsed: Boolean(uiCookie.isSidebarCollapsed),
     rouletteMode: ROULETTE_MODES.includes(uiCookie.rouletteMode) ? uiCookie.rouletteMode : "vertical",
     characterFilters,
@@ -2652,13 +2654,33 @@ function App() {
   const [languageMode, setLanguageMode] = useState(boot.languageMode || "auto");
   const languageModeRef = useRef(languageMode);
   const [settings, setSettings] = useState(boot.settings);
-  const [activeSection, setActiveSection] = useState(boot.activeSection);
+  const [activeSection, setActiveSectionState] = useState(boot.activeSection);
+  const setActiveSection = useCallback((sectionId) => {
+    if (!SECTION_IDS.includes(sectionId)) return;
+    setActiveSectionState(sectionId);
+    const path = sectionPath(sectionId);
+    if (window.location.pathname !== path) window.history.pushState({ sectionId }, "", path);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(boot.isSidebarCollapsed);
   const [rouletteMode, setRouletteMode] = useState(boot.rouletteMode || "vertical");
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     mediaQueryMatches("(max-width: 900px)")
   );
+
+  useEffect(() => {
+    updateSectionMetadata(activeSection, lang);
+  }, [activeSection, lang]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveSectionState(sectionFromPath(window.location.pathname));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const [data, setData] = useState(() => {
     const snapshot = readCatalogSnapshot();
@@ -3440,11 +3462,15 @@ function App() {
 
         <div className="menu-list">
           {menuItems.map((item) => (
-            <button
+            <a
               key={item.id}
-              type="button"
               className={`menu-item ${activeSection === item.id ? "active" : ""}`}
-              onClick={() => handleMenuItemClick(item.id)}
+              href={sectionPath(item.id)}
+              onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                handleMenuItemClick(item.id);
+              }}
               aria-label={item.label}
               title={item.label}
             >
@@ -3452,7 +3478,7 @@ function App() {
                 <MenuIcon name={item.icon} />
               </span>
               <span className="menu-item-label">{item.label}</span>
-            </button>
+            </a>
           ))}
         </div>
 
@@ -3461,10 +3487,10 @@ function App() {
             <span className="menu-item-icon" aria-hidden="true"><MenuIcon name="support" /></span>
             <span className="menu-item-label">{t.supportMenu}</span>
           </button>
-          <button type="button" className={`menu-item sidebar-action ${activeSection === "donate" ? "active" : ""}`} onClick={() => handleMenuItemClick("donate")} aria-label={t.donateMenu} title={t.donateMenu}>
+          <a className={`menu-item sidebar-action ${activeSection === "donate" ? "active" : ""}`} href={sectionPath("donate")} onClick={(event) => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); handleMenuItemClick("donate"); }} aria-label={t.donateMenu} title={t.donateMenu}>
             <span className="menu-item-icon" aria-hidden="true"><MenuIcon name="donate" /></span>
             <span className="menu-item-label">{t.donateMenu}</span>
-          </button>
+          </a>
         </div>
 
         <div className="sidebar-footer">
