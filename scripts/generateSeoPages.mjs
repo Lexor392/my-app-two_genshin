@@ -5,7 +5,8 @@ import { SEO_ROUTES, sectionMetadata } from "../src/services/seo.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = path.join(projectRoot, "dist");
-const siteUrl = "https://lexor392.github.io/my-app-two_genshin/";
+const configuredSiteUrl = process.env.VITE_PUBLIC_SITE_URL || "https://lexor392.github.io/my-app-two_genshin/";
+const siteUrl = configuredSiteUrl.endsWith("/") ? configuredSiteUrl : `${configuredSiteUrl}/`;
 const imageUrl = new URL("assets/teyvat-world.png", siteUrl).href;
 const rootHtml = await readFile(path.join(distRoot, "index.html"), "utf8");
 
@@ -61,3 +62,4 @@ const sitemapEntries = SEO_ROUTES.map(({ section, slug }) => {
   return `  <url><loc>${url}</loc><changefreq>weekly</changefreq><priority>${section === "dashboard" ? "1.0" : "0.7"}</priority></url>`;
 }).join("\n");
 await writeFile(path.join(distRoot, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapEntries}\n</urlset>\n`);
+await writeFile(path.join(distRoot, "robots.txt"), `User-agent: *\nDisallow:\nSitemap: ${new URL("sitemap.xml", siteUrl).href}\n`);

@@ -1,5 +1,13 @@
-const SITE_URL = "https://lexor392.github.io/my-app-two_genshin/";
-const DEFAULT_BASE_URL = import.meta.env?.BASE_URL || "/my-app-two_genshin/";
+const CONFIGURED_SITE_URL = import.meta.env?.VITE_PUBLIC_SITE_URL
+  || (typeof process !== "undefined" ? process.env?.VITE_PUBLIC_SITE_URL : "");
+const DEFAULT_BASE_URL = import.meta.env?.BASE_URL
+  || (typeof process !== "undefined" && process.env?.CF_PAGES ? "/" : "/my-app-two_genshin/");
+
+function getSiteUrl() {
+  if (CONFIGURED_SITE_URL) return CONFIGURED_SITE_URL.endsWith("/") ? CONFIGURED_SITE_URL : `${CONFIGURED_SITE_URL}/`;
+  if (typeof window !== "undefined") return new URL(DEFAULT_BASE_URL, window.location.origin).href;
+  return "https://lexor392.github.io/my-app-two_genshin/";
+}
 const ROUTES = {
   dashboard: "",
   characters: "characters",
@@ -87,7 +95,7 @@ export function sectionPath(section, baseUrl = DEFAULT_BASE_URL) {
 
 export function sectionMetadata(section, lang = "en") {
   const [title, description] = (SEO_TEXT[section] || SEO_TEXT.dashboard)[lang] || DEFAULT_META;
-  const url = new URL(sectionPath(section), SITE_URL).href;
+  const url = new URL(sectionPath(section), getSiteUrl()).href;
   return { title, description, url };
 }
 
@@ -134,7 +142,7 @@ export function updateSectionMetadata(section, lang = "en") {
     name: metadata.title,
     description: metadata.description,
     url: metadata.url,
-    isPartOf: { "@type": "WebSite", name: "Genshin Impact Random Lab", url: SITE_URL },
+    isPartOf: { "@type": "WebSite", name: "Genshin Impact Random Lab", url: getSiteUrl() },
   });
 }
 
