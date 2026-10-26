@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import "./App.css";
 import { translations } from "./i18n/translations";
 import { fetchFallbackImage, fetchGenshinData } from "./services/genshinApi";
@@ -6,6 +7,7 @@ import { cacheImageAsset, getCachedImageSource, readCatalogSnapshot, saveCatalog
 import { countRollSessions, createRollHistoryEntries } from "./services/rollHistory";
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
+import { fetchHoverDetails } from "./services/hoverDetails";
 import {
   buildRollSequence,
   getCenteredReelPosition,
@@ -58,6 +60,18 @@ const EXTRA_LABELS = {
   wheelResults: { ru: "Выпавшие персонажи", en: "Selected characters", zh: "抽取结果", ja: "選ばれたキャラクター", ko: "선택된 캐릭터" },
   needLanes: { ru: "В пуле должно быть не менее {count} разных персонажей для {count} рулеток.", en: "Add at least {count} different characters to spin {count} lanes.", zh: "角色池至少需要 {count} 名不同角色才能转动 {count} 个转盘。", ja: "{count} 個のルーレットを回すには、異なるキャラクターが {count} 人以上必要です。", ko: "룰렛 {count}개를 돌리려면 서로 다른 캐릭터가 {count}명 이상 필요합니다." },
   catalogUpdated: { ru: "Каталог обновлён", en: "Catalog updated", zh: "目录更新", ja: "カタログ更新", ko: "목록 업데이트" },
+  detailLoading: { ru: "Загружаю подробности…", en: "Loading details…", zh: "正在加载详细信息…", ja: "詳細を読み込み中…", ko: "상세 정보를 불러오는 중…" },
+  detailUnavailable: { ru: "Подробности пока недоступны.", en: "Details are unavailable right now.", zh: "暂时无法获取详细信息。", ja: "詳細情報を現在取得できません。", ko: "현재 상세 정보를 불러올 수 없습니다." },
+  detailAffiliation: { ru: "Организация", en: "Affiliation", zh: "所属", ja: "所属", ko: "소속" },
+  detailRegion: { ru: "Регион", en: "Region", zh: "地区", ja: "地域", ko: "지역" },
+  detailArea: { ru: "Область", en: "Area", zh: "区域", ja: "エリア", ko: "지역" },
+  detailSubarea: { ru: "Место", en: "Location", zh: "地点", ja: "場所", ko: "위치" },
+  detailConstellation: { ru: "Созвездие", en: "Constellation", zh: "命之座", ja: "命ノ星座", ko: "운명의 자리" },
+  detailBirthday: { ru: "День рождения", en: "Birthday", zh: "生日", ja: "誕生日", ko: "생일" },
+  detailWeapon: { ru: "Оружие", en: "Weapon", zh: "武器", ja: "武器", ko: "무기" },
+  detailElement: { ru: "Стихия", en: "Element", zh: "元素", ja: "元素", ko: "원소" },
+  detailMap: { ru: "Карта места", en: "Location map", zh: "位置地图", ja: "場所のマップ", ko: "위치 지도" },
+  detailMapUnavailable: { ru: "Скриншот карты для этого босса не найден.", en: "No map screenshot was found for this boss.", zh: "未找到该首领的地图截图。", ja: "このボスのマップ画像は見つかりませんでした。", ko: "이 보스의 지도 이미지를 찾지 못했습니다." },
 };
 const getExtraLabel = (key, lang) => EXTRA_LABELS[key]?.[lang] || EXTRA_LABELS[key]?.en || "";
 const getLocale = (lang) => ({ ru: "ru-RU", en: "en-GB", zh: "zh-CN", ja: "ja-JP", ko: "ko-KR" }[lang] || "en-GB");
@@ -82,7 +96,7 @@ const HISTORY_LIMIT_OPTIONS = [30, 60, 90];
 
 const DEFAULT_CHARACTER_FILTERS = {
   search: "",
-  viewMode: "list",
+  viewMode: "cards",
   rarities: [],
   weapons: [],
   elements: [],
@@ -654,7 +668,7 @@ const normalizeCharacterFilters = (value) => {
 
   return {
     search: typeof source.search === "string" ? source.search : DEFAULT_CHARACTER_FILTERS.search,
-    viewMode: "list",
+    viewMode: source.viewMode === "list" || source.viewMode === "cards" ? source.viewMode : DEFAULT_CHARACTER_FILTERS.viewMode,
     rarities,
     weapons: uniqueStringArray(source.weapons),
     elements: uniqueStringArray(source.elements),
@@ -800,9 +814,12 @@ const matchesBossFilters = (item, filters, lang) => {
 const loadInitialState = () => {
   const settingsCookie = readCookieJson(COOKIE_KEYS.settings, {});
   const uiCookie = readCookieJson(COOKIE_KEYS.ui, {});
-  const characterFilters = normalizeCharacterFilters(
-    readCookieJson(COOKIE_KEYS.characterFilters, DEFAULT_CHARACTER_FILTERS)
-  );
+  const storedCharacterFilters = normalizeCharacterFilters(readCookieJson(COOKIE_KEYS.characterFilters, DEFAULT_CHARACTER_FILTERS));
+  const storedCharacterView = uiCookie.characterPoolViewMode;
+  const characterFilters = {
+    ...storedCharacterFilters,
+    viewMode: storedCharacterView === "list" || storedCharacterView === "cards" ? storedCharacterView : DEFAULT_CHARACTER_FILTERS.viewMode,
+  };
   const storedBossFilters = normalizeBossFilters(readCookieJson(COOKIE_KEYS.bossFilters, DEFAULT_BOSS_FILTERS));
   const storedBossView = uiCookie.bossPoolViewMode;
   const bossFilters = {
@@ -946,7 +963,7 @@ const ImageWithFallback = ({
   );
 };
 
-const CharacterOption = ({ item, lang, selected, onToggle, viewMode }) => {
+const CharacterOption = ({ item, lang, selected, onToggle, viewMode, onHoverDetails }) => {
   const rarityClass = item.rarity === 5 ? "rarity-5" : "rarity-4";
   const wrapperClass = viewMode === "cards" ? "option-card" : "option-list";
   const specialClass = isSpecialMagentaCharacter(item) ? "special-magenta" : "";
@@ -957,6 +974,11 @@ const CharacterOption = ({ item, lang, selected, onToggle, viewMode }) => {
       className={`option-item ${wrapperClass} ${rarityClass} ${specialClass} ${selected ? "is-selected" : ""}`}
       aria-pressed={selected}
       onClick={() => onToggle(item.id)}
+      onMouseEnter={(event) => onHoverDetails?.(item, "characters", event)}
+      onMouseMove={(event) => onHoverDetails?.(item, "characters", event)}
+      onMouseLeave={() => onHoverDetails?.(null)}
+      onFocus={(event) => onHoverDetails?.(item, "characters", event)}
+      onBlur={() => onHoverDetails?.(null)}
     >
       <ItemImage item={item} alt={getItemName(item, lang)} loading="eager" />
       <div className="option-content">
@@ -972,7 +994,7 @@ const CharacterOption = ({ item, lang, selected, onToggle, viewMode }) => {
   );
 };
 
-export const BossOption = ({ item, lang, selected, onToggle, viewMode, t }) => {
+export const BossOption = ({ item, lang, selected, onToggle, viewMode, t, onHoverDetails }) => {
   const wrapperClass = viewMode === "cards" ? "option-card boss-option" : "option-list";
 
   return (
@@ -981,6 +1003,11 @@ export const BossOption = ({ item, lang, selected, onToggle, viewMode, t }) => {
       className={`option-item ${wrapperClass} ${selected ? "is-selected" : ""}`}
       aria-pressed={selected}
       onClick={() => onToggle(item.id)}
+      onMouseEnter={(event) => onHoverDetails?.(item, "bosses", event)}
+      onMouseMove={(event) => onHoverDetails?.(item, "bosses", event)}
+      onMouseLeave={() => onHoverDetails?.(null)}
+      onFocus={(event) => onHoverDetails?.(item, "bosses", event)}
+      onBlur={() => onHoverDetails?.(null)}
     >
       <ImageWithFallback
         src={item.image}
@@ -999,6 +1026,120 @@ export const BossOption = ({ item, lang, selected, onToggle, viewMode, t }) => {
   );
 };
 
+const ItemHoverDetail = ({ target, point, lang }) => {
+  const detailRef = useRef(null);
+  const [details, setDetails] = useState(null);
+  const [mapFailed, setMapFailed] = useState(false);
+  const [size, setSize] = useState({ width: 340, height: 320 });
+  const item = target?.item;
+  const isBoss = target?.kind === "bosses";
+  const t = translations[lang] || translations.en;
+
+  useEffect(() => {
+    if (!item) return undefined;
+    setDetails(null);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      fetchHoverDetails(item, target.kind, lang, controller.signal)
+        .then((value) => setDetails(value || {}))
+        .catch(() => setDetails({}));
+    }, 140);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [item?.id, target?.kind, lang]);
+
+  useLayoutEffect(() => {
+    if (!detailRef.current) return;
+    const measure = () => {
+      const bounds = detailRef.current?.getBoundingClientRect();
+      if (bounds) setSize((previous) =>
+        Math.abs(previous.width - bounds.width) < 2 && Math.abs(previous.height - bounds.height) < 2
+          ? previous
+          : { width: bounds.width, height: bounds.height }
+      );
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    if (observer && detailRef.current) observer.observe(detailRef.current);
+    return () => observer?.disconnect();
+  }, [item?.id, details]);
+
+  useEffect(() => setMapFailed(false), [item?.id, details?.mapImage]);
+
+  if (!item || typeof document === "undefined") return null;
+
+  const viewportWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
+  const viewportHeight = typeof window === "undefined" ? 800 : window.innerHeight;
+  const gap = 17;
+  const margin = 12;
+  const placeRight = point.x + gap + size.width <= viewportWidth - margin;
+  const left = placeRight
+    ? Math.min(viewportWidth - size.width - margin, point.x + gap)
+    : Math.max(margin, point.x - size.width - gap);
+  const top = Math.max(margin, Math.min(point.y - 42, viewportHeight - size.height - margin));
+  const description = details?.description || item.description || "";
+  const rows = isBoss
+    ? [
+        [getExtraLabel("detailRegion", lang), details?.region],
+        [getExtraLabel("detailArea", lang), details?.area],
+        [getExtraLabel("detailSubarea", lang), details?.subarea],
+      ]
+    : [
+        [getExtraLabel("detailAffiliation", lang), details?.affiliation],
+        [getExtraLabel("detailRegion", lang), details?.region],
+        [getExtraLabel("detailConstellation", lang), details?.constellation],
+        [getExtraLabel("detailBirthday", lang), details?.birthday],
+        [getExtraLabel("detailWeapon", lang), details?.weapon || formatWeapon(item.weapon, lang)],
+        [getExtraLabel("detailElement", lang), details?.element || formatElement(item.element, lang)],
+      ].filter(([, value]) => value);
+
+  return createPortal(
+    <aside
+      ref={detailRef}
+      className={`item-hover-detail ${isBoss ? "is-boss-detail" : "is-character-detail"}`}
+      role="tooltip"
+      style={{ left, top, width: Math.min(360, viewportWidth - 24) }}
+    >
+      <div className="item-hover-detail-head">
+        <ItemImage item={item} alt={getItemName(item, lang)} loading="eager" />
+        <div>
+          <strong>{getItemName(item, lang)}</strong>
+          {details?.title ? <span>{details.title}</span> : null}
+          <div className="item-hover-badges">
+            {item.rarity ? <ItemBadge text={`${item.rarity}★`} /> : null}
+            {isBoss && item.group ? <ItemBadge text={formatBossType(item.group, lang)} /> : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="item-hover-detail-content">
+        {description ? <p className="item-hover-description">{description}</p> : <p className="item-hover-description is-muted">{getExtraLabel(details ? "detailUnavailable" : "detailLoading", lang)}</p>}
+        {rows.length ? (
+          <dl className="item-hover-meta">
+            {rows.map(([label, value]) => (
+              <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+            ))}
+          </dl>
+        ) : null}
+        {isBoss ? (
+          <div className="item-hover-map">
+            <strong>{getExtraLabel("detailMap", lang)}</strong>
+            {details?.mapImage && !mapFailed ? (
+              <img src={details.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} loading="lazy" onError={() => setMapFailed(true)} />
+            ) : (
+              <p className="is-muted">{details ? getExtraLabel("detailMapUnavailable", lang) : getExtraLabel("detailLoading", lang)}</p>
+            )}
+          </div>
+        ) : null}
+        {details?.sourceUrl ? <a className="item-hover-source" href={details.sourceUrl} target="_blank" rel="noreferrer">{t.sourceLabel}</a> : null}
+      </div>
+    </aside>,
+    document.body
+  );
+};
+
 const CharacterPoolPanel = ({
   t,
   lang,
@@ -1008,7 +1149,10 @@ const CharacterPoolPanel = ({
   selectedIds,
   setSelectedIds,
   onBack,
+  isMobileLayout,
+  onHoverDetails,
 }) => {
+  const viewMode = isMobileLayout ? "list" : activeFilters.viewMode;
   const visibleItems = useMemo(
     () => sortCharactersNewestFirst(allItems.filter((item) => matchesCharacterFilters(item, activeFilters, lang))),
     [allItems, activeFilters, lang]
@@ -1163,6 +1307,30 @@ const CharacterPoolPanel = ({
         </details>
         </div>
 
+        {!isMobileLayout ? (
+          <div className="view-toggle pool-view-toggle">
+            <span>{t.view}</span>
+            <div className="toggle-row">
+              <button
+                type="button"
+                className={viewMode === "cards" ? "is-active" : ""}
+                aria-pressed={viewMode === "cards"}
+                onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "cards" }))}
+              >
+                {t.viewCards}
+              </button>
+              <button
+                type="button"
+                className={viewMode === "list" ? "is-active" : ""}
+                aria-pressed={viewMode === "list"}
+                onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "list" }))}
+              >
+                {t.viewList}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="filter-actions pool-selection-actions">
           <button type="button" className="btn-secondary" onClick={selectVisible}>{t.selectAll}</button>
           <button type="button" className="btn-secondary" onClick={deselectVisible}>{t.deselectAll}</button>
@@ -1175,7 +1343,7 @@ const CharacterPoolPanel = ({
 
         {visibleItems.length ? (
           <div className="options-scroll">
-            <div className="options-grid is-list">
+            <div className={`options-grid ${viewMode === "list" ? "is-list" : "is-cards"}`}>
               {visibleItems.map((item) => (
                 <CharacterOption
                   key={item.id}
@@ -1183,7 +1351,8 @@ const CharacterPoolPanel = ({
                   lang={lang}
                   selected={selectedIds.has(item.id)}
                   onToggle={toggleSelection}
-                  viewMode="list"
+                  viewMode={viewMode}
+                  onHoverDetails={isMobileLayout ? undefined : onHoverDetails}
                 />
               ))}
             </div>
@@ -1206,6 +1375,7 @@ const BossPoolPanel = ({
   setSelectedIds,
   onBack,
   isMobileLayout,
+  onHoverDetails,
 }) => {
   const viewMode = isMobileLayout ? "list" : activeFilters.viewMode;
   const visibleItems = useMemo(
@@ -1367,6 +1537,7 @@ const BossPoolPanel = ({
                   onToggle={toggleSelection}
                   viewMode={viewMode}
                   t={t}
+                  onHoverDetails={isMobileLayout ? undefined : onHoverDetails}
                 />
               ))}
             </div>
@@ -1844,6 +2015,8 @@ const RouletteEngine = ({
   onRollComplete,
   onTick,
   externalRollTrigger = 0,
+  onHoverDetails,
+  detailType = "characters",
 }) => {
   const [laneCount, setLaneCount] = useState(maxLanes);
   const [isEditingLaneCount, setIsEditingLaneCount] = useState(false);
@@ -1853,14 +2026,11 @@ const RouletteEngine = ({
   const [wheelResults, setWheelResults] = useState([]);
   const [wheelCountdown, setWheelCountdown] = useState(null);
   const [wheelOrderIds, setWheelOrderIds] = useState([]);
-  const [hoveredWheelItem, setHoveredWheelItem] = useState(null);
-  const [wheelHoverPosition, setWheelHoverPosition] = useState({ left: 12, top: 12 });
   const viewportRefs = useRef([]);
   const trackRefs = useRef([]);
   const wheelRefs = useRef([]);
   const reelPositionRefs = useRef(Array.from({ length: maxLanes }, () => 0));
   const wheelRotationRefs = useRef(Array.from({ length: maxLanes }, () => 0));
-  const wheelHoverPositionRef = useRef({ left: 12, top: 12 });
   const frameRef = useRef(0);
   const sessionRef = useRef(0);
   const rollingRef = useRef(false);
@@ -1917,25 +2087,8 @@ const RouletteEngine = ({
   }, []);
 
   const showWheelItem = useCallback((item, event) => {
-    setHoveredWheelItem(item);
-    const cursorX = Number(event?.clientX) || window.innerWidth / 2;
-    const cursorY = Number(event?.clientY) || window.innerHeight / 2;
-    const cardWidth = Math.min(270, window.innerWidth - 24);
-    const gapFromCursor = 16;
-    const leftOfCursor = cursorX - cardWidth - gapFromCursor;
-    const left = leftOfCursor >= 12
-      ? leftOfCursor
-      : Math.min(window.innerWidth - cardWidth - 12, cursorX + gapFromCursor);
-    const position = {
-      left: Math.max(12, left),
-      top: Math.max(12, Math.min(window.innerHeight - 112, cursorY - 48)),
-    };
-    const previous = wheelHoverPositionRef.current;
-    if (Math.abs(position.left - previous.left) >= 14 || Math.abs(position.top - previous.top) >= 14) {
-      wheelHoverPositionRef.current = position;
-      setWheelHoverPosition(position);
-    }
-  }, []);
+    onHoverDetails?.(item, detailType, event);
+  }, [detailType, onHoverDetails]);
 
   useEffect(() => {
     setLaneCount((current) => Math.max(1, Math.min(maxLanes, current)));
@@ -1995,8 +2148,8 @@ const RouletteEngine = ({
     const shuffled = shuffleArray(wheelItems);
     if (shuffled.every((item, index) => item.id === wheelItems[index].id)) shuffled.unshift(shuffled.pop());
     setWheelOrderIds(shuffled.map((item) => item.id));
-    setHoveredWheelItem(null);
-  }, [wheelItems]);
+    onHoverDetails?.(null);
+  }, [onHoverDetails, wheelItems]);
 
   const roll = useCallback(() => {
     if (!canRoll || rollingRef.current) return;
@@ -2014,7 +2167,7 @@ const RouletteEngine = ({
     setLastWinners([]);
     if (mode === "wheel") setWheelResults([]);
     setWheelCountdown(null);
-    setHoveredWheelItem(null);
+    onHoverDetails?.(null);
     completedWheelStepRef.current = -1;
     const durationPerStep = rollDurationMs;
     if (mode === "wheel") {
@@ -2050,7 +2203,7 @@ const RouletteEngine = ({
     });
     const plan = { id, mode, lanes, durationPerStep, accelerationDuration: ROLL_ACCELERATION_MS, decelerationDuration: ROLL_DECELERATION_MS };
     setSpinPlan(plan);
-  }, [canRoll, cardHeight, gap, mode, rollDurationMs, safeLaneCount, setSelectedItem, uniqueItems, wheelItems]);
+  }, [canRoll, cardHeight, gap, mode, onHoverDetails, rollDurationMs, safeLaneCount, setSelectedItem, uniqueItems, wheelItems]);
 
   useEffect(() => {
     if (!spinPlan) return undefined;
@@ -2237,7 +2390,7 @@ const RouletteEngine = ({
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
                       {wheelItems.map((item, index) => (
-                        <path key={item.id} d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} onMouseEnter={(event) => showWheelItem(item, event)} onMouseMove={(event) => showWheelItem(item, event)} onMouseLeave={() => setHoveredWheelItem(null)} onFocus={(event) => showWheelItem(item, event)} onBlur={() => setHoveredWheelItem(null)} tabIndex={0} aria-label={getItemName(item, lang)}>
+                        <path key={item.id} d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} onMouseEnter={(event) => showWheelItem(item, event)} onMouseMove={(event) => showWheelItem(item, event)} onMouseLeave={() => onHoverDetails?.(null)} onFocus={(event) => showWheelItem(item, event)} onBlur={() => onHoverDetails?.(null)} tabIndex={0} aria-label={getItemName(item, lang)}>
                           <title>{getItemName(item, lang)}</title>
                         </path>
                       ))}
@@ -2246,12 +2399,6 @@ const RouletteEngine = ({
                   <div className="wheel-center" aria-hidden="true"><span>✦</span></div>
                   {wheelCountdown !== null ? <div className="wheel-countdown" aria-live="polite">{wheelCountdown}</div> : null}
                 </div>
-                {hoveredWheelItem ? (
-                  <div className="wheel-hover-card" role="status" style={wheelHoverPosition}>
-                    <ItemImage item={hoveredWheelItem} alt="" loading="eager" />
-                    <div><strong>{getItemName(hoveredWheelItem, lang)}</strong><p>{hoveredWheelItem.description || `${ELEMENT_LABELS[hoveredWheelItem.element]?.[lang] || ""}${hoveredWheelItem.rarity ? ` · ${hoveredWheelItem.rarity}★` : ""}`}</p></div>
-                  </div>
-                ) : null}
               </div>
               <aside className="wheel-results" aria-label={getExtraLabel("wheelResults", lang)}>
                 <h3>{getExtraLabel("wheelResults", lang)}</h3>
@@ -2366,6 +2513,8 @@ function App() {
   const [splashResult, setSplashResult] = useState(null);
   const [characterRerollTrigger, setCharacterRerollTrigger] = useState(0);
   const [bossRerollTrigger, setBossRerollTrigger] = useState(0);
+  const [hoverTarget, setHoverTarget] = useState(null);
+  const [hoverPoint, setHoverPoint] = useState({ x: 24, y: 24 });
 
   const [characterFilters, setCharacterFilters] = useState(boot.characterFilters);
   const [bossFilters, setBossFilters] = useState(boot.bossFilters);
@@ -2380,8 +2529,31 @@ function App() {
   const hasPersistedBossSelectionRef = useRef(boot.hasBossSelection);
   const audioContextRef = useRef(null);
   const loadControllerRef = useRef(null);
+  const hoverFrameRef = useRef(0);
+  const pendingHoverPointRef = useRef({ x: 24, y: 24 });
 
   const t = translations[lang] || translations.en;
+  const handleHoverDetails = useCallback((item, kind, event) => {
+    if (!item) {
+      setHoverTarget(null);
+      return;
+    }
+    setHoverTarget((previous) => previous?.kind === kind && previous.item.id === item.id ? previous : { item, kind });
+    let x = Number(event?.clientX);
+    let y = Number(event?.clientY);
+    if ((!x && !y) && event?.currentTarget?.getBoundingClientRect) {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      x = bounds.left + bounds.width / 2;
+      y = bounds.top + Math.min(40, bounds.height / 2);
+    }
+    pendingHoverPointRef.current = { x: Number.isFinite(x) ? x : 24, y: Number.isFinite(y) ? y : 24 };
+    if (!hoverFrameRef.current && typeof window !== "undefined") {
+      hoverFrameRef.current = window.requestAnimationFrame(() => {
+        hoverFrameRef.current = 0;
+        setHoverPoint(pendingHoverPointRef.current);
+      });
+    }
+  }, []);
   const changeLanguage = (nextLanguage) => {
     languageModeRef.current = "manual";
     setLanguageMode("manual");
@@ -2874,9 +3046,10 @@ function App() {
       activeSection,
       isSidebarCollapsed,
       rouletteMode,
+      characterPoolViewMode: characterFilters.viewMode,
       bossPoolViewMode: bossFilters.viewMode,
     });
-  }, [activeSection, isSidebarCollapsed, rouletteMode, bossFilters.viewMode]);
+  }, [activeSection, isSidebarCollapsed, rouletteMode, characterFilters.viewMode, bossFilters.viewMode]);
 
   useEffect(() => {
     setCookieJson(COOKIE_KEYS.characterFilters, characterFilters);
@@ -3001,6 +3174,8 @@ function App() {
             onRollComplete={isCharacterStage ? handleCharacterRollComplete : handleBossRollComplete}
             onTick={playRollTickSound}
             externalRollTrigger={isCharacterStage ? characterRerollTrigger : bossRerollTrigger}
+            onHoverDetails={handleHoverDetails}
+            detailType={stage}
           />
         )}
 
@@ -3221,6 +3396,8 @@ function App() {
                 selectedIds={selectedCharacterIds}
                 setSelectedIds={setSelectedCharacterIds}
                 onBack={() => setActiveSection("characters")}
+                isMobileLayout={isMobileLayout}
+                onHoverDetails={handleHoverDetails}
               />
             )}
             {activeSection === "bosses" && renderStage("bosses")}
@@ -3235,6 +3412,7 @@ function App() {
                 setSelectedIds={setSelectedBossIds}
                 onBack={() => setActiveSection("bosses")}
                 isMobileLayout={isMobileLayout}
+                onHoverDetails={handleHoverDetails}
               />
             )}
             {activeSection === "history" && (
@@ -3275,6 +3453,7 @@ function App() {
         onReroll={rerollFromSplash}
         effectsEnabled={settings.splashEffects}
       />
+      <ItemHoverDetail target={hoverTarget} point={hoverPoint} lang={lang} />
     </div>
   );
 }

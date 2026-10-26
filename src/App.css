@@ -2357,6 +2357,43 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
   animation: teyvat-panel-enter .42s cubic-bezier(.2,.7,.25,1) both;
 }
 .settings-note { margin: 8px 0 0; color: var(--text-muted); font-size: .78rem; line-height: 1.5; }
+.item-hover-detail {
+  position: fixed;
+  z-index: 1200;
+  max-height: min(72vh, 680px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid rgba(225, 201, 150, .78);
+  border-radius: 3px;
+  color: #f1eee4;
+  background: rgba(17, 31, 40, .97);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .48);
+  backdrop-filter: blur(14px) saturate(1.12);
+  -webkit-backdrop-filter: blur(14px) saturate(1.12);
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  transition: left 120ms cubic-bezier(.2,.7,.25,1), top 120ms cubic-bezier(.2,.7,.25,1), opacity 140ms ease;
+  animation: hover-detail-enter 160ms ease both;
+}
+.item-hover-detail-head { display: grid; grid-template-columns: 66px minmax(0, 1fr); align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(226, 202, 142, .24); }
+.item-hover-detail-head > img, .item-hover-detail-head > .traveler-duo-portrait, .item-hover-detail-head > .traveler-pair-image, .item-hover-detail-head > .image-fallback { width: 66px; height: 66px; border: 1px solid rgba(225, 201, 150, .36); border-radius: 2px; object-fit: cover; }
+.item-hover-detail-head > div { display: grid; gap: 4px; min-width: 0; }
+.item-hover-detail-head strong { color: #f4e8c9; font-size: .92rem; line-height: 1.3; }
+.item-hover-detail-head span { color: #bfcac7; font-size: .75rem; }
+.item-hover-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.item-hover-detail-content { display: grid; gap: 9px; padding-top: 9px; }
+.item-hover-description { margin: 0; color: #d2d9d5; font-size: .77rem; line-height: 1.5; white-space: pre-line; }
+.item-hover-description.is-muted, .item-hover-map .is-muted { color: #9daba9; }
+.item-hover-meta { display: grid; gap: 5px; margin: 0; }
+.item-hover-meta > div { display: grid; grid-template-columns: minmax(72px, .7fr) minmax(0, 1.3fr); gap: 8px; font-size: .73rem; line-height: 1.35; }
+.item-hover-meta dt { color: #9daba9; }
+.item-hover-meta dd { margin: 0; color: #ece5d3; text-align: right; }
+.item-hover-map { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid rgba(226, 202, 142, .24); }
+.item-hover-map > strong { color: #e8d6aa; font-size: .75rem; }
+.item-hover-map img { display: block; width: 100%; max-height: 220px; object-fit: contain; border: 1px solid rgba(225, 201, 150, .25); background: rgba(7, 15, 21, .78); }
+.item-hover-map > p { margin: 0; font-size: .72rem; line-height: 1.4; }
+.item-hover-source { justify-self: end; color: #e5cd92; font-size: .7rem; text-decoration: underline; pointer-events: auto; }
+@keyframes hover-detail-enter { from { opacity: 0; transform: translate3d(0, 5px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 .menu-item-icon { display: inline-grid; place-items: center; flex: 0 0 23px; }
 .menu-item-icon svg { width: 20px; height: 20px; }
 .menu-item, .btn-primary, .btn-secondary, .toggle-row button, .option-item, .choice-card, .stat-card, .dashboard-stat-card {
@@ -2576,6 +2613,12 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .roulette-refresh-button:disabled { opacity: .45; cursor: default; }
 .roulette-engine .roulette-toolbar { justify-content: center; }
 .roulette-engine .lane-remove-button { left: 7px; right: auto; z-index: 9; }
+.app-shell.sidebar-collapsed .sidebar-top { justify-content: center; align-items: center; }
+.app-shell.sidebar-collapsed .sidebar-top .brand { display: none; }
+.app-shell.sidebar-collapsed .sidebar-toggle { display: grid; place-items: center; width: 42px; min-width: 42px; height: 42px; min-height: 42px; padding: 0; border: 1px solid rgba(218, 193, 142, .45); border-radius: 2px; }
+@media (max-width: 900px) {
+  .item-hover-detail { display: none; }
+}
 @media (max-width: 680px) {
   .character-pool-panel .filter-toolbar { flex-wrap: wrap; }
   .character-pool-panel .filter-toolbar > .search-box { flex: 1 1 calc(100% - 54px); }
