@@ -7,7 +7,7 @@ const GITHUB_MONSTER_ICON_BASE = "https://raw.githubusercontent.com/CMHopeSunshi
 const DEFAULT_HEADERS = {
   Accept: "application/json",
 };
-const DATA_CACHE_PREFIX = "genshin-random-lab:data:v5:";
+const DATA_CACHE_PREFIX = "genshin-random-lab:data:v6:";
 const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
 
 const LOCAL_LEGEND_PAGE = "Local Legend";
@@ -712,10 +712,11 @@ export const fetchGenshinData = async ({ signal } = {}) => {
     const fallbackImage = getImageLookupTitles(boss)
       .map((title) => bossImages.get(keyify(title)))
       .find(Boolean) || bossImages.get(keyify(boss.nameRu)) || "";
-    const image = boss.image || fallbackImage;
-    const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), fallbackImage].filter((candidate) => candidate !== image));
-    const splash = boss.splash || image;
-    const splashFallbacks = uniqueUrls([...(boss.splashFallbacks || []), fallbackImage].filter((candidate) => candidate !== splash));
+    // Prefer the wiki's full boss artwork over API icon filenames, which are often absent from mirrors.
+    const image = fallbackImage || boss.image;
+    const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), boss.image, fallbackImage].filter((candidate) => candidate !== image));
+    const splash = fallbackImage || boss.splash || image;
+    const splashFallbacks = uniqueUrls([...(boss.splashFallbacks || []), boss.splash, fallbackImage].filter((candidate) => candidate && candidate !== splash));
     return { ...boss, image, imageFallbacks, splash, splashFallbacks };
   });
   const bossById = new Map(resolvedBossPool.map((boss) => [boss.id, boss]));

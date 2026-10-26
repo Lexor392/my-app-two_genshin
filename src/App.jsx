@@ -52,6 +52,7 @@ const EXTRA_LABELS = {
   poolFilters: { ru: "Фильтры", en: "Filters", zh: "筛选", ja: "フィルター", ko: "필터" },
   shuffleWheel: { ru: "Перемешать сектора колеса", en: "Shuffle wheel segments", zh: "打乱转盘扇区", ja: "ホイールの区画をシャッフル", ko: "휠 구간 섞기" },
   rouletteWheel: { ru: "Колесо", en: "Wheel", zh: "幸运转盘", ja: "ルーレット", ko: "룰렛 휠" },
+  specialCharacters: { ru: "Особые персонажи", en: "Special characters", zh: "特殊角色", ja: "特別なキャラクター", ko: "특수 캐릭터" },
   wheelResults: { ru: "Выпавшие персонажи", en: "Selected characters", zh: "抽取结果", ja: "選ばれたキャラクター", ko: "선택된 캐릭터" },
   needLanes: { ru: "В пуле должно быть не менее {count} разных персонажей для {count} рулеток.", en: "Add at least {count} different characters to spin {count} lanes.", zh: "角色池至少需要 {count} 名不同角色才能转动 {count} 个转盘。", ja: "{count} 個のルーレットを回すには、異なるキャラクターが {count} 人以上必要です。", ko: "룰렛 {count}개를 돌리려면 서로 다른 캐릭터가 {count}명 이상 필요합니다." },
   catalogUpdated: { ru: "Каталог обновлён", en: "Catalog updated", zh: "目录更新", ja: "カタログ更新", ko: "목록 업데이트" },
@@ -84,6 +85,7 @@ const DEFAULT_CHARACTER_FILTERS = {
   rarities: [],
   weapons: [],
   elements: [],
+  includeSpecial: false,
 };
 
 const DEFAULT_BOSS_FILTERS = {
@@ -177,6 +179,8 @@ const SPECIAL_MAGENTA_CHARACTER_IDS = new Set(["aloy", "playerboy", "playergirl"
 const SPECIAL_MAGENTA_CHARACTER_TOKENS = [
   "манекен м",
   "манекен ж",
+  "манекен (м)",
+  "манекен (ж)",
   "элой",
   "aloy",
   "male traveler",
@@ -654,6 +658,7 @@ const normalizeCharacterFilters = (value) => {
     rarities,
     weapons: uniqueStringArray(source.weapons),
     elements: uniqueStringArray(source.elements),
+    includeSpecial: source.includeSpecial === true,
   };
 };
 
@@ -770,6 +775,9 @@ const getBossNameLength = (value) => {
 };
 
 const matchesCharacterFilters = (item, filters, lang) => {
+  if (!filters.includeSpecial && isSpecialMagentaCharacter(item)) {
+    return false;
+  }
   if (filters.rarities.length && !filters.rarities.includes(item.rarity)) {
     return false;
   }
@@ -1061,7 +1069,7 @@ const CharacterPoolPanel = ({
 
   const weaponKeys = Object.keys(WEAPON_LABELS);
   const elementKeys = Object.keys(ELEMENT_LABELS).filter((key) => key !== "NONE");
-  const activeFilterCount = Number(activeFilters.rarities.length > 0) + Number(activeFilters.weapons.length > 0) + Number(activeFilters.elements.length > 0);
+  const activeFilterCount = Number(activeFilters.rarities.length > 0) + Number(activeFilters.weapons.length > 0) + Number(activeFilters.elements.length > 0) + Number(activeFilters.includeSpecial);
 
   return (
     <section className="stage-panel character-pool-panel" id="character-pool">
@@ -1124,6 +1132,17 @@ const CharacterPoolPanel = ({
           </summary>
           <div className="pool-filter-content">
         <div className="filter-groups">
+          <div className="filter-group">
+            <p>{getExtraLabel("specialCharacters", lang)}</p>
+            <div className="chip-row">
+              <FilterChip
+                label={getExtraLabel("specialCharacters", lang)}
+                active={activeFilters.includeSpecial}
+                onClick={() => setActiveFilters((prev) => ({ ...prev, includeSpecial: !prev.includeSpecial }))}
+              />
+            </div>
+          </div>
+
           <div className="filter-group">
             <p>{t.rarity}</p>
             <div className="chip-row">
@@ -1249,7 +1268,6 @@ const BossPoolPanel = ({
   };
 
   const selectVisible = () => {
-    rememberScrollTop();
     setSelectedIds((prev) => {
       const next = new Set(prev);
       visibleItems.forEach((item) => next.add(item.id));
@@ -1258,7 +1276,6 @@ const BossPoolPanel = ({
   };
 
   const deselectVisible = () => {
-    rememberScrollTop();
     const visibleIds = new Set(visibleItems.map((item) => item.id));
     setSelectedIds((prev) => new Set([...prev].filter((id) => !visibleIds.has(id))));
   };
@@ -2535,7 +2552,8 @@ function App() {
       setData(readyPayload);
 
       setSelectedCharacterIds((prev) => {
-        const availableIds = new Set(readyPayload.characters.map((item) => item.id));
+        const availableCharacters = readyPayload.characters.filter((item) => boot.characterFilters.includeSpecial || !isSpecialMagentaCharacter(item));
+        const availableIds = new Set(availableCharacters.map((item) => item.id));
         if (!hasPersistedCharacterSelectionRef.current) {
           return availableIds;
         }
