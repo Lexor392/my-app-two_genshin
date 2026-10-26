@@ -7,7 +7,7 @@ const GITHUB_MONSTER_ICON_BASE = "https://raw.githubusercontent.com/CMHopeSunshi
 const DEFAULT_HEADERS = {
   Accept: "application/json",
 };
-const DATA_CACHE_PREFIX = "genshin-random-lab:data:v3:";
+const DATA_CACHE_PREFIX = "genshin-random-lab:data:v5:";
 const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
 
 const LOCAL_LEGEND_PAGE = "Local Legend";
@@ -194,8 +194,39 @@ const buildMihoyoIcon = (filename) => filename
   ? `https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/${String(filename).replace(/\.(png|webp)$/i, "")}.png`
   : "";
 export const repairWikiImageUrl = (url = "") =>
-  url.replace("static.wikia.nocookie.net/gensin-impact/", "static.wikia.nocookie.net/genshin-impact/");
+  url
+    .replace("static.wikia.nocookie.net/genshin-impact/", "static.wikia.nocookie.net/gensin-impact/")
+    .replace(/\/revision\/latest\/scale-to-width-down\/\d+(?=\?|$)/i, "/revision/latest");
 const uniqueUrls = (list) => Array.from(new Set(list.filter(Boolean)));
+
+const BOSS_IMAGE_LOOKUP_TITLES = {
+  "Il Dottore": ["Heretic of the False Moon", "The Doctor (Quest Enemy)"],
+  "Lupus Boreas, Dominator of Wolves": ["Boreas"],
+  "Shouki no Kami, the Prodigal": ["Everlasting Lord of Arcane Wisdom"],
+  Stormterror: ["Dvalin"],
+  "The Doctor": ["Heretic of the False Moon", "The Doctor (Quest Enemy)"],
+  "Experimental Field Generator": ["Prototype Cal. Breguet"],
+  "Gluttonous Yumkasaur Mountain King": ["Kongamato"],
+  "Goldflame Qucusaur Tyrant": ["Holawaqa Ngoubou"],
+  "Legatus Golem": ['"Statue of Marble and Brass"'],
+  "Tenebrous Papilla: Type I": ["Tenebrous Papilla"],
+  "Watcher: Fallen Vigil": ["The Open-Eyed"],
+  "Battlegoat and Ironclaw": ['"Battlegoat" and "Ironclaw"'],
+  "He Never Dies": ['"He Never Dies"'],
+  "The Homesick Lone Wolf": ['"The Homesick Lone Wolf"'],
+};
+const BOSS_IMAGE_FALLBACKS = {
+  "Ironbeard": ["https://static.wikia.nocookie.net/gensin-impact/images/4/40/Qucusaurus_Warrior_Heartstar_Hammer_Icon.png/revision/latest?cb=20241120023203"],
+  "Liam": ["https://static.wikia.nocookie.net/gensin-impact/images/9/91/Liam_Icon.png/revision/latest?cb=20260214054408"],
+  "Super-Heavy Landrover: Mechanized Fortress": ["https://static.wikia.nocookie.net/gensin-impact/images/2/23/Super-Heavy_Landrover_Mechanized_Fortress_Icon.png/revision/latest?cb=20251203041232"],
+  Mushteshir: ["https://static.wikia.nocookie.net/gensin-impact/images/4/4a/Mushteshir_Icon.png/revision/latest?cb=20260704072424"],
+};
+
+const getImageLookupTitles = (item) => uniqueUrls([
+  item.imageLookupTitle,
+  ...(item.imageLookupTitles || []),
+  item.name,
+]);
 
 const getNameMap = (indexData) => indexData?.namemap || {};
 const getNameFromMap = (nameMap, id, fallback) => nameMap?.[id] || fallback;
@@ -267,7 +298,7 @@ const getCharacterSplashCandidates = (entry = {}) =>
     buildHakushPng(entry.filename_icon),
     entry.cover1,
     entry.cover2,
-    entry.image,
+    repairWikiImageUrl(entry.image),
     entry.portrait,
     entry.mihoyo_sideIcon,
     entry.hoyowiki_sideIcon,
@@ -283,7 +314,7 @@ export const getEnemyImageCandidates = (entry = {}) =>
     buildMonsterIcon(AMBR_UI_BASE, entry.filename_investigationIcon, "png"),
     buildMonsterIcon(HAKUSH_UI_BASE, entry.filename_icon, "webp"),
     buildMonsterIcon(HAKUSH_UI_BASE, entry.filename_investigationIcon, "webp"),
-    entry.image,
+    repairWikiImageUrl(entry.image),
     entry.mihoyo_icon,
     entry.hoyowiki_icon,
     repairWikiImageUrl(entry.portrait),
@@ -291,7 +322,7 @@ export const getEnemyImageCandidates = (entry = {}) =>
 
 const getEnemySplashCandidates = (entry = {}) =>
   uniqueUrls([
-    entry.image,
+    repairWikiImageUrl(entry.image),
     entry.mihoyo_icon,
     entry.hoyowiki_icon,
     repairWikiImageUrl(entry.portrait),
@@ -299,7 +330,7 @@ const getEnemySplashCandidates = (entry = {}) =>
   ]);
 
 const fetchPageImageMap = async (items, signal) => {
-  const titles = Array.from(new Set(items.flatMap((item) => [item.imageLookupTitle, item.name]).filter(Boolean)));
+  const titles = Array.from(new Set(items.flatMap(getImageLookupTitles).filter(Boolean)));
   const titleMap = new Map();
   const chunkSize = 45;
 
@@ -500,8 +531,9 @@ const mapBossList = async (ids, nameMaps, imageMap, group, signal) => {
       nameZh: getNameFromMap(nameMaps.zh, id, name),
       nameJa: getNameFromMap(nameMaps.ja, id, name),
       nameKo: getNameFromMap(nameMaps.ko, id, name),
+      imageLookupTitles: BOSS_IMAGE_LOOKUP_TITLES[name] || [],
       image,
-      imageFallbacks: imageCandidates.slice(1),
+      imageFallbacks: uniqueUrls([...imageCandidates.slice(1), ...(BOSS_IMAGE_FALLBACKS[name] || [])]),
       splash: splashCandidates[0] || image,
       splashFallbacks: splashCandidates.slice(1),
     };
@@ -545,6 +577,8 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
     const enemyEntry = enemyIdCandidate ? enemyImageMap[enemyIdCandidate] || {} : {};
     const enemyCandidates = getEnemyImageCandidates(enemyEntry);
     const wikiImage = "";
+    const imageLookupTitles = BOSS_IMAGE_LOOKUP_TITLES[legend.name] || [];
+    const legendImageFallbacks = BOSS_IMAGE_FALLBACKS[legend.name] || [];
 
     if (enemyIdCandidate) {
       const enemySplashCandidates = getEnemySplashCandidates(enemyEntry);
@@ -556,6 +590,7 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
         id: `local-legend-${enemyIdCandidate}`,
         slug: enemyIdCandidate,
         imageLookupTitle: getNameFromMap(enemyNameMaps.en, enemyIdCandidate, legend.name),
+        imageLookupTitles,
         group: "localLegend",
         name,
         nameRu:
@@ -567,26 +602,28 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
         nameKo:
           getNameFromMap(enemyNameMaps.ko, enemyIdCandidate, "") || getLocalizedLegendName(name, "ko") || name,
         image,
-        imageFallbacks: uniqueUrls([...enemyCandidates.slice(1), wikiImage && wikiImage !== image ? wikiImage : ""]),
+        imageFallbacks: uniqueUrls([...enemyCandidates.slice(1), wikiImage && wikiImage !== image ? wikiImage : "", ...legendImageFallbacks]),
         splash: enemySplashCandidates[0] || image,
         splashFallbacks: enemySplashCandidates.slice(1),
       };
     }
 
     const name = legend.name;
+    const imageFallbacks = legendImageFallbacks;
     return {
       id: `local-legend-${toSlug(name)}`,
       slug: toSlug(name),
       imageLookupTitle: name,
+      imageLookupTitles,
       group: "localLegend",
       name,
       nameRu: getLocalizedLegendName(name, "ru") || name,
       nameZh: getLocalizedLegendName(name, "zh") || name,
       nameJa: getLocalizedLegendName(name, "ja") || name,
       nameKo: getLocalizedLegendName(name, "ko") || name,
-      image: wikiImage,
-      imageFallbacks: [],
-      splash: wikiImage,
+      image: wikiImage || imageFallbacks[0] || "",
+      imageFallbacks,
+      splash: wikiImage || imageFallbacks[0] || "",
       splashFallbacks: [],
     };
   });
@@ -672,7 +709,9 @@ export const fetchGenshinData = async ({ signal } = {}) => {
     // Per-item Fandom lookup is retried during the initial image preparation.
   }
   const resolvedBossPool = bossPool.map((boss) => {
-    const fallbackImage = bossImages.get(keyify(boss.imageLookupTitle)) || bossImages.get(keyify(boss.name)) || bossImages.get(keyify(boss.nameRu)) || "";
+    const fallbackImage = getImageLookupTitles(boss)
+      .map((title) => bossImages.get(keyify(title)))
+      .find(Boolean) || bossImages.get(keyify(boss.nameRu)) || "";
     const image = boss.image || fallbackImage;
     const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), fallbackImage].filter((candidate) => candidate !== image));
     const splash = boss.splash || image;

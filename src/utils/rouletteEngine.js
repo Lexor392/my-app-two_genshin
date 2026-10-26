@@ -1,6 +1,6 @@
 export const ROULETTE_MODES = ["vertical", "horizontal", "wheel"];
-export const ROULETTE_WINNER_INDEX = 52;
-export const ROULETTE_SEQUENCE_LENGTH = 72;
+export const ROULETTE_WINNER_INDEX = 112;
+export const ROULETTE_SEQUENCE_LENGTH = 160;
 export const ROULETTE_TRAVEL_CARDS = 40;
 
 export const pickUniqueWinners = (items, count, random = Math.random) => {
@@ -41,6 +41,18 @@ export const getSequentialLaneDelay = (laneIndex, accelerationDurationMs, cruise
     + Math.max(0, Number(cruiseDurationMs) || 0)
     + Math.max(0, Number(decelerationDurationMs) || 0)
   );
+
+export const getRollDistanceRatio = (cruiseDurationMs, accelerationDurationMs, decelerationDurationMs, baseCruiseDurationMs = 5000) => {
+  const acceleration = Math.max(0, Number(accelerationDurationMs) || 0);
+  const deceleration = Math.max(0, Number(decelerationDurationMs) || 0);
+  const cruise = Math.max(0, Number(cruiseDurationMs) || 0);
+  const baseCruise = Math.max(0, Number(baseCruiseDurationMs) || 0);
+  const baseDistance = baseCruise + (acceleration + deceleration) / 2;
+  return baseDistance ? (cruise + (acceleration + deceleration) / 2) / baseDistance : 1;
+};
+
+export const getRollTravelCardCount = (cruiseDurationMs, accelerationDurationMs, decelerationDurationMs, baseCardCount = ROULETTE_TRAVEL_CARDS) =>
+  Math.max(1, Math.round(baseCardCount * getRollDistanceRatio(cruiseDurationMs, accelerationDurationMs, decelerationDurationMs)));
 
 export const getWheelTargetRotation = (segmentIndex, segmentCount, currentRotation, fullTurns = 6) => {
   if (!segmentCount) return currentRotation;

@@ -7,6 +7,8 @@ import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import {
   buildRollSequence,
   getCenteredReelPosition,
+  getRollDistanceRatio,
+  getRollTravelCardCount,
   getSequentialLaneDelay,
   getRollProgress,
   getWheelTargetRotation,
@@ -1913,6 +1915,9 @@ const RouletteEngine = ({
   const sessionRef = useRef(0);
   const rollingRef = useRef(false);
   const externalTriggerRef = useRef(0);
+  const animationSessionRef = useRef(null);
+  const animationStartTimeRef = useRef(null);
+  const animationPreparedSessionRef = useRef(null);
   const lastTickRefs = useRef(Array.from({ length: maxLanes }, () => null));
   const completedWheelStepRef = useRef(-1);
 
@@ -2050,6 +2055,9 @@ const RouletteEngine = ({
 
     const id = sessionRef.current + 1;
     sessionRef.current = id;
+    animationSessionRef.current = id;
+    animationStartTimeRef.current = null;
+    animationPreparedSessionRef.current = null;
     rollingRef.current = true;
     setIsRolling(true);
     setSelectedItem(null);
@@ -2065,7 +2073,8 @@ const RouletteEngine = ({
       const steps = winners.map((winner) => {
         const segmentIndex = wheelItems.findIndex((item) => item.id === winner.id);
         const fromRotation = rotation;
-        rotation = getWheelTargetRotation(segmentIndex, uniqueItems.length, rotation, 6);
+        const turns = 6 * getRollDistanceRatio(durationPerStep, ROLL_ACCELERATION_MS, ROLL_DECELERATION_MS);
+        rotation = getWheelTargetRotation(segmentIndex, wheelItems.length, rotation, turns);
         return { winner, segmentIndex, fromRotation, toRotation: rotation };
       });
       setSpinPlan({ id, mode, steps, durationPerStep, accelerationDuration: ROLL_ACCELERATION_MS, decelerationDuration: ROLL_DECELERATION_MS, countdownDuration: 3000, stepGap: 0 });
@@ -2076,7 +2085,8 @@ const RouletteEngine = ({
       const viewport = viewportRefs.current[index];
       const viewportSize = (vertical ? viewport?.clientHeight : viewport?.clientWidth) || (vertical ? 430 : 760);
       const finalIndex = ROULETTE_WINNER_INDEX;
-      const fromIndex = finalIndex - ROULETTE_TRAVEL_CARDS;
+      const travelCards = getRollTravelCardCount(durationPerStep, ROLL_ACCELERATION_MS, ROLL_DECELERATION_MS, ROULETTE_TRAVEL_CARDS);
+      const fromIndex = finalIndex - travelCards;
       return {
         index,
         winner,
@@ -2094,13 +2104,22 @@ const RouletteEngine = ({
 
   useEffect(() => {
     if (!spinPlan) return undefined;
+    if (animationSessionRef.current !== spinPlan.id) {
+      animationSessionRef.current = spinPlan.id;
+      animationStartTimeRef.current = null;
+    }
     let alive = true;
     let frame = 0;
-    frame = window.requestAnimationFrame((startTime) => {
+    frame = window.requestAnimationFrame((firstFrameTime) => {
       if (!alive || spinPlan.id !== sessionRef.current) return;
+      if (animationStartTimeRef.current === null) animationStartTimeRef.current = firstFrameTime;
+      const startTime = animationStartTimeRef.current;
       if (spinPlan.mode === "wheel") {
         const firstStep = spinPlan.steps[0];
-        setWheelRotation(0, firstStep?.fromRotation || 0);
+        if (animationPreparedSessionRef.current !== spinPlan.id) {
+          setWheelRotation(0, firstStep?.fromRotation || 0);
+          animationPreparedSessionRef.current = spinPlan.id;
+        }
         const movementDuration = spinPlan.accelerationDuration + spinPlan.durationPerStep + spinPlan.decelerationDuration;
         const stepStride = movementDuration + spinPlan.countdownDuration + spinPlan.stepGap;
         const totalDuration = spinPlan.steps.length * (movementDuration + spinPlan.countdownDuration) + Math.max(0, spinPlan.steps.length - 1) * spinPlan.stepGap;
@@ -2131,6 +2150,9 @@ const RouletteEngine = ({
             rollingRef.current = false;
             setIsRolling(false);
             setSpinPlan(null);
+            animationSessionRef.current = null;
+            animationStartTimeRef.current = null;
+            animationPreparedSessionRef.current = null;
             setLastWinners(winners);
             setSelectedItem(winners[0]);
             onRollComplete?.(maxLanes > 1 ? winners : winners[0]);
@@ -2141,10 +2163,13 @@ const RouletteEngine = ({
         frame = window.requestAnimationFrame(animateWheel);
         return;
       }
-      spinPlan.lanes.forEach((lane) => {
-        setTrackPosition(lane.index, lane.fromPosition);
-        lastTickRefs.current[lane.index] = lane.fromIndex ?? null;
-      });
+      if (animationPreparedSessionRef.current !== spinPlan.id) {
+        spinPlan.lanes.forEach((lane) => {
+          setTrackPosition(lane.index, lane.fromPosition);
+          lastTickRefs.current[lane.index] = lane.fromIndex ?? null;
+        });
+        animationPreparedSessionRef.current = spinPlan.id;
+      }
 
       const animate = (now) => {
         if (!alive || spinPlan.id !== sessionRef.current) return;
@@ -2173,6 +2198,9 @@ const RouletteEngine = ({
           rollingRef.current = false;
           setIsRolling(false);
           setSpinPlan(null);
+          animationSessionRef.current = null;
+          animationStartTimeRef.current = null;
+          animationPreparedSessionRef.current = null;
           setLastWinners(winners);
           for (const lane of spinPlan.lanes) setTrackPosition(lane.index, 0);
           setSelectedItem(winners[0]);
@@ -2193,6 +2221,9 @@ const RouletteEngine = ({
     if (!rollingRef.current) return;
     rollingRef.current = false;
     sessionRef.current += 1;
+    animationSessionRef.current = null;
+    animationStartTimeRef.current = null;
+    animationPreparedSessionRef.current = null;
     if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
     frameRef.current = 0;
     setSpinPlan(null);
@@ -2210,6 +2241,9 @@ const RouletteEngine = ({
   useEffect(() => () => {
     rollingRef.current = false;
     sessionRef.current += 1;
+    animationSessionRef.current = null;
+    animationStartTimeRef.current = null;
+    animationPreparedSessionRef.current = null;
     if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
   }, []);
 
@@ -2801,6 +2835,14 @@ function App() {
     },
     [settings.historyLimit, settings.splashEnabled]
   );
+  const handleCharacterRollComplete = useCallback(
+    (winner) => handleRollComplete("characters", winner),
+    [handleRollComplete]
+  );
+  const handleBossRollComplete = useCallback(
+    (winner) => handleRollComplete("bosses", winner),
+    [handleRollComplete]
+  );
 
   const saveCurrentSquad = useCallback((squad) => {
     if (!Array.isArray(squad) || !squad.length) {
@@ -2976,7 +3018,7 @@ function App() {
             lang={lang}
             rollingLabel={t.rolling}
             rollDurationMs={rollDurationMs}
-            onRollComplete={(winner) => handleRollComplete(stage, winner)}
+            onRollComplete={isCharacterStage ? handleCharacterRollComplete : handleBossRollComplete}
             onTick={playRollTickSound}
             externalRollTrigger={isCharacterStage ? characterRerollTrigger : 0}
           />

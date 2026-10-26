@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildRollSequence,
   getCenteredReelPosition,
+  getRollDistanceRatio,
+  getRollTravelCardCount,
   getSequentialLaneDelay,
   getRollProgress,
   getWheelTargetRotation,
@@ -42,8 +44,17 @@ describe("roulette engine math", () => {
     expect(getSequentialLaneDelay(0, 3000, 5000, 5000)).toBe(0);
     expect(getSequentialLaneDelay(1, 3000, 5000, 5000)).toBe(laneDuration);
     expect(getSequentialLaneDelay(3, 3000, 5000, 5000)).toBe(laneDuration * 3);
-    expect(ROULETTE_WINNER_INDEX - ROULETTE_TRAVEL_CARDS).toBe(12);
+    expect(ROULETTE_WINNER_INDEX - ROULETTE_TRAVEL_CARDS).toBe(72);
     expect(ROULETTE_WINNER_INDEX).toBeLessThan(ROULETTE_SEQUENCE_LENGTH);
+  });
+
+  it("keeps reel and wheel speed constant as the selected cruise time changes", () => {
+    expect(getRollDistanceRatio(3000, 3000, 5000)).toBeCloseTo(7 / 9, 8);
+    expect(getRollDistanceRatio(5000, 3000, 5000)).toBe(1);
+    expect(getRollDistanceRatio(10000, 3000, 5000)).toBeCloseTo(14 / 9, 8);
+    expect(getRollTravelCardCount(3000, 3000, 5000)).toBe(31);
+    expect(getRollTravelCardCount(5000, 3000, 5000)).toBe(40);
+    expect(getRollTravelCardCount(10000, 3000, 5000)).toBe(62);
   });
 
   it("stops the wheel on the chosen wedge after multiple forward turns", () => {

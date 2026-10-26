@@ -4,7 +4,7 @@ const STORE_NAME = "images";
 const MEMORY_URLS = new Map();
 const MEMORY_SOURCES = new Map();
 const IMAGE_TIMEOUT_MS = 6500;
-const CATALOG_STORAGE_KEY = "teyvat-random-lab:catalog:v3";
+const CATALOG_STORAGE_KEY = "teyvat-random-lab:catalog:v5";
 
 let databasePromise;
 
@@ -71,20 +71,30 @@ const saveBlob = async (url, blob) => {
 const isImageBlob = (blob) => blob instanceof Blob && blob.size > 0 && blob.type.startsWith("image/");
 
 const fetchBlob = async (url, signal) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
-  const abort = () => controller.abort(signal?.reason);
-  signal?.addEventListener("abort", abort, { once: true });
-  try {
-    const response = await fetch(url, { mode: "cors", signal: controller.signal, cache: "force-cache" });
-    if (!response.ok) throw new Error(`Image request failed: ${response.status}`);
-    const blob = await response.blob();
-    if (!isImageBlob(blob)) throw new Error("Image response was not an image");
-    return blob;
-  } finally {
-    clearTimeout(timeoutId);
-    signal?.removeEventListener("abort", abort);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
+    const abort = () => controller.abort(signal?.reason);
+    signal?.addEventListener("abort", abort, { once: true });
+    try {
+      const response = await fetch(url, { mode: "cors", signal: controller.signal, cache: "force-cache" });
+      if (!response.ok) {
+        const error = new Error(`Image request failed: ${response.status}`);
+        error.retryable = response.status === 429 || response.status >= 500;
+        throw error;
+      }
+      const blob = await response.blob();
+      if (!isImageBlob(blob)) throw new Error("Image response was not an image");
+      return blob;
+    } catch (error) {
+      if (signal?.aborted || !error.retryable || attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    } finally {
+      clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", abort);
+    }
   }
+  throw new Error("Image request failed");
 };
 
 const makeObjectUrl = (url, blob) => {
