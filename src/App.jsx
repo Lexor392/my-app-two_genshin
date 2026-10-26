@@ -262,6 +262,19 @@ const ELEMENT_ICONS = {
   DENDRO: "🍃",
   NONE: "✧",
 };
+const ELEMENT_IMAGE_ASSETS = {
+  PYRO: "element-pyro.svg",
+  HYDRO: "element-hydro.svg",
+  ANEMO: "element-anemo.svg",
+  ELECTRO: "element-electro.webp",
+  CRYO: "element-cryo.png",
+  GEO: "element-geo.png",
+  DENDRO: "element-dendro.png",
+};
+const getElementImage = (element) => {
+  const asset = ELEMENT_IMAGE_ASSETS[element];
+  return asset ? `${import.meta.env.BASE_URL}assets/${asset}` : "";
+};
 
 const PRELOADER_COPY = {
   ru: { title: "Путешествие по Тейвату", data: "Собираем архив приключений…", images: "Пробуждаем образы героев и противников…", count: "Подготовлено изображений", failed: "Не удалось загрузить", retry: "Повторить загрузку" },
@@ -557,21 +570,16 @@ const ItemImage = ({ item, alt, className, loading = "lazy" }) => {
   return <ImageWithFallback src={item?.image} fallbackSrcs={item?.imageFallbacks} alt={alt} className={className} loading={loading} />;
 };
 
-const ELEMENT_SIGIL_PATHS = {
-  ANEMO: "M16 3c-4 1-7 4-8 8 4 0 7-2 9-5 3 5 1 11-5 14 8 0 13-6 11-13-2 1-4 1-7 0M7 11c-3 1-4 4-4 7 3-1 5-3 5-6",
-  GEO: "M16 2 27 10 23 24 9 28 2 16 7 5ZM9 8l11 1 4 9-8 7-9-7ZM12 12l6 1 2 5-5 4-4-5Z",
-  HYDRO: "M16 2C12 8 6 14 6 20a10 10 0 0 0 20 0C26 14 20 8 16 2ZM11 20a5 5 0 0 0 5 5",
-  ELECTRO: "M18 2 6 17h8l-2 13 14-18h-9l1-10Z",
-  PYRO: "M17 2c1 7-5 8-3 13 1-3 4-4 6-7 5 6 7 12 3 18a10 10 0 0 1-18-5c0-5 3-9 8-13-1 5 0 7 2 8 2-5 2-9 2-14Z",
-  CRYO: "M16 2v28M4 9l24 14M4 23 28 9M12 5l4 4 4-4M12 27l4-4 4 4M5 13l5-1-1-5M27 19l-5 1 1 5M10 26l-1-5-5 1M22 6l1 5 5-1",
-  DENDRO: "M27 4C13 3 5 8 5 17c0 7 6 10 12 8 8-3 11-12 10-21ZM4 28c4-7 9-12 17-17M10 20l-1-6 6 1m-1 10 1-6 6 1",
-};
-
 const ElementSigil = ({ element }) => (
-  element === "ELECTRO"
-    ? <img className="traveler-element-sigil traveler-element-sigil-image" src={`${import.meta.env.BASE_URL}assets/element-electro.webp`} alt="" aria-hidden="true" />
-    : <svg className="traveler-element-sigil" viewBox="0 0 32 32" aria-hidden="true"><path d={ELEMENT_SIGIL_PATHS[element] || ELEMENT_SIGIL_PATHS.ANEMO} /></svg>
+  <img className="traveler-element-sigil traveler-element-sigil-image" src={getElementImage(element)} alt="" aria-hidden="true" />
 );
+
+const ElementIcon = ({ element }) => {
+  const image = getElementImage(element);
+  return image
+    ? <img className={`element-icon-image element-icon-${String(element || "none").toLowerCase()}`} src={image} alt="" aria-hidden="true" />
+    : <span aria-hidden="true">{ELEMENT_ICONS[element] || "✧"}</span>;
+};
 
 const safeJsonParse = (value, fallback) => {
   try {
@@ -1805,7 +1813,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
 
                   <p className="squad-attr">
                     <span className="squad-attr-icon" aria-hidden="true">
-                      {ELEMENT_ICONS[member.element] || "✧"}
+                      <ElementIcon element={member.element} />
                     </span>
                     <span>
                       {getElementLabel(lang)}: {formatElement(member.element, lang)}
@@ -3210,7 +3218,7 @@ function App() {
                                 <div>
                                   <p>{getItemName(member, lang)}</p>
                                   <span className="type-chip">
-                                    {ELEMENT_ICONS[member.element] || "✧"} {formatElement(member.element, lang)}
+                                    <ElementIcon element={member.element} /> {formatElement(member.element, lang)}
                                   </span>
                                 </div>
                               </div>

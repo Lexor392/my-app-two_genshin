@@ -1639,6 +1639,40 @@ h4 {
   flex: 0 0 auto;
 }
 
+.squad-attr-icon .element-icon-image {
+  width: 15px;
+  height: 15px;
+  display: block;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  filter: drop-shadow(0 0 3px rgba(226, 202, 142, 0.25));
+}
+
+.element-icon-image {
+  width: 15px;
+  height: 15px;
+  display: inline-block;
+  vertical-align: -3px;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+}
+
+.saved-squad-member .element-icon-image {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+}
+
+.saved-squad-member .type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .splash-stage {
   margin: 0;
   color: var(--text-muted);
