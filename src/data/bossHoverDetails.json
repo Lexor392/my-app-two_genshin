@@ -1,0 +1,1245 @@
+{
+  "alldevouringnarwhal": {
+    "name": "All-Devouring Narwhal",
+    "location": {
+      "region": "",
+      "area": "Shadow of Another World",
+      "subarea": ""
+    },
+    "description": "A mysterious and gargantuan creature from another world.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/All-Devouring_Narwhal"
+  },
+  "aeonblightdrake": {
+    "name": "Aeonblight Drake",
+    "location": {
+      "region": "Sumeru",
+      "area": "Ardravi Valley",
+      "subarea": "Devantaka Mountain"
+    },
+    "description": "This dragon-shaped combat machine is a being that inspires fear, much like the lord who once ruled these vast lands. It is said that the now-destroyed realm once sought forbidden knowledge and attempted to create perpetual-motion machines that could match or even surpass primordial lifeforms. This mysterious, tireless mechanical monstrosity seems to be proof that they did indeed reach heights that mortals should never have attained.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Aeonblight_Drake"
+  },
+  "anemohypostasis": {
+    "name": "Anemo Hypostasis",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Starfell Valley",
+      "subarea": "Stormbearer Mountains"
+    },
+    "description": "Code name: Beth. A high-purity Anemo entity. Elemental hypostases are life forms which have completely abandoned their former appearance and biological structure, making them able to reach the highest level of elemental purity. Research into hypostases is mainly led by scholars of Sumeru Akademiya, but due to the level of danger that they pose, little of substance is known about hypostases beyond their scientific name and code name.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Anemo_Hypostasis"
+  },
+  "algorithmofsemiintransientmatrixofoverseernetwork": {
+    "name": "Algorithm of Semi-Intransient Matrix of Overseer Network",
+    "location": {
+      "region": "Sumeru",
+      "area": "Hypostyle Desert",
+      "subarea": "The Dune of Elusion"
+    },
+    "description": "A perpetual motion machine that rules over the many constructs scattered throughout the desert. It seems that the lonely ruler's will still indwells this device. Perhaps due to a friend's teachings in a dream or perhaps because he coveted the power of the holy ones in the skies, the king created mysterious devices that should not exist in this world before founding his realm in these lands. Amidst the ruins of the City of the Pillars, the ancient crystals still reflect the glory of the golden paradise, though none now live who remember the king's dreams.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Algorithm_of_Semi-Intransient_Matrix_of_Overseer_Network"
+  },
+  "bolteaterbathysmalvishap": {
+    "name": "Bolteater Bathysmal Vishap",
+    "location": {
+      "region": "",
+      "area": "",
+      "subarea": ""
+    },
+    "description": "Bolteater Bathysmal Vishaps are a kind of Bathysmal Vishap.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Bolteater_Bathysmal_Vishap"
+  },
+  "azhdaha": {
+    "name": "Azhdaha",
+    "location": {
+      "region": "",
+      "area": "Beneath the Dragon-Queller",
+      "subarea": ""
+    },
+    "description": "An enormous dragon as ancient as the mountains themselves. In an age that has all but faded from memory, he stood shoulder to shoulder with one who ruled over a harbor of stone. But in the end, the two came into conflict, and the dragon was banished to a dark place deep underground. Over the long years of his imprisonment, his power has slowly dissipated. He has also become disfigured from the various kinds of erosion he has been subjected to. The faint rattling of this dragon lord's shackles and his deep, angry growl echo through the bowels of the mountains like memories of a bygone era.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Azhdaha_(Weekly_Boss)"
+  },
+  "cryohypostasis": {
+    "name": "Cryo Hypostasis",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Dragonspine",
+      "subarea": "Entombed City - Outskirts"
+    },
+    "description": "In order to challenge the Cryo Hypostasis, players must complete the . After it is completed, the boss will spawn over the ice where the elemental monuments, automatons, and switches used to be.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Cryo_Hypostasis"
+  },
+  "childe": {
+    "name": "Childe",
+    "location": {
+      "region": "",
+      "area": "Enter the Golden House",
+      "subarea": ""
+    },
+    "description": "\"Childe\" Tartaglia, Eleventh of the Fatui Harbingers. He draws power from the ominous Delusion he possesses and fights using martial arts that he learned in a land of darkness. He is a pure warrior with an insatiable lust for battle. Each bloody conflict, each life-and-death struggle is a delightful trial to him. People say that the young Childe is famed throughout the land for his battle prowess. But he has never taken big talk of this kind to heart. After all... \"You shall ever be the eye of the storm, \"And the clashing of steel shall ever accompany you. \"The pitch-black memory of stepping i",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Childe"
+  },
+  "chimericwingedlion": {
+    "name": "Chimeric Winged Lion",
+    "location": {
+      "region": "Snezhnaya",
+      "area": "Volkodlak Tundra",
+      "subarea": ""
+    },
+    "description": "A product of bio-alchemy, one of the man-made monsters that was abandoned. To bring a certain great wish to fruition, an alchemist created numerous primordial bodies known as \"Prototypes\" through a technique that must never be retold. Of these, only one successfully grew into the perfect creation he had planned. The others, though close to perfection, ultimately failed, and were carelessly remade into two-headed monsters. Though regarded as failures, these special two-headed monsters still possess tremendous power. Among chimeras, there is nothing that can stand against them.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Chimeric_Winged_Lion"
+  },
+  "cryoregisvine": {
+    "name": "Cryo Regisvine",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Starfell Valley",
+      "subarea": ""
+    },
+    "description": "A monster formed from a vine that was imbued with the essence of biting frost within the ley lines. Some studies suggest that plants are like the organs of the world, harmonizing the turbulent elemental energies of the ley lines. Concrete examples of this phenomena are Mist Flowers, Whopperflowers, and the like, which brim over with elemental energy. In certain circumstances, certain plants will turn into creatures of monstrous size and intent — such as the Cryo Regisvines — in the course of many years.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Cryo_Regisvine"
+  },
+  "dendrohypostasis": {
+    "name": "Dendro Hypostasis",
+    "location": {
+      "region": "Sumeru",
+      "area": "Land of Lower Setekh",
+      "subarea": ""
+    },
+    "description": "Code Name: Zayin. A high-purity Dendro entity. According to the deductions of some researchers, Elemental Hypostases have the knowledge required to \"learn,\" which is how they use \"mimesis\" to initiate attacks. However, the ability to incorporate information to create change also opens one to the risk of information contamination. As this creature learns and changes, the purpose of its birth — no matter how academically unquantifiable it may still be — may yet become so distorted as to be rendered irrelevant.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Dendro_Hypostasis"
+  },
+  "electrohypostasis": {
+    "name": "Electro Hypostasis",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Galesong Hill",
+      "subarea": "Cape Oath"
+    },
+    "description": "Code name: Aleph. A high-purity Electro entity. Elemental hypostases are the highest forms of elemental structures, usually formed either at a location bursting with elemental energy or at a clogged ley line. Elemental hypostases have developed various attacks based on their elemental attributes.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Electro_Hypostasis"
+  },
+  "electroregisvine": {
+    "name": "Electro Regisvine",
+    "location": {
+      "region": "Sumeru",
+      "area": "Lokapala Jungle",
+      "subarea": "Mawtiyima Forest"
+    },
+    "description": "A huge vine that has morphed into a monster through the conduction of high-voltage currents through the Ley Lines. Electricity surges constantly from its canopy like the unending rage of the earth itself. Kshahrewar researchers once submitted that a complex circuit matrix might be set up around this creature to carry electrical energy to the city for use there. This plan was stridently opposed by scholars from Spantamad, who sacrificed 10 Shroomboars to drive home the point about the dangers of utilizing electricity.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Electro_Regisvine"
+  },
+  "emperoroffireandiron": {
+    "name": "Emperor of Fire and Iron",
+    "location": {
+      "region": "Fontaine",
+      "area": "Belleau Region",
+      "subarea": ""
+    },
+    "description": "One of the two sovereigns who once stood at the apex of the aberrant species of the Fontemer, and the subject of many a tale among sailors. An Armored Crab that avoids predation, and can keep hunting and eating, will continue to grow, continually seeking out suitable shells to become its new armor. But eventually, it became simply too gargantuan. Before the first diluvian period, a massive Armored Crab once attacked a ship, and was finally forced back into the depths by Basil Elton, who had not yet been reinstated as a naval commander. Imagine this world: All of humanity has been purged from T",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Emperor_of_Fire_and_Iron"
+  },
+  "frostnightherra": {
+    "name": "Frostnight Herra",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Hiisi Island",
+      "subarea": ""
+    },
+    "description": "Proud beings that roam in the waning glow of the moon, wielding ancient powers long since tamed by the Lord of the Sky. Legends say these graceful, mystical beasts were born in the age when the Frost Moon still turned, and, favored by the divine emissary, they would not be tainted by the light of day. Even now, among the followers of the Frost Moon, they are regarded as sacred beasts lost to this world, retreating along secret lunar paths beyond the reach of mortal eyes. Yet, as they have for countless centuries past, they still wander in the shadows of the moon, treading the boundary between ",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Frostnight_Herra"
+  },
+  "geohypostasis": {
+    "name": "Geo Hypostasis",
+    "location": {
+      "region": "Liyue",
+      "area": "Sea of Clouds",
+      "subarea": "Guyun Stone Forest"
+    },
+    "description": "Code name: Gimel. A high-purity Geo entity. Elemental hypostases are ultra-compact structures with a high mass. Concentrated elemental energy forms a solid shell around the core of the hypostasis, leaving only the core reactive to elemental stimuli.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Geo_Hypostasis"
+  },
+  "goldenwolflord": {
+    "name": "Golden Wolflord",
+    "location": {
+      "region": "Inazuma",
+      "area": "Tsurumi Island",
+      "subarea": ""
+    },
+    "description": "Hailing from a dark world, this ruler of the black wolves has the power to call upon its followers, its hidden claws, to dissolve space itself and forge a rift through which it may enter. The Wolflord has no name, for it was but one of \"Gold\"'s unintentional creations, and that is precisely why it is obsessed with invading worlds that do not belong to it and making a name for itself. That said, the wolf pack is far from unintelligent. After suffering a defeat in its previous invasion, a deserted island where no humans or protectors dwell has been selected for them to prepare for their lord's d",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Golden_Wolflord"
+  },
+  "guardianbladeofdriftingsnow": {
+    "name": "Guardian Blade of Drifting Snow",
+    "location": {
+      "region": "Snezhnaya",
+      "area": "Fellfrost Peak",
+      "subarea": ""
+    },
+    "description": "An ancient Snegovik held in high esteem among her kin. She once served the legendary Great Snegurochka, whose name was steeped in crimson infamy, and was entrusted with the solemn duty of protecting the Snegovik clan for the rest of her life. It is said that seven were given this charge, but she alone remains. Every succession of the Snegovik sovereign must therefore take place under her watchful eye. After the current Snegurochka princess ascended to power, she left the clan's manor in the mountains — perhaps because their ideals no longer aligned.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Guardian_Blade_of_Drifting_Snow"
+  },
+  "guardianofapepsoasis": {
+    "name": "Guardian of Apep's Oasis",
+    "location": {
+      "region": "",
+      "area": "The Realm of Beginnings",
+      "subarea": ""
+    },
+    "description": "Apep once walked through an ocean of fragrant grass, gigantic trees, and unimaginably long vines like a fish with its many offspring swimming through the sea. Finally, the grass, trees, and vines withered and turned to dust, while countless beings as minute as grains of gravel built a fragile kingdom upon Apep's land. Apep and its offspring let the sea of sand rage like boiling water and swept houses down as if they were falling leaves. Until the day when the new Lord of Sand reconciled with the king who lost their homeland, the dunes under the sun belonged to humanity, while the dragon's oasi",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Guardian_of_Apep's_Oasis"
+  },
+  "hydrohypostasis": {
+    "name": "Hydro Hypostasis",
+    "location": {
+      "region": "Inazuma",
+      "area": "Watatsumi Island",
+      "subarea": ""
+    },
+    "description": "Code Name: He. A high-purity Hydro entity. Hypostases have strong rejection properties, and will mercilessly expel any that test them. Its rejection behavior even extends to natural elements.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Hydro_Hypostasis"
+  },
+  "hydrotulpa": {
+    "name": "Hydro Tulpa",
+    "location": {
+      "region": "Fontaine",
+      "area": "Beryl Region",
+      "subarea": ""
+    },
+    "description": "A humanoid monster formed from the agglomeration of water.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Hydro_Tulpa"
+  },
+  "experimentalfieldgenerator": {
+    "name": "Experimental Field Generator",
+    "location": {
+      "region": "Fontaine",
+      "area": "Academic Assembly Hall",
+      "subarea": "Fontaine Research Institute of Kinetic Energy Engineering Region"
+    },
+    "description": "A large device designed by the late Edwin Eastinghouse. It has the ability to \"counteract\" the effects of gravity. According to the original design intentions, this was the first step in a plan to turn Fontaine into a city in the sky, so never again would the people have to worry about the waves that once swept over the land. Even if all seven nations were to be swallowed by the deeps, the elegant Court of Fontaine would float above it all, just like Celestia. Even the secrets of the universe would no longer seem so distant. The Arkhium in the device's core has the characteristics of \"splittin",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Prototype_Cal._Breguet"
+  },
+  "icewindsuite": {
+    "name": "Icewind Suite",
+    "location": {
+      "region": "Fontaine",
+      "area": "Court of Fontaine Region",
+      "subarea": ""
+    },
+    "description": "There are 2 versions of this challenge, \"Dirge of Coppelia\" and \"Nemesis of Coppelius,\" each with a different set of abilities and rewards. The challenge can be initiated by talking to Maillardet and choosing either version.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Icewind_Suite"
+  },
+  "goldflamequcusaurtyrant": {
+    "name": "Goldflame Qucusaur Tyrant",
+    "location": {
+      "region": "Natlan",
+      "area": "Basin of Unnumbered Flames",
+      "subarea": "Huitztli Hill"
+    },
+    "description": "A Qucusaurus whose body has attained a supernatural form due to enduring forces that the bodies of modern Saurians cannot control. Legends say that when the giant Qucusaur who now often dwells in the mountain fog was young, he also once followed the heroes who saved Natlan in their adventures. It is said that one of those heroes once agreed to make the pilgrimage with him together to the volcano, to save his mind back from the brink of insanity that the increasing violent power in his blood was forcing him towards. However, judging from his current title of \"Tyrant,\" that story did not have a ",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Holawaqa_Ngoubou"
+  },
+  "immortalconstruct": {
+    "name": "Immortal Construct",
+    "location": {
+      "region": "Snezhnaya",
+      "area": "Everfrozen Earth",
+      "subarea": ""
+    },
+    "description": "A byproduct created by the alchemist Koshchei during his creation of the individual known as the Firebird. Perhaps this was the gloomy alchemist's habit: whenever one experimental subject from a batch succeeded, all the others would be abandoned or disposed of as he pleased. This derivative creation should have fused with some form of power and reached completion. Now, however, it can only wander endlessly through the mountain gorges as an incomplete, mindless beast.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Immortal_Construct"
+  },
+  "gluttonousyumkasaurmountainking": {
+    "name": "Gluttonous Yumkasaur Mountain King",
+    "location": {
+      "region": "Natlan",
+      "area": "Tequemecan Valley",
+      "subarea": ""
+    },
+    "description": "A powerful Yumkasaur that has survived both the ravages of time and countless battles, surviving until the present day. This \"Mountain King,\" who once joined forces with the great heroes against the Black Tide, holds a special place in the hearts of the Scions of the Canopy. Some tribe members believe that it has its current body shape because it has a unique physique, like the Qucusaurus \"Tyrant\"... Though in fact, this is simply because it's lived for so long, and eaten way, WAY too much.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Kongamato"
+  },
+  "jadeplumeterrorshroom": {
+    "name": "Jadeplume Terrorshroom",
+    "location": {
+      "region": "Sumeru",
+      "area": "Vissudha Field",
+      "subarea": ""
+    },
+    "description": "Over many long years, this large fungal beast has morphed into a unique form. Its intelligence has already reached and perhaps has even surpassed real animals, and it will actively hunt prey to obtain sustenance. Its tail has a lovely jade plumage that seems very similar to that of the ancient sacred beast that the Spantamad school reveres. As far as the logic of mimesis is concerned, it seems quite likely that the two beings once walked the earth together.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Jadeplume_Terrorshroom"
+  },
+  "knuckleduckle": {
+    "name": "Knuckle Duckle",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Lempo Isle",
+      "subarea": "Clink-Clank Krumkake Craftshop"
+    },
+    "description": "A kuuvahki mechanism of peculiar make, made from scrap metal and mechanical bearings, that bears a partial resemblance — as per its creator's proclivities, apparently — to a \"duck.\" Its output and resistance to damage are comparable to the Fatui's most cutting-edge warfighting weaponry... But even so, it remains simply a toy duck that can punch its opponents very, very hard. A creator's preferences will always do much to determine a creation's appearance, as clay lacks the authority to question its creator's choice of molds. The world beneath the moon has long been sculpted into a form that pe",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Knuckle_Duckle"
+  },
+  "lavadragonstatue": {
+    "name": "Lava Dragon Statue",
+    "location": {
+      "region": "Natlan",
+      "area": "Atocpan",
+      "subarea": ""
+    },
+    "description": "Stygian Onslaught Fearless/Dire Variant: All RES are increased until 200% in Geohuman form, this increase is keeping on RES in Molten Dragon Form. Additionally, the Fury accumulation for Geohuman and Molten Dragon Forms requirements will be changed:",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Lava_Dragon_Statue"
+  },
+  "lasignora": {
+    "name": "La Signora",
+    "location": {
+      "region": "",
+      "area": "Narukami Island: Tenshukaku",
+      "subarea": ""
+    },
+    "description": "Signora, the Eighth of the Fatui Harbingers. Unlike other Fatui who use the authority granted by Delusions, her Delusion is meant to shackle a flame that will devour everything. As opposed to a weapon used to kill, it might be more fitting to consider this a tool of imprisonment. And it was the embers of that flame, which had accumulated over many long years, that would break through the frosty seal of the Delusion and apply a warped rouge upon her. The crimson dawn was reflected in her pupils, and at last, she unfolded her flaming wings and flew towards the light. \"But that light is not the d",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/La_Signora"
+  },
+  "lordoferodedprimalfire": {
+    "name": "Lord of Eroded Primal Fire",
+    "location": {
+      "region": "",
+      "area": "Stone Stele Records",
+      "subarea": ""
+    },
+    "description": "A fell dragon, congealed from the power of pitch-black darkness.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Lord_of_Eroded_Primal_Fire"
+  },
+  "lordofthehiddendepthswhispererofnightmares": {
+    "name": "Lord of the Hidden Depths: Whisperer of Nightmares",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Ashveil Peak",
+      "subarea": ""
+    },
+    "description": "An Abyssal creature that creeps through rifts in the hidden depths, quietly watching this world. Its eerie, faceless form is said to be nothing more than a projection, for its true body exists only as a formless mass of pure Abyssal energy. Even invaders who seek to claim this world must obey its rules to some extent. Unless the heavens split open and the earth's defenses collapse, these star-born outsiders can do little more than linger at the world's fringes, whispering their madness into this realm, their attempts to seep inside amounting to nothing... But how long can this stability and or",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Lord_of_the_Hidden_Depths%3A_Whisperer_of_Nightmares"
+  },
+  "magatsumitakenarukaminomikoto": {
+    "name": "Magatsu Mitake Narukami no Mikoto",
+    "location": {
+      "region": "",
+      "area": "End of the Oneiric Euthymia",
+      "subarea": ""
+    },
+    "description": "This is the form that the puppet that inherited the Raiden Shogun's authority takes when she is opposing those who threaten Eternity. As the Raiden Shogun's assistant in pursuing eternity, she has never doubted, never felt fear, never given anything less than her best, never been disturbed by idle thoughts. She once heard about how Ei had shouldered a similar duty when Makoto was also present, suffering much agonizing loss in the process. When the two shadows overlapped once more, however, she could only see the countless fine fractures in what should have been \"her\" eternal will. Since fate i",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Magatsu_Mitake_Narukami_no_Mikoto"
+  },
+  "legatusgolem": {
+    "name": "Legatus Golem",
+    "location": {
+      "region": "Fontaine",
+      "area": "Nostoi Region",
+      "subarea": "Faded Castle"
+    },
+    "description": "A centaur-shaped golem forged of marble and brass. Under the hard stone exterior flows Ichor blood. Towering as one who commands a legion, it is ready to trample any foe that might transgress against its honor. The now sunken civilization believed that war was as music, an art of rhythms to be followed. Therefore, one who marshals a legion must be like a conductor, whose shield and sword are like the strings and bow of a violin, performing a blazing melody like the raging flames upon the merciless battlefield. \"War is a necessary evil on the path to all-encompassing peace.\" Thus spake a Harmos",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/%22Statue_of_Marble_and_Brass%22"
+  },
+  "iniquitousbaptist": {
+    "name": "Iniquitous Baptist",
+    "location": {
+      "region": "Sumeru",
+      "area": "Gavireh Lajavard",
+      "subarea": "Gate of Zulqarnain"
+    },
+    "description": "A monster from the Abyss that wields multiple types of Elemental Power and has gained extra limbs from its \"evolution.\" \"The nature of the 'Abyss' is essentially irreconcilable with the elements. However, even the elements of gods can be entrapped and distorted before they are subsumed to become tools of the abyssal will. Just judging from outcomes and practical use, \"Abyssal powers\" seem little different from elemental items, from ones as paltry as the Treasure Hoarders' elemental containers to those as powerful as Visions...\" —Notes left behind in Hangeh Afrasiyab by someone.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Iniquitous_Baptist"
+  },
+  "maguukenki": {
+    "name": "Maguu Kenki",
+    "location": {
+      "region": "Inazuma",
+      "area": "Yashiori Island",
+      "subarea": "Serpent's Head"
+    },
+    "description": "A disciplined mechanical swordsman. Doesn't seem to have the ability nor will to speak, but instead only seeks to communicate with crossed swords. It is said that this machine was made using the memories of the first-generation master of a certain sword school. However, it malfunctioned, lost control, and was ultimately discarded. Some sing that the machine's spirit still lingers in the place where its fate was ended. They also say that the vicious mask that serves as its guard was inspired by a famous oni from that era.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Maguu_Kenki"
+  },
+  "oceanid": {
+    "name": "Oceanid",
+    "location": {
+      "region": "Fontaine",
+      "area": "",
+      "subarea": ""
+    },
+    "description": "The Oceanids, occasionally called the Lochfolk, are a species made of pure Hydro energy originating from Fontaine. They are able to control water and mimic real life forms with water.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Oceanid"
+  },
+  "lupusboreasdominatorofwolves": {
+    "name": "Lupus Boreas, Dominator of Wolves",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Windwail Highland",
+      "subarea": "Wolvendom"
+    },
+    "description": "Andrius, also known as the Wolf of the North Challenge and the Dominator of Wolves Challenge, is a Weekly Boss found in Wolvendom, Mondstadt. It is unlocked after completing the .",
+    "map": "assets/boss-maps/lupusboreasdominatorofwolves.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Andrius"
+  },
+  "millennialpearlseahorse": {
+    "name": "Millennial Pearl Seahorse",
+    "location": {
+      "region": "Fontaine",
+      "area": "Liffey Region",
+      "subarea": ""
+    },
+    "description": "One of the two sovereigns standing at the apex of the Fontemer Aberrants. Poets and authors often proclaim it to be proud and noble due to its solitary tendencies, but the true reason behind such adulatory descriptions is its elegant and slender body. As such, it is a \"Pearl Seahorse,\" while the suzerain of the Armored Crabs is an \"Emperor.\" In the legends and rumors of Fontaine, a brutal war was once waged among the Aberrants of the Fontemer, leaving only the \"Millennial Pearl Seahorse\" and \"Emperor of Fire and Iron\" splitting the great lake into two courts, one ruling over the north, the oth",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Millennial_Pearl_Seahorse"
+  },
+  "perpetualmechanicalarray": {
+    "name": "Perpetual Mechanical Array",
+    "location": {
+      "region": "Inazuma",
+      "area": "Narukami Island",
+      "subarea": "Araumi"
+    },
+    "description": "In order to access the boss, the player can enter through a portal on Jinren Island. A faster route is unlocked through a Teleport Waypoint next to the boss; this requires completion of the Araumi section of Cleansing Defilement.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Perpetual_Mechanical_Array"
+  },
+  "primogeovishap": {
+    "name": "Primo Geovishap",
+    "location": {
+      "region": "Liyue",
+      "area": "Minlin",
+      "subarea": "Tianqiu Valley"
+    },
+    "description": "After many years, the awesomely powerful Primo Geovishaps grow accustomed to changes in their elemental environment. Folktales hold that after the great \"draconic calamity\" that led to the ruination of Tianqiu Valley, the overlord of the Geovishaps and Primo Geovishaps was imprisoned deep beneath the earth, and so too did they burrow into deep and unseen places, awaiting their chance to rise once more...",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Primo_Geovishap"
+  },
+  "radiantmoonfly": {
+    "name": "Radiant Moonfly",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Lempo Isle",
+      "subarea": "Barrowmoss Barrens"
+    },
+    "description": "The moon's ancient power has seeped into these illusory wings, and the butterfly-shaped monster now dances lightly in the moonlight. The principles of evolution state that after the wild yet primeval power was tamed by the heavenly ruler, such a monster should not be able to maintain its shape, becoming smaller and weaker over time. However, the moon's blessing has allowed it to glide through this world while remaining in its prime, displaying the remnants of an older world, when the ancient moon once illuminated the land.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Radiant_Moonfly"
+  },
+  "pyroregisvine": {
+    "name": "Pyro Regisvine",
+    "location": {
+      "region": "Liyue",
+      "area": "Minlin",
+      "subarea": "Cuijue Slope"
+    },
+    "description": "A giant vine that has absorbed the ancient flame that rages within the ley lines. It is restless as if filled with endless fury. Poets, bards, and even some academics believe that elements also contain emotions and hopes. If this is true, then one can only wonder what emotions cause the Pyro Regisvine to burn eternally, writhing like one longing to be free of the confines of the earth...",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Pyro_Regisvine"
+  },
+  "rimebiterbathysmalvishap": {
+    "name": "Rimebiter Bathysmal Vishap",
+    "location": {
+      "region": "",
+      "area": "",
+      "subarea": ""
+    },
+    "description": "Rimebiter Bathysmal Vishaps are a kind of Bathysmal Vishap.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Rimebiter_Bathysmal_Vishap"
+  },
+  "radiantmoongecko": {
+    "name": "Radiant Moongecko",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Wavechaser Plain",
+      "subarea": "Afterglow Cavern"
+    },
+    "description": "An ancient monster drawn to moonlight, this gecko dwells deep within layers of rock. The gradual accumulation of kuuvahki has crystallized its body into segments as precise as mechanical components. These parts can harden and form stone spikes used to repel intruders. Some scholars believe this unusual lizard's ancestors once roamed the surface. Over the ages, sweeping changes in the world drove them underground, where they have since lived in darkness for countless generations. Though their memory of true moonlight has faded, instinct remains. On nights of the full moon, they are compelled to",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Radiant_Moongecko"
+  },
+  "ildottore": {
+    "name": "Il Dottore",
+    "location": {
+      "region": "",
+      "area": "Binding Field of Universal Nirvana",
+      "subarea": ""
+    },
+    "description": "To push his heretical experiments to their end, Dottore has severed the constraints of his corporeal form. Now, he has merged as one with the Irminsul that threads through all of Teyvat. This world inherently predates any natural order. Until it cast its gaze, the origin and terminus of all matter were indeterminate. Yet the weak, seeking to escape the crushing weight of freedom, would rather bow before the throne of \"Certainty.\" Only those with the resolve to pierce the veil of mundane perception may earn the right to forge a \"new world.\" That is the domain of \"Possibility\" — a perpetual and ",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Exalted_Master_of_the_Heretical_Path"
+  },
+  "ruinserpent": {
+    "name": "Ruin Serpent",
+    "location": {
+      "region": "Liyue",
+      "area": "The Chasm: Underground Mines",
+      "subarea": "The Serpent's Cave"
+    },
+    "description": "In order to access the boss, the player must complete part of the World Quest Chasm Spelunkers.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Ruin_Serpent"
+  },
+  "secretsourceautomatonconfigurationdevice": {
+    "name": "Secret Source Automaton: Configuration Device",
+    "location": {
+      "region": "Natlan",
+      "area": "Toyac Springs, Natlan",
+      "subarea": ""
+    },
+    "description": "A manufacturing machine from the ancient ruins. This type of machine, which can transform into numerous shapes, was used by the masters of the ancient ruins to perform various manufacturing tasks. As long as you learn how to use such a machine, you could build a city colossal beyond imagination, even within extreme environments like the depths of a volcano. In addition, it also seems to be able to be used as a weapon. Though the ancient civilization has long since fallen, this machine, shaped like a giant claw and powered by the golden designs engraved on it, can still engage in battle based u",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Secret_Source_Automaton%3A_Configuration_Device"
+  },
+  "secretsourceautomatonoverseerdevice": {
+    "name": "Secret Source Automaton: Overseer Device",
+    "location": {
+      "region": "Natlan",
+      "area": "Atocpan",
+      "subarea": ""
+    },
+    "description": "A domination mechanism from the ancient ruins. In ancient times, to oversee the operation of their mega-cities, a mighty race vested part of their power into a form of phlogiston-engineered intelligence. Driven by their mission, and by means of various other mechanisms, the machines upon which it was bestowed once controlled the functioning of myriad cities across the land. Now, long after their ancient civilization's fall through wars with an emerging race, these once-wise contraptions retain only the most basic of commands.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Secret_Source_Automaton%3A_Overseer_Device"
+  },
+  "setekhwenut": {
+    "name": "Setekh Wenut",
+    "location": {
+      "region": "Sumeru",
+      "area": "Desert of Hadramaveth",
+      "subarea": "Wenut Tunnels"
+    },
+    "description": "An eyeless predator that dwells within the depths of the desert and uses sound and vibrations to seek out its prey. Legend has it that in the ancient past before even the concept of time was created, these creatures thrived with their progenitors and offspring in a land of verdant grass and colossal trees, traversing through slick soil like fishes diving through the wet. With the passage of eons, the gifts of heaven have long reduced the soils to sand, rendering a great many creatures extinct. This branch of their genus was able to survive by adapting more toward earth-based living, and became",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Setekh_Wenut"
+  },
+  "solitarysuanni": {
+    "name": "Solitary Suanni",
+    "location": {
+      "region": "Liyue",
+      "area": "Chenyu Vale: Southern Mountain",
+      "subarea": "Chizhang Wall"
+    },
+    "description": "These elegant and proud mystical beasts only live in mountains shrouded in adeptal energy. Since ancient times, they have been considered a symbol of good fortune, and their preference for living aloof from the material world has been admired by intellectuals for generations. In ancient legends from Chenyu Vale, the leader of the suanni was called the Mountain Lord and was considered to be of the same standing as the adepti. Another theory claims that the Xuanwen Beasts that roam the mountains these days are the descendants of the suanni, but that the thinning of their blood over the years has",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Solitary_Suanni"
+  },
+  "superheavylandrovermechanizedfortress": {
+    "name": "Super-Heavy Landrover: Mechanized Fortress",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Paha Isle",
+      "subarea": ""
+    },
+    "description": "Referred to internally as the \"Type Drzislav,\" this super heavy-class mechanism was jointly developed by the Armory Palace and the Kuuvahki Experimental Design Bureau. This giant all-terrain vehicle was originally designed for civilian use, particularly heavy transport, as evidenced by its equipped drills and cutters. However, later production models were militarized with heavy weapons mounted on them. After all, in this mortal world beneath the moon, even the most perfect and divine designs may stray from their original intent, let alone machines born of mortal hands, crafted from humble inte",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Super-Heavy_Landrover%3A_Mechanized_Fortress"
+  },
+  "pyrohypostasis": {
+    "name": "Pyro Hypostasis",
+    "location": {
+      "region": "Inazuma",
+      "area": "Kannazuka",
+      "subarea": ""
+    },
+    "description": "Code Name: Ayin. A high-purity Pyro entity. According to researchers, Elemental Hypostases are related to anomalies in local Elemental veins. But whether it is the existence of Elemental Hypostases that have affected Elemental veins or the mutated Elemental Energy that created Elemental Hypostases remains to be confirmed.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Pyro_Hypostasis"
+  },
+  "thegamebeforethegate": {
+    "name": "The Game Before the Gate",
+    "location": {
+      "region": "",
+      "area": "Unresolved Chess Game",
+      "subarea": ""
+    },
+    "description": "A soldier-entity born into being through the skills of various members of the Hexenzirkel. Although their technological underpinnings are far from abstruse, and touch not upon the profound wisdom at the universe's core, yet as guards of the gate's final threshold, they are a metaphor in and of themselves. This world may be governed by rules, but for those who manage to cross its verge, such constraints no longer apply.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/The_Game_Before_the_Gate"
+  },
+  "tenebrouspapillatypei": {
+    "name": "Tenebrous Papilla: Type I",
+    "location": {
+      "region": "Natlan",
+      "area": "Quahuacan Cliff",
+      "subarea": ""
+    },
+    "description": "Abyssal creatures with plant-like forms that have descended from a deep, dark, unfathomable, contorted otherworld. These twisted monstrosities are capable of infiltrating deep down into the bowels of the earth, extracting memories to imitate and manipulate. Through this process of distorting the past's memories into more abstruse and sordid forms, they gradually draw closer to Irminsul's core, threatening to undermine its very existence. Some say that these aberrations work constantly to corrupt the many colors of light, leaving only pitch-black information in their stead. Such a hypothesis se",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Tenebrous_Papilla"
+  },
+  "theknave": {
+    "name": "The Knave",
+    "location": {
+      "region": "",
+      "area": "Scattered Ruins",
+      "subarea": ""
+    },
+    "description": "The Knave, Fourth of the Fatui Harbingers.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/The_Knave"
+  },
+  "thedoctor": {
+    "name": "The Doctor",
+    "location": {
+      "region": "",
+      "area": "}}",
+      "subarea": ""
+    },
+    "description": "The Doctor is a quest-exclusive enemy encountered during the .",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/The_Doctor_(Quest_Enemy)"
+  },
+  "stormterror": {
+    "name": "Stormterror",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Brightcrown Mountains",
+      "subarea": "Stormterror's Lair"
+    },
+    "description": "Confront Stormterror is a Trounce Domain battle unlocked after completing . Players can relive the fight they had with Dvalin in A Long Shot and receive bountiful rewards.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Confront_Stormterror"
+  },
+  "thundermanifestation": {
+    "name": "Thunder Manifestation",
+    "location": {
+      "region": "Inazuma",
+      "area": "Seirai Island",
+      "subarea": "Amakumo Peak"
+    },
+    "description": "An abnormal Electro elemental life form. Although it might appear similar to an Oceanid, it does not possess her intelligence or memories. That which drives the Thunder Manifestation is a much more primal fury. It is said that these life forms will only descend like lightning upon places that play host to great lingering resentment, such as the fragmented Amakumo Peak, where the storm clouds ever roil. As long as the grudges of the land do not fade, so will the roaring thunder persist.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Thunder_Manifestation"
+  },
+  "local-legend-geovishap": {
+    "name": "Ruler of the Chizhang Mountains: Yiji & Ruler of the Chizhang Mountains: Tianyu",
+    "location": {
+      "region": "",
+      "area": "Liyue",
+      "subarea": ""
+    },
+    "description": "A pair of Local Legend Geovishaps, the Rulers of the Chizhang Mountains: Yiji and Tianyu, can be found in Chizhang Wall, Liyue.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Geovishap"
+  },
+  "waywardhermeticspiritspeaker": {
+    "name": "Wayward Hermetic Spiritspeaker",
+    "location": {
+      "region": "Natlan",
+      "area": "Tezcatepetonco Range",
+      "subarea": ""
+    },
+    "description": "A priestess of the Masters of the Night-Wind who has lived apart from her tribe, honing her abilities in utter solitude. It is said that her Spiritspeaking powers surpass those of ordinary priests and shamans, a result of having had the protection of the Masters of the Night-Wind's Wayob bestowed upon her. Both a blessing and a curse, these powers were at first beyond her ability to control, which was why she set out to master them in isolation from her tribe. Though she has since done so, to this day she still lives in seclusion, a habit that has earned her a reputation as a loner and a reclu",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Wayward_Hermetic_Spiritspeaker"
+  },
+  "local-legend-huntersray": {
+    "name": "Angelica, Fairy Knight Twin & Medoro, Fairy Knight Twin",
+    "location": {
+      "region": "",
+      "area": "",
+      "subarea": ""
+    },
+    "description": "Two pairs of Local Legends, Hunter's Ray - the Fairy Knight Twins (Angelica and Medoro) and Swords of the Gorge (Cortana and Murgleis), can be found in Salacia Plain and Thalatta Submarine Canyon respectively.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Hunter's_Ray"
+  },
+  "local-legend-churldric": {
+    "name": "Churldric",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Windrest Peak",
+      "subarea": ""
+    },
+    "description": "Churldric is a Local Legend found in Windrest Peak, Mondstadt.",
+    "map": "assets/boss-maps/local-legend-churldric.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Churldric"
+  },
+  "local-legend-blubberbeast": {
+    "name": "Dobharcu, Lord of the Hidden",
+    "location": {
+      "region": "Fontaine",
+      "area": "Chemin de L'Espoir",
+      "subarea": ""
+    },
+    "description": "Two Local Legend Blubberbeasts, Fading Veteran and Dobharcu, Lord of the Hidden, can be found in Elton Trench and Chemin de L'Espoir respectively.",
+    "map": "assets/boss-maps/local-legend-blubberbeast.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Blubberbeast"
+  },
+  "local-legend-sternshieldcrab": {
+    "name": "Iron Viscount",
+    "location": {
+      "region": "Fontaine",
+      "area": "Beryl Region",
+      "subarea": ""
+    },
+    "description": "Two Local Legend Sternshield Crabs, Iron Viscount and Ocean Circuit Judge, can be found in Beryl Region and Elynas, respectively.",
+    "map": "assets/boss-maps/local-legend-sternshieldcrab.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Sternshield_Crab"
+  },
+  "watcherfallenvigil": {
+    "name": "Watcher: Fallen Vigil",
+    "location": {
+      "region": "Mondstadt",
+      "area": "Windrest Peak",
+      "subarea": ""
+    },
+    "description": "A shadow construct born from the overflow of the mighty primordial being, a Watcher who once dwelt in the highest heavens, yet was cast down into the mortal realm for daring to open its eye. A Watcher was meant only to stand in silent vigil within the Pillar Hall of the World. Any inquiry that transgressed the ordained order was deemed an unforgivable sin, tantamount to seeking the world's annihilation. As sovereign of the world's watchtower, it wielded the authority bestowed by its creator — the power to correct all matters of \"innovation\" and \"evolution.\" After enduring countless aeons of ne",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/The_Open-Eyed"
+  },
+  "local-legend-cherubicseahare": {
+    "name": "Luachra the Brilliant",
+    "location": {
+      "region": "Fontaine",
+      "area": "Liffey Region",
+      "subarea": ""
+    },
+    "description": "One Local Legend Cherubic Sea Hare, Luachra the Brilliant, can be found in the north-west corner of the Liffey Region.",
+    "map": "assets/boss-maps/local-legend-cherubicseahare.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Cherubic_Sea_Hare"
+  },
+  "local-legend-hatjellyfish": {
+    "name": "Chassanion",
+    "location": {
+      "region": "Fontaine",
+      "area": "Sealed Ruined Tower",
+      "subarea": ""
+    },
+    "description": "Two Local Legend Hat Jellyfish, Chassanion and Mageblade Corrouge, can be found underneath the Sealed Ruined Tower and Roots of Erinnyes respectively. After completing the , Chassanion can be found inside the Tower of Ipsissimus. Mageblade Corrouge can only be fought after the is completed.",
+    "map": "assets/boss-maps/local-legend-hatjellyfish.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Hat_Jellyfish"
+  },
+  "local-legend-taintedwatersplittingphantasm": {
+    "name": "Ninianne of the Lake",
+    "location": {
+      "region": "Fontaine",
+      "area": "Elynas",
+      "subarea": ""
+    },
+    "description": "One Local Legend Water-Spitting Phantasm, Ninianne of the Lake, can be found by the northern skeletal remains in Elynas.",
+    "map": "assets/boss-maps/local-legend-taintedwatersplittingphantasm.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Tainted_Water-Splitting_Phantasm"
+  },
+  "local-legend-taintedwaterspoutingphantasm": {
+    "name": "Vivianne of the Lake",
+    "location": {
+      "region": "Fontaine",
+      "area": "Court of Fontaine Region",
+      "subarea": ""
+    },
+    "description": "One Local Legend Water-Spouting Phantasm, Vivianne of the Lake, can be found northeast of the Echoes of the Deep Tides domain.",
+    "map": "assets/boss-maps/local-legend-taintedwaterspoutingphantasm.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Tainted_Water-Spouting_Phantasm"
+  },
+  "local-legend-frostoperative": {
+    "name": "Yseut",
+    "location": {
+      "region": "Fontaine",
+      "area": "Mont Esus East",
+      "subarea": ""
+    },
+    "description": "One Local Legend Frost Operative, called Yseut, can be found west of the Statue of the Seven in the Liffey Region.",
+    "map": "assets/boss-maps/local-legend-frostoperative.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Frost_Operative"
+  },
+  "local-legend-windoperative": {
+    "name": "Deianeira of Snezhevna",
+    "location": {
+      "region": "Fontaine",
+      "area": "Sealed Ruined Tower",
+      "subarea": ""
+    },
+    "description": "One Local Legend Wind Operative, Deianeira of Snezhevna, can be found in the Hidden Lab, Morte Region after completing the World Quest An Expected Lie.",
+    "map": "assets/boss-maps/local-legend-windoperative.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Wind_Operative"
+  },
+  "local-legend-arithmeticenhancermek": {
+    "name": "Automated Supercomputing Field Generator",
+    "location": {
+      "region": "Fontaine",
+      "area": "Fontaine Research Institute of Kinetic Energy Engineering Region",
+      "subarea": ""
+    },
+    "description": "One Local Legend Arithmetic Enhancer Mek, the Automated Supercomputing Field Generator, can be found in the Central Laboratory Ruins sub-area of the Fontaine Research Institute of Kinetic Energy Engineering Region, just north of the Institute of Clockwork Applications.",
+    "map": "assets/boss-maps/local-legend-arithmeticenhancermek.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Arithmetic_Enhancer_Mek"
+  },
+  "local-legend-liam": {
+    "name": "Liam",
+    "location": {
+      "region": "Fontaine",
+      "area": "Erinnyes Forest",
+      "subarea": ""
+    },
+    "description": "Liam is a Local Legend found east of the Weeping Willow of the Lake, Fontaine.",
+    "map": "assets/boss-maps/local-legend-liam.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Liam"
+  },
+  "local-legend-primordialbathysmalvishap": {
+    "name": "Cineas",
+    "location": {
+      "region": "Fontaine",
+      "area": "Clivus Capitolinus",
+      "subarea": ""
+    },
+    "description": "One Local Legend Primordial Bathysmal Vishap, Cineas, can be found in Machimos, Sea of Bygone Eras.",
+    "map": "assets/boss-maps/local-legend-primordialbathysmalvishap.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Primordial_Bathysmal_Vishap"
+  },
+  "local-legend-rocky-avildsen": {
+    "name": "Rocky Avildsen",
+    "location": {
+      "region": "Fontaine",
+      "area": "Erinnyes Forest",
+      "subarea": ""
+    },
+    "description": "Rocky Avildsen is a Local Legend found on the path northeast of Weeping Willow of the Lake, Erinnyes Forest.",
+    "map": "assets/boss-maps/local-legend-rocky-avildsen.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Rocky_Avildsen"
+  },
+  "local-legend-he-never-dies": {
+    "name": "He Never Dies",
+    "location": {
+      "region": "Natlan",
+      "area": "Coatepec Mountain",
+      "subarea": ""
+    },
+    "description": "\"He Never Dies\" is a Local Legend found in Natlan.",
+    "map": "assets/boss-maps/local-legend-he-never-dies.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/%22He_Never_Dies%22"
+  },
+  "local-legend-rockcavernouswayobmanifestation": {
+    "name": "Atlatl's Blessing",
+    "location": {
+      "region": "Natlan",
+      "area": "Tepeacac Rise",
+      "subarea": ""
+    },
+    "description": "One Local Legend Rock-Cavernous Wayob Manifestation, \"Atlatl's Blessing\" — Will of Plumes Swift, can be found as part of a Nightsoul Totem challenge in the Ancient Excavation Site, Coatepec Mountain, Natlan.",
+    "map": "assets/boss-maps/local-legend-rockcavernouswayobmanifestation.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Rock-Cavernous_Wayob_Manifestation"
+  },
+  "local-legend-tepetlisauruswarriorrockbreakerblade": {
+    "name": "Tlatzacuilotl",
+    "location": {
+      "region": "Natlan",
+      "area": "Sulfurous Veins",
+      "subarea": ""
+    },
+    "description": "A Local Legend Tepetlisaurus warrior, \"Tlatzacuilotl\" — Explorer of the Golden City, can be found as part of a Nightsoul Totem challenge at Tequemecan Valley, Natlan.",
+    "map": "assets/boss-maps/local-legend-tepetlisauruswarriorrockbreakerblade.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Tepetlisaurus_Warrior%3A_Rockbreaker_Blade"
+  },
+  "local-legend-yumkasauruswarriorflowingskyfire": {
+    "name": "Cihuacoatl of Chimeric Bone",
+    "location": {
+      "region": "Natlan",
+      "area": "Coatepec Mountain",
+      "subarea": ""
+    },
+    "description": "A Local Legend Yumkasaurus Warrior: Flowing Skyfire, \"Cihuacoatl of Chimeric Bone\" — Once Walked With the Lord of Xibalba, can be found a part of a Nightsoul Totem challenge in Coatepec Mountain, west from Teticpac Peak, Natlan.",
+    "map": "assets/boss-maps/local-legend-yumkasauruswarriorflowingskyfire.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Yumkasaurus_Warrior%3A_Flowing_Skyfire"
+  },
+  "local-legend-flowinvertedwayobmanifestation": {
+    "name": "Chimalli's Shade",
+    "location": {
+      "region": "Natlan",
+      "area": "Ancestral Temple",
+      "subarea": ""
+    },
+    "description": "One Local Legend Flow-Inverted Wayob Manifestation, \"Chimalli's Shade\" — Will of Shields Horned, can be found as part of a Nightsoul Totem challenge in Ancestral Temple, Natlan.",
+    "map": "assets/boss-maps/local-legend-flowinvertedwayobmanifestation.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Flow-Inverted_Wayob_Manifestation"
+  },
+  "local-legend-qucusauruswarriorheartstarhammer": {
+    "name": "Ironbeard",
+    "location": {
+      "region": "Natlan",
+      "area": "Quahuacan Cliff",
+      "subarea": ""
+    },
+    "description": "A Local Legend Qucusaurus Warrior: Heartstar Hammer, Ironbeard — The Fire That Forges All, can be found in Quahuacan Cliff, Natlan as part of a Nightsoul Totem challenge.",
+    "map": "assets/boss-maps/local-legend-qucusauruswarriorheartstarhammer.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Qucusaurus_Warrior%3A_Heartstar_Hammer"
+  },
+  "local-legend-bitingcoldwayobmanifestation": {
+    "name": "Potapo's Solidarity",
+    "location": {
+      "region": "Natlan",
+      "area": "Stadium of the Sacred Flame",
+      "subarea": ""
+    },
+    "description": "A Local Legend Biting-Cold Wayob Manifestation, \"Potapo's Solidarity\" — Will of Rivalry and Battle, can be found as a Nightsoul Totem challenge in Natlan.",
+    "map": "assets/boss-maps/local-legend-bitingcoldwayobmanifestation.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Biting-Cold_Wayob_Manifestation"
+  },
+  "local-legend-burningaflamewayobmanifestation": {
+    "name": "Tupayo's Aid",
+    "location": {
+      "region": "Natlan",
+      "area": "Quahuacan Cliff",
+      "subarea": ""
+    },
+    "description": "A Local Legend Burning-Aflame Wayob Manifestation, \"Tupayo's Aid\" — Will of Honor and Glory, can be found as a Nightsoul Totem challenge in Natlan.",
+    "map": "assets/boss-maps/local-legend-burningaflamewayobmanifestation.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Burning-Aflame_Wayob_Manifestation"
+  },
+  "local-legend-iktomisaurus": {
+    "name": "Spirit of the Fallen Dawnstar",
+    "location": {
+      "region": "Natlan",
+      "area": "Tezcatepetonco Range",
+      "subarea": ""
+    },
+    "description": "A Local Legend Iktomisaurus, \"Spirit of the Fallen Dawnstar\" — All-Twisting Obsidian Storm, can be found in Tezcatepetonco Range, Natlan as part of a Nightsoul Totem challenge.",
+    "map": "assets/boss-maps/local-legend-iktomisaurus.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Iktomisaurus"
+  },
+  "shoukinokamitheprodigal": {
+    "name": "Shouki no Kami, the Prodigal",
+    "location": {
+      "region": "",
+      "area": "Joururi Workshop",
+      "subarea": ""
+    },
+    "description": "Shouki no Kami, as an artificial divinity created using all the might of Sumeru's Six Darshans, has power that rivals that of true gods. But those of this world who call such a being a \"false deity\" misunderstand the true meaning of the word. Shouki no Kami now understands countless things and shoulders unassailable might, and may be said to surpass mortals. If gods must love mortals, then Shouki no Kami, who grants failure in equal measure to humanity, loves them also. If gods must watch over humanity, ... ... then Shouki no Kami, who has borne witness to infinite love, hatred, partings, grud",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Everlasting_Lord_of_Arcane_Wisdom"
+  },
+  "local-legend-thunderingwayobmanifestation": {
+    "name": "Tupu's Lushness",
+    "location": {
+      "region": "Natlan",
+      "area": "Atocpan",
+      "subarea": ""
+    },
+    "description": "A Local Legend Thundering Wayob Manfestation, Tupu's Lushness — Vessel for the Will to Grow, can be found as part of a Nightsoul Totem challenge in Natlan.",
+    "map": "assets/boss-maps/local-legend-thunderingwayobmanifestation.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Thundering_Wayob_Manifestation"
+  },
+  "local-legend-koholasauruswarriorwaveshuttler": {
+    "name": "Sappho Amidst the Waves",
+    "location": {
+      "region": "Natlan",
+      "area": "Tepeacac Rise",
+      "subarea": ""
+    },
+    "description": "One Local Legend Koholasaurus Warrior: Waveshuttler, called \"Sappho Amidst the Waves\" — Waterborne Lutenist, can be found in Coatepec Mountain, Natlan, northwest from the Blazing Ruins Domain. Unlike most other Local Legends, Sappho is not aggressive unless she is attacked, or the wildlife near her are attacked or caught with an Omni-Ubiquity Net.",
+    "map": "assets/boss-maps/local-legend-koholasauruswarriorwaveshuttler.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Koholasaurus_Warrior%3A_Waveshuttler"
+  },
+  "local-legend-tatankasauruswarriorspiritlightchaser": {
+    "name": "Reji",
+    "location": {
+      "region": "Natlan",
+      "area": "Atocpan",
+      "subarea": ""
+    },
+    "description": "A Local Legend Tatankasaurus Warrior: Spiritlight Chaser, \"Reji\" — Launch and Leap, can be found as part of a Nightsoul Totem challenge at Atocpan, Natlan.",
+    "map": "assets/boss-maps/local-legend-tatankasauruswarriorspiritlightchaser.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Tatankasaurus_Warrior%3A_Spiritlight_Chaser"
+  },
+  "local-legend-fatuiskirmisherpyroslingerbracer": {
+    "name": "Polychrome Tri-Stars",
+    "location": {
+      "region": "",
+      "area": "Multiple",
+      "subarea": ""
+    },
+    "description": "One Local Legend Pyroslinger Bracer, called Polychrome Tri-Stars: Vasily, can be found in Huitztli Hill, Basin of Unnumbered Flames, Natlan, along with his fellow Polychrome Tri-Stars Nomokonov and Sidorenko.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Fatui_Skirmisher_-_Pyroslinger_Bracer"
+  },
+  "local-legend-cocijo": {
+    "name": "Cocijo",
+    "location": {
+      "region": "Natlan",
+      "area": "Ameyalco Waters",
+      "subarea": ""
+    },
+    "description": "Cocijo is a Local Legend found south of the Statue of The Seven in Ameyalco Waters, Natlan.",
+    "map": "assets/boss-maps/local-legend-cocijo.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Cocijo"
+  },
+  "local-legend-fatuiskirmisherelectrohammervanguard": {
+    "name": "Polychrome Tri-Stars",
+    "location": {
+      "region": "",
+      "area": "Multiple",
+      "subarea": ""
+    },
+    "description": "One Local Legend Electrohammer Vanguard, called Polychrome Tri-Stars: Nomokonov, can be found in Huitztli Hill, Basin of Unnumbered Flames, Natlan, along with his fellow Polychrome Tri-Stars Vasily and Sidorenko.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Fatui_Skirmisher_-_Electrohammer_Vanguard"
+  },
+  "local-legend-fatuiskirmishercryogunnerlegionnaire": {
+    "name": "Polychrome Tri-Stars",
+    "location": {
+      "region": "",
+      "area": "Multiple",
+      "subarea": ""
+    },
+    "description": "One Local Legend Cryogunner Legionnaire, called Polychrome Tri-Stars: Sidorenko, can be found in Huitztli Hill, Basin of Unnumbered Flames, Natlan, along with his fellow Polychrome Tri-Stars Vasily and Nomokonov.",
+    "map": "",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Fatui_Skirmisher_-_Cryogunner_Legionnaire"
+  },
+  "local-legend-iktomisauruswarriorcryocrystalcannon": {
+    "name": "Rilai",
+    "location": {
+      "region": "Natlan",
+      "area": "Tezcatepetonco Range",
+      "subarea": ""
+    },
+    "description": "A Local Legend Iktomisaurus Warrior: Cryocrystal Cannon, Rilai — Frozen Collar, can be found in Natlan. Unlike most other Local Legends, Rilai is not aggressive unless she is attacked, or the wildlife near her are attacked or caught with an Omni-Ubiquity Net.",
+    "map": "assets/boss-maps/local-legend-iktomisauruswarriorcryocrystalcannon.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Iktomisaurus_Warrior%3A_Cryocrystal_Cannon"
+  },
+  "local-legend-fatuipyroagent": {
+    "name": "Balachko",
+    "location": {
+      "region": "Natlan",
+      "area": "Ameyalco Waters",
+      "subarea": ""
+    },
+    "description": "One Local Legend Fatui Pyro Agent, \"Balachko\" — Shadows Like Blades Deepening, can be found west of the Sanctum of Rainbow Spirits Domain in Toyac Springs, Natlan. Accessing the Local Legend for the first time requires the player to find two Key to Somewhere to unlock the gate leading to him, both of which are found in the small Koholasaurus tribe camp.",
+    "map": "assets/boss-maps/local-legend-fatuipyroagent.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Fatui_Pyro_Agent"
+  },
+  "local-legend-ruindrakeearthguard": {
+    "name": "Bronzelock",
+    "location": {
+      "region": "Natlan",
+      "area": "Ochkanatlan",
+      "subarea": ""
+    },
+    "description": "A Local Legend Ruin Drake: Earthguard, \"Bronzelock\" — Capricious Warbeast, can be found in Ochkanatlan, Natlan. Accessing the Local Legend for the first time requires doing one of the following: * Spawning a Spiritway leading to Bronzelock by solving a Koholasaurus-related puzzle at sea level southeast of Bronzelock's location * Gliding to Bronzelock from higher elevation, such as by using a Qucusaurus to glide from the higher island with a Teleport Waypoint northwest of Bronzelock",
+    "map": "assets/boss-maps/local-legend-ruindrakeearthguard.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Ruin_Drake%3A_Earthguard"
+  },
+  "local-legend-the-peak": {
+    "name": "The Peak",
+    "location": {
+      "region": "Natlan",
+      "area": "Atocpan",
+      "subarea": ""
+    },
+    "description": "The Peak is a Local Legend found in Atocpan, Natlan.",
+    "map": "assets/boss-maps/local-legend-the-peak.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/The_Peak"
+  },
+  "local-legend-foliarswiftwayobmanifestation": {
+    "name": "Ichcahuipilli's Aegis",
+    "location": {
+      "region": "Natlan",
+      "area": "Basin of Unnumbered Flames",
+      "subarea": ""
+    },
+    "description": "A Local Legend Foliar-Swift Wayob, \"Ichcahuipilli's Aegis\" — Will of Scales Resilient, can be found as a Nightsoul Totem challenge in Basin of Unnumbered Flames, Huitztli Hill.",
+    "map": "assets/boss-maps/local-legend-foliarswiftwayobmanifestation.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Foliar-Swift_Wayob_Manifestation"
+  },
+  "local-legend-erodingavataroflava": {
+    "name": "Infinitesimal",
+    "location": {
+      "region": "Natlan",
+      "area": "Flame-Melding Ritual Grounds",
+      "subarea": ""
+    },
+    "description": "A Local Legend Eroding Avatar of Lava, \"Infinitesimal\" — A Fiery Stone Gathers No Moss, can be found in the Ancient Sacred Mountain, Natlan, just west of its easternmost Waypoint. Accessing the Local Legend for the first time requires the player to progress through the World Quest Nahuatzin's Leap.",
+    "map": "assets/boss-maps/local-legend-erodingavataroflava.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Eroding_Avatar_of_Lava"
+  },
+  "local-legend-sigurd": {
+    "name": "Sigurd",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Lempo Isle",
+      "subarea": ""
+    },
+    "description": "Sigurd is a Local Legend found in Lempo Isle, Nod-Krai. In order to challenge him, the player must have completed the and then interact with his gravestone to summon him.",
+    "map": "assets/boss-maps/local-legend-sigurd.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Sigurd_(Local_Legend)"
+  },
+  "local-legend-the-last-survivor-of-tenochtzitoc": {
+    "name": "The Last Survivor of Tenochtzitoc",
+    "location": {
+      "region": "Natlan",
+      "area": "Wavey Bay",
+      "subarea": ""
+    },
+    "description": "The Last Survivor of Tenochtzitoc is a Local Legend found in .",
+    "map": "assets/boss-maps/local-legend-the-last-survivor-of-tenochtzitoc.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/The_Last_Survivor_of_Tenochtzitoc_(Local_Legend)"
+  },
+  "local-legend-battlegoat-and-ironclaw": {
+    "name": "Battlegoat and Ironclaw",
+    "location": {
+      "region": "Natlan",
+      "area": "Atocpan",
+      "subarea": ""
+    },
+    "description": "\"Battlegoat\" and \"Ironclaw\" are a pair of a Local Legends found in Natlan, near the Derelict Masonry Dock domain. Unlike most other Local Legends, they are not aggressive to the player unless they are attacked.",
+    "map": "assets/boss-maps/local-legend-battlegoat-and-ironclaw.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/%22Battlegoat%22_and_%22Ironclaw%22"
+  },
+  "local-legend-crab-tsar": {
+    "name": "Crab Tsar",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Crab Tsar's Palace",
+      "subarea": ""
+    },
+    "description": "Crab Tsar is a Local Legend found in Crab Tsar's Palace, Hiisi Island, Nod-Krai.",
+    "map": "assets/boss-maps/local-legend-crab-tsar.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Crab_Tsar"
+  },
+  "local-legend-oprichnikifirebladeshocktrooper": {
+    "name": "Raskolnikov",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Kuuvahki Experimental Design Bureau",
+      "subarea": ""
+    },
+    "description": "One Local Legend Fireblade Shock Trooper, Raskolnikov — Poruchik, can be found at the top of the Kuuvahki Experimental Design Bureau. Accessing the Local Legend requires completion of the World Quest The Shoemaker's Children Go Barefoot.",
+    "map": "assets/boss-maps/local-legend-oprichnikifirebladeshocktrooper.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Oprichniki_Fireblade_Shock_Trooper"
+  },
+  "local-legend-hexadecatonic-mandragora": {
+    "name": "Hexadecatonic Mandragora",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Voidsea Outlook",
+      "subarea": ""
+    },
+    "description": "Hexadecatonic Mandragora is a Local Legend found in Voidsea Outlook, Nod-Krai.",
+    "map": "assets/boss-maps/local-legend-hexadecatonic-mandragora.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Hexadecatonic_Mandragora"
+  },
+  "local-legend-hiljetta": {
+    "name": "Hiljetta",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Wavechaser Plain",
+      "subarea": ""
+    },
+    "description": "Hiljetta is a Local Legend found in Wavechaser Plain, Nod-Krai. Unlike most other Local Legends, Hiljetta is not aggressive unless she is attacked.",
+    "map": "assets/boss-maps/local-legend-hiljetta.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Hiljetta_(Local_Legend)"
+  },
+  "local-legend-the-homesick-lone-wolf": {
+    "name": "The Homesick Lone Wolf",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Ashveil Peak",
+      "subarea": ""
+    },
+    "description": "\"The Homesick Lone Wolf\" is a Local Legend found in Ashveil Peak, Nod-Krai.",
+    "map": "assets/boss-maps/local-legend-the-homesick-lone-wolf.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/%22The_Homesick_Lone_Wolf%22"
+  },
+  "local-legend-groundedgeoshroom": {
+    "name": "Maha Vasudevayaputra",
+    "location": {
+      "region": "Temple of Space",
+      "area": "Temple of Space",
+      "subarea": ""
+    },
+    "description": "One Local Legend Grounded Geoshroom, \"Maha Vasudevayaputra\" - Blessed With Excess, can be found in the Desert Pavilion, Temple of Space. Accessing the Local Legend requires partial completion of the World Quest Unofficial Chronicle of the Desert Pavilion, and players must speak to Mardava to initiate the fight.",
+    "map": "assets/boss-maps/local-legend-groundedgeoshroom.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Grounded_Geoshroom"
+  },
+  "local-legend-churin": {
+    "name": "Churin",
+    "location": {
+      "region": "Snezhnaya",
+      "area": "Fellfrost Peak",
+      "subarea": ""
+    },
+    "description": "Churin is a Local Legend found in Fellfrost Peak, Snezhnaya.",
+    "map": "assets/boss-maps/local-legend-churin.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Churin_(Local_Legend)"
+  },
+  "local-legend-chimericburrowbeast": {
+    "name": "Bandersnatch",
+    "location": {
+      "region": "Snezhnaya",
+      "area": "Cavern of Prime Ice Mountain",
+      "subarea": ""
+    },
+    "description": "One Local Legend Chimeric Burrowbeast, Bandersnatch — Grounded Snowhawk, can be found underneath Svetloledovka. Accessing the Local Legend requires partial completion of .",
+    "map": "assets/boss-maps/local-legend-chimericburrowbeast.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Chimeric_Burrowbeast"
+  },
+  "local-legend-prism-slime": {
+    "name": "Prism Slime",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Lunar Highlands",
+      "subarea": ""
+    },
+    "description": "Prism Slime is a Local Legend found in . Accessing the Local Legend requires completion of the .",
+    "map": "assets/boss-maps/local-legend-prism-slime.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Prism_Slime"
+  },
+  "local-legend-voywolfhunter": {
+    "name": "Furiosa",
+    "location": {
+      "region": "Snezhnaya",
+      "area": "Everfrozen Earth",
+      "subarea": ""
+    },
+    "description": "One Local Legend Voywolf Hunter, Furiosa — Guardian of What Is No More, can be found in Everfrozen Earth, Snezhnaya, near the Scars of Cursed Obsession domain.",
+    "map": "assets/boss-maps/local-legend-voywolfhunter.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Voywolf_Hunter"
+  },
+  "local-legend-mushteshir": {
+    "name": "Mushteshir",
+    "location": {
+      "region": "Nod-Krai",
+      "area": "Kalag Guarding Grounds",
+      "subarea": ""
+    },
+    "description": "One Local Legend Precursor's Secret Source Matrix of Overseer Network, Mushteshir — The Pioneer That Gazes at the Stars, can be found in . Accessing the Local Legend requires completion of two simple combat challenges. Subsequent respawns will not require the player to repeat the challenges, as the Local Legend will immediately enter the arena.",
+    "map": "assets/boss-maps/local-legend-mushteshir.png",
+    "sourcePage": "https://genshin-impact.fandom.com/wiki/Precursor's_Secret_Source_Matrix_of_Overseer_Network"
+  }
+}

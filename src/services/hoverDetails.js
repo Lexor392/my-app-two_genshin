@@ -1,8 +1,11 @@
-const DETAIL_CACHE_KEY = "genshin-random-lab:hover-details:v1";
+import bossHoverDetails from "../data/bossHoverDetails.json" with { type: "json" };
+
+const DETAIL_CACHE_KEY = "genshin-random-lab:hover-details:v2";
 const DETAIL_CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
 const DETAIL_CACHE_LIMIT = 120;
 const GENDATA_API = "https://genshin-db-api.vercel.app/api/v5";
 const FANDOM_API = "https://genshin-impact.fandom.com/api.php";
+const APP_BASE_URL = import.meta.env?.BASE_URL || "/";
 const RESULT_LANGUAGES = { ru: "russian", en: "english", zh: "chinese", ja: "japanese", ko: "korean" };
 const memoryCache = new Map();
 const pendingRequests = new Map();
@@ -158,6 +161,26 @@ const fetchBossLocation = async (item, signal) => {
 };
 
 const loadHoverDetails = async (item, kind, lang, signal) => {
+  if (kind === "bosses") {
+    const local = bossHoverDetails[item.id];
+    if (local) {
+      return {
+        title: local.name || item.name,
+        description: local.description || "",
+        affiliation: "",
+        region: local.location?.region || "",
+        area: local.location?.area || "",
+        subarea: local.location?.subarea || "",
+        constellation: "",
+        birthday: "",
+        weapon: "",
+        element: "",
+        mapImage: local.map ? `${APP_BASE_URL}${local.map.replace(/^\//, "")}` : "",
+        sourceUrl: local.sourcePage || "",
+      };
+    }
+  }
+
   const entry = await fetchDatabaseEntry(item, kind, lang, signal);
   const wiki = kind === "bosses" ? await fetchBossLocation(item, signal) : { location: {}, mapImage: "" };
   return {
