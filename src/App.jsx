@@ -8,7 +8,7 @@ import { countRollSessions, createRollHistoryEntries } from "./services/rollHist
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
 import { fetchHoverDetails, getLocalBossDetails } from "./services/hoverDetails";
-import { KOFI_SIGNUP_URL, KOFI_URL, PATREON_SIGNUP_URL, PATREON_URL, SUPPORT_EMAIL } from "./config/support";
+import { KOFI_SIGNUP_URL, KOFI_URL, NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
 import {
   buildRollSequence,
   getCenteredReelPosition,
@@ -2607,7 +2607,7 @@ const DonationPage = ({ t }) => (
     <div className="donation-services">
       {[
         { name: "Ko-fi", description: t.donateKofi, methods: ["PayPal", t.donateCards, "Apple Pay", "Google Pay", t.donateLocalPayments], href: KOFI_URL || KOFI_SIGNUP_URL, configured: Boolean(KOFI_URL), openLabel: t.donateOpenKofi, createLabel: t.donateCreateKofi, terms: "https://help.ko-fi.com/hc/en-us/articles/360002506494-Does-Ko-fi-take-a-fee" },
-        { name: "Patreon", description: t.donatePatreon, methods: [t.donateCards, "PayPal", "Apple Pay", "Venmo"], href: PATREON_URL || PATREON_SIGNUP_URL, configured: Boolean(PATREON_URL), openLabel: t.donateOpenPatreon, createLabel: t.donateCreatePatreon, terms: "https://support.patreon.com/hc/en-us/articles/39694936541965-Payouts-guide-for-creators-outside-of-the-US" },
+        { name: "NOWPayments", description: t.donateNowpayments, methods: ["BTC", "ETH", "USDT", t.donateManyCoins], href: NOWPAYMENTS_URL, configured: Boolean(NOWPAYMENTS_URL), openLabel: t.donateOpenNowpayments, createLabel: t.donateOpenNowpayments, terms: "https://nowpayments.io/donation-tools" },
       ].map((service) => (
         <article className="donation-card" key={service.name}>
           <div className="donation-card-heading">
