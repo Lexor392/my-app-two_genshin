@@ -91,7 +91,7 @@ const DEFAULT_CHARACTER_FILTERS = {
 
 const DEFAULT_BOSS_FILTERS = {
   search: "",
-  viewMode: "list",
+  viewMode: "cards",
   groups: [],
 };
 
@@ -666,7 +666,7 @@ const normalizeBossFilters = (value) => {
   const source = value && typeof value === "object" ? value : {};
   return {
     search: typeof source.search === "string" ? source.search : DEFAULT_BOSS_FILTERS.search,
-    viewMode: "list",
+    viewMode: source.viewMode === "list" || source.viewMode === "cards" ? source.viewMode : DEFAULT_BOSS_FILTERS.viewMode,
     groups: uniqueStringArray(source.groups),
   };
 };
@@ -803,7 +803,12 @@ const loadInitialState = () => {
   const characterFilters = normalizeCharacterFilters(
     readCookieJson(COOKIE_KEYS.characterFilters, DEFAULT_CHARACTER_FILTERS)
   );
-  const bossFilters = normalizeBossFilters(readCookieJson(COOKIE_KEYS.bossFilters, DEFAULT_BOSS_FILTERS));
+  const storedBossFilters = normalizeBossFilters(readCookieJson(COOKIE_KEYS.bossFilters, DEFAULT_BOSS_FILTERS));
+  const storedBossView = uiCookie.bossPoolViewMode;
+  const bossFilters = {
+    ...storedBossFilters,
+    viewMode: storedBossView === "list" || storedBossView === "cards" ? storedBossView : DEFAULT_BOSS_FILTERS.viewMode,
+  };
   const selectedCookie = readCookieJson(COOKIE_KEYS.selectedIds, {});
   const historyFilters = normalizeHistoryFilters(
     readCookieJson(COOKIE_KEYS.historyFilters, DEFAULT_HISTORY_FILTERS)
@@ -1200,7 +1205,9 @@ const BossPoolPanel = ({
   selectedIds,
   setSelectedIds,
   onBack,
+  isMobileLayout,
 }) => {
+  const viewMode = isMobileLayout ? "list" : activeFilters.viewMode;
   const visibleItems = useMemo(
     () => allItems.filter((item) => matchesBossFilters(item, activeFilters, lang)),
     [allItems, activeFilters, lang]
@@ -1314,6 +1321,30 @@ const BossPoolPanel = ({
         </details>
         </div>
 
+          {!isMobileLayout ? (
+            <div className="view-toggle pool-view-toggle">
+              <span>{t.view}</span>
+              <div className="toggle-row">
+                <button
+                  type="button"
+                  className={viewMode === "cards" ? "is-active" : ""}
+                  aria-pressed={viewMode === "cards"}
+                  onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "cards" }))}
+                >
+                  {t.viewCards}
+                </button>
+                <button
+                  type="button"
+                  className={viewMode === "list" ? "is-active" : ""}
+                  aria-pressed={viewMode === "list"}
+                  onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "list" }))}
+                >
+                  {t.viewList}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
         <div className="filter-actions pool-selection-actions">
           <button type="button" className="btn-secondary" onClick={selectVisible}>{t.selectAll}</button>
           <button type="button" className="btn-secondary" onClick={deselectVisible}>{t.deselectAll}</button>
@@ -1326,7 +1357,7 @@ const BossPoolPanel = ({
 
         {visibleItems.length ? (
           <div className="options-scroll">
-            <div className="options-grid is-list">
+            <div className={`options-grid ${viewMode === "list" ? "is-list" : "is-cards"}`}>
               {visibleItems.map((item) => (
                 <BossOption
                   key={item.id}
@@ -1334,7 +1365,7 @@ const BossPoolPanel = ({
                   lang={lang}
                   selected={selectedIds.has(item.id)}
                   onToggle={toggleSelection}
-                  viewMode="list"
+                  viewMode={viewMode}
                   t={t}
                 />
               ))}
@@ -1756,7 +1787,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
                 {getSaveSquadLabel(lang)}
               </button>
               <button type="button" className="btn-primary splash-reroll" onClick={onReroll}>
-                {getRerollSquadLabel(lang)}
+                {result.stage === "bosses" ? t.rerollBoss : getRerollSquadLabel(lang)}
               </button>
             </>
           ) : (
@@ -1765,7 +1796,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onReroll, ef
                 {t.close}
               </button>
               <button type="button" className="btn-primary splash-reroll" onClick={onReroll}>
-                {getRerollSquadLabel(lang)}
+                {result.stage === "bosses" ? t.rerollBoss : getRerollSquadLabel(lang)}
               </button>
             </>
           )}
@@ -2334,6 +2365,7 @@ function App() {
   const [selectedBoss, setSelectedBoss] = useState(null);
   const [splashResult, setSplashResult] = useState(null);
   const [characterRerollTrigger, setCharacterRerollTrigger] = useState(0);
+  const [bossRerollTrigger, setBossRerollTrigger] = useState(0);
 
   const [characterFilters, setCharacterFilters] = useState(boot.characterFilters);
   const [bossFilters, setBossFilters] = useState(boot.bossFilters);
@@ -2763,7 +2795,7 @@ function App() {
 
       setRollHistory((prev) => [...entries, ...prev].slice(0, settings.historyLimit));
 
-      if (settings.splashEnabled && stage === "characters" && squad.length) {
+      if (settings.splashEnabled && ((stage === "characters" && squad.length) || stage === "bosses")) {
         setSplashResult({ stage, item: winner, squad, timestamp });
       }
     },
@@ -2797,16 +2829,21 @@ function App() {
   }, []);
 
   const rerollFromSplash = useCallback(() => {
+    const stage = splashResult?.stage || "characters";
     setSplashResult(null);
+    if (stage === "bosses") {
+      setActiveSection("bosses");
+      setSelectedBoss(null);
+      setBossRerollTrigger((prev) => prev + 1);
+      return;
+    }
     setActiveSection("characters");
     setSelectedCharacter(null);
     setCharacterRerollTrigger((prev) => prev + 1);
-  }, []);
+  }, [splashResult?.stage]);
 
   useEffect(() => {
-    if (!splashResult || splashResult.stage !== "characters" || !Array.isArray(splashResult.squad)) {
-      return;
-    }
+    if (!splashResult) return;
     playVictorySound();
   }, [playVictorySound, splashResult]);
 
@@ -2837,8 +2874,9 @@ function App() {
       activeSection,
       isSidebarCollapsed,
       rouletteMode,
+      bossPoolViewMode: bossFilters.viewMode,
     });
-  }, [activeSection, isSidebarCollapsed, rouletteMode]);
+  }, [activeSection, isSidebarCollapsed, rouletteMode, bossFilters.viewMode]);
 
   useEffect(() => {
     setCookieJson(COOKIE_KEYS.characterFilters, characterFilters);
@@ -2962,7 +3000,7 @@ function App() {
             rollDurationMs={rollDurationMs}
             onRollComplete={isCharacterStage ? handleCharacterRollComplete : handleBossRollComplete}
             onTick={playRollTickSound}
-            externalRollTrigger={isCharacterStage ? characterRerollTrigger : 0}
+            externalRollTrigger={isCharacterStage ? characterRerollTrigger : bossRerollTrigger}
           />
         )}
 
@@ -3196,6 +3234,7 @@ function App() {
                 selectedIds={selectedBossIds}
                 setSelectedIds={setSelectedBossIds}
                 onBack={() => setActiveSection("bosses")}
+                isMobileLayout={isMobileLayout}
               />
             )}
             {activeSection === "history" && (

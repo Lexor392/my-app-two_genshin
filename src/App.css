@@ -2563,6 +2563,9 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .active-filter-count { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 10px; color: #172832; background: #e5ca8c; font-size: .68rem; font-weight: 800; }
 .pool-filter-content { position: absolute; z-index: 80; top: calc(100% + 8px); right: 0; display: grid; gap: 10px; width: min(760px, calc(100vw - 40px)); max-height: min(70vh, 620px); overflow: auto; padding: 12px; border: 1px solid rgba(225, 201, 150, .72); border-radius: 3px; background: rgba(20, 34, 43, .98); box-shadow: 0 16px 40px rgba(0, 0, 0, .48); animation: teyvat-panel-enter .16s ease both; }
 .pool-filter-content .filter-actions { justify-content: flex-end; }
+.pool-view-toggle { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.pool-view-toggle .toggle-row { gap: 5px; }
+.pool-view-toggle .toggle-row button { min-height: 34px; padding: 6px 11px; }
 .pool-selection-actions { margin-top: 10px; }
 .roulette-engine-grid.is-cases .lane-add-button { align-self: center; }
 .wheel-pointer { transform: translateX(-50%) rotate(180deg); }
