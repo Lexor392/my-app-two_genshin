@@ -2446,6 +2446,45 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .preloader-stars span { animation: preloader-star-glow 1.8s ease-in-out infinite alternate; }
 .preloader-stars span:nth-child(2) { animation-delay: .45s; }
 .preloader-stars span:nth-child(3) { animation-delay: .9s; }
+.sidebar { display: flex; flex-direction: column; }
+.menu-list { flex: 0 0 auto; }
+.sidebar-actions { display: grid; gap: 5px; margin-top: auto; padding-top: 16px; }
+.sidebar-action { width: 100%; }
+.app-shell.sidebar-collapsed .sidebar-actions .menu-item { justify-content: center; padding: 9px 8px; }
+.app-shell.sidebar-collapsed .sidebar-actions .menu-item-label { display: none; }
+.sidebar-footer { position: static; margin-top: 12px; }
+.support-backdrop { z-index: 1100; }
+.support-modal { width: min(620px, 100%); gap: 12px; }
+.support-modal { animation: splash-modal-in .32s cubic-bezier(.16,.75,.25,1) both; }
+.support-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.support-modal-head h2 { margin: 4px 0 0; font-family: var(--font-display); font-size: clamp(1.35rem, 4vw, 1.8rem); }
+.support-modal-head .splash-close-icon { position: static; flex: 0 0 auto; }
+.support-hint, .donation-card p { margin: 0; color: var(--text-muted); line-height: 1.6; }
+.support-form { display: grid; gap: 12px; }
+.support-form label { display: grid; gap: 6px; color: var(--text-muted); font-size: .85rem; }
+.support-form input, .support-form select, .support-form textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 3px; padding: 10px 11px; color: var(--text-main); background: rgba(5, 15, 23, .48); font: inherit; }
+.support-form textarea { resize: vertical; min-height: 120px; }
+.support-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.support-honeypot { position: absolute; width: 1px !important; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.support-setup-note, .donation-setup > p { margin: 0; padding: 10px 12px; border: 1px solid rgba(211, 187, 139, .35); background: rgba(211, 187, 139, .08); color: var(--text-muted); font-size: .85rem; line-height: 1.5; }
+.support-status { margin: 0; font-weight: 700; }
+.support-status.sent { color: #b8d4b4; }
+.support-status.error { color: #e5a6a1; }
+.support-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
+.support-actions .btn-primary, .support-actions .btn-secondary { min-width: 140px; }
+.donation-panel { max-width: 900px; }
+.donation-card { position: relative; display: grid; gap: 16px; overflow: hidden; padding: clamp(20px, 4vw, 36px); border: 1px solid rgba(211, 187, 139, .35); background: linear-gradient(145deg, rgba(28, 45, 58, .91), rgba(18, 32, 44, .94)); box-shadow: var(--shadow); }
+.donation-card::after { content: ""; position: absolute; width: 260px; height: 260px; right: -100px; top: -130px; border: 1px solid rgba(211, 187, 139, .18); border-radius: 50%; box-shadow: 0 0 0 24px rgba(211, 187, 139, .035), 0 0 0 48px rgba(211, 187, 139, .025); pointer-events: none; }
+.donation-emblem { color: var(--teyvat-gold); font-size: 2rem; }
+.donation-link { position: relative; z-index: 1; display: inline-flex; justify-content: center; align-items: center; gap: 12px; width: fit-content; min-width: 210px; text-decoration: none; }
+.donation-terms { position: relative; z-index: 1; display: inline-flex; width: fit-content; align-items: center; gap: 7px; color: var(--teyvat-gold-light); text-underline-offset: 3px; font-size: .88rem; }
+.donation-setup { display: grid; justify-items: start; gap: 10px; }
+@media (max-width: 600px) {
+  .support-form-row { grid-template-columns: minmax(0, 1fr); }
+  .support-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .support-actions button { width: 100%; }
+  .donation-link { width: 100%; }
+}
 @keyframes teyvat-panel-enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes splash-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes splash-modal-in { from { opacity: 0; transform: translateY(18px) scale(.975); } to { opacity: 1; transform: translateY(0) scale(1); } }

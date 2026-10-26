@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 import App, { BossOption, buildTravelerDuoCharacters } from "./App";
 import { translations } from "./i18n/translations";
 
@@ -26,6 +26,8 @@ vi.mock("./services/genshinApi", () => ({
   }),
 }));
 
+afterEach(() => cleanup());
+
 test("renders app shell", async () => {
   render(<App />);
 
@@ -45,6 +47,32 @@ test("renders app shell", async () => {
   expect(screen.getByRole("option", { name: "中文" })).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "日本語" })).toBeInTheDocument();
   expect(screen.getByRole("option", { name: "한국어" })).toBeInTheDocument();
+});
+
+test("opens the support form from the sidebar and shows the unconfigured state", async () => {
+  render(<App />);
+
+  fireEvent.click(await screen.findByRole("button", { name: /написать в поддержку/i }));
+  expect(screen.getByRole("dialog", { name: /написать в поддержку/i })).toBeInTheDocument();
+  expect(screen.getByText(/приём обращений ещё не подключён/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /отправить сообщение/i })).toBeDisabled();
+});
+
+test("opens the donation page from the sidebar", async () => {
+  render(<App />);
+
+  fireEvent.click(await screen.findByRole("button", { name: /поддержать проект/i }));
+  expect(screen.getByRole("heading", { name: /поддержать проект/i })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /создать страницу donatello/i })).toHaveAttribute("href", "https://donatello.to/");
+});
+
+test("provides support and donation labels in all site languages", () => {
+  for (const language of Object.values(translations)) {
+    expect(language.supportMenu).toBeTruthy();
+    expect(language.donateMenu).toBeTruthy();
+    expect(language.supportSend).toBeTruthy();
+    expect(language.donateFees).toBeTruthy();
+  }
 });
 
 test("combines both Travelers into one API-driven card for every available element", () => {

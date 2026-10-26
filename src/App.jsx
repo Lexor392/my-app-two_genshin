@@ -8,6 +8,7 @@ import { countRollSessions, createRollHistoryEntries } from "./services/rollHist
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
 import { fetchHoverDetails, getLocalBossDetails } from "./services/hoverDetails";
+import { DONATION_SIGNUP_URL, DONATION_URL, SUPPORT_EMAIL } from "./config/support";
 import {
   buildRollSequence,
   getCenteredReelPosition,
@@ -2514,12 +2515,109 @@ const MENU_ICON_PATHS = {
   bossPool: "M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4M15 9l6-6M9 15l-6 6",
   history: "M4 19V5M4 19h17M8 16v-5M13 16V7M18 16V3",
   settings: "M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.07-.94l2.03-1.58-2-3.46-2.39.96a7.02 7.02 0 0 0-1.63-.94L14.78 3h-4l-.36 3.04c-.59.23-1.14.55-1.63.94L6.4 6.02l-2 3.46 2.03 1.58a6.6 6.6 0 0 0 0 1.88L4.4 14.52l2 3.46 2.39-.96c.49.39 1.04.71 1.63.94L10.78 21h4l.36-3.04c.59-.23 1.14-.55 1.63-.94l2.39.96 2-3.46-2.02-1.58ZM12.78 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z",
+  support: "M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-5 4v-4.2A2.5 2.5 0 0 1 4 13.5zM8 8h8M8 11h5",
+  donate: "M12 3v18M17 7.5c0-1.4-2.2-2.5-5-2.5S7 6.1 7 7.5 9.2 10 12 10s5 1.1 5 2.5-2.2 2.5-5 2.5-5 1.1-5 2.5S9.2 20 12 20s5-1.1 5-2.5",
 };
 
 const MenuIcon = ({ name }) => (
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
     <path d={MENU_ICON_PATHS[name]} stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
+);
+
+const SupportModal = ({ t, onClose }) => {
+  const [topic, setTopic] = useState("suggestion");
+  const [status, setStatus] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!SUPPORT_EMAIL) return;
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("topic", topic === "suggestion" ? t.supportSuggestion : topic === "bug" ? t.supportBug : t.supportOther);
+    setIsSending(true);
+    setStatus("");
+    try {
+      const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(SUPPORT_EMAIL)}`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok || result.success === false) throw new Error("Form submission failed");
+      setStatus("sent");
+      form.reset();
+      setTopic("suggestion");
+    } catch {
+      setStatus("error");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="splash-backdrop support-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="splash-modal support-modal" role="dialog" aria-modal="true" aria-labelledby="support-title">
+        <div className="support-modal-head">
+          <div><span className="eyebrow">{t.supportMenu}</span><h2 id="support-title">{t.supportTitle}</h2></div>
+          <button type="button" className="splash-close-icon" onClick={onClose} aria-label={t.supportClose}>×</button>
+        </div>
+        <p className="support-hint">{t.supportHint}</p>
+        {!SUPPORT_EMAIL ? <p className="support-setup-note" role="status">{t.supportSetup}</p> : null}
+        <form className="support-form" onSubmit={submit}>
+          <label>{t.supportTopic}
+            <select value={topic} onChange={(event) => setTopic(event.target.value)}>
+              <option value="suggestion">{t.supportSuggestion}</option>
+              <option value="bug">{t.supportBug}</option>
+              <option value="other">{t.supportOther}</option>
+            </select>
+          </label>
+          <div className="support-form-row">
+            <label>{t.supportName}<input name="name" autoComplete="name" maxLength={100} /></label>
+            <label>{t.supportEmail}<input name="email" type="email" autoComplete="email" maxLength={200} /></label>
+          </div>
+          <label>{t.supportMessage}<textarea name="message" required minLength={8} maxLength={4000} rows={5} /></label>
+          <input type="text" name="_honey" className="support-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+          <input type="hidden" name="_subject" value="Genshin Impact Random Lab — feedback" />
+          {status ? <p className={`support-status ${status}`} role="status">{status === "sent" ? t.supportSent : t.supportError}</p> : null}
+          <div className="support-actions">
+            <button type="button" className="btn-secondary" onClick={onClose}>{t.supportClose}</button>
+            <button type="submit" className="btn-primary" disabled={!SUPPORT_EMAIL || isSending}>{isSending ? t.supportSending : t.supportSend}</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+};
+
+const DonationPage = ({ t }) => (
+  <section className="stage-panel donation-panel" id="donate">
+    <div className="panel-head">
+      <h2>{t.donateTitle}</h2>
+      <p>{t.donateHint}</p>
+    </div>
+    <article className="donation-card">
+      <span className="donation-emblem" aria-hidden="true">✦</span>
+      <p>{t.donateService}</p>
+      <p>{t.donateFees}</p>
+      <a className="donation-terms" href="https://donatello.me/individuals" target="_blank" rel="noreferrer">{t.donateTerms}<span aria-hidden="true">↗</span></a>
+      {DONATION_URL ? (
+        <a className="btn-primary donation-link" href={DONATION_URL} target="_blank" rel="noreferrer">{t.donateOpen}<span aria-hidden="true">↗</span></a>
+      ) : (
+        <div className="donation-setup">
+          <p role="status">{t.donateSetup}</p>
+          <a className="btn-primary donation-link" href={DONATION_SIGNUP_URL} target="_blank" rel="noreferrer">{t.donateCreate}<span aria-hidden="true">↗</span></a>
+        </div>
+      )}
+    </article>
+  </section>
 );
 
 function App() {
@@ -2535,6 +2633,7 @@ function App() {
   const languageModeRef = useRef(languageMode);
   const [settings, setSettings] = useState(boot.settings);
   const [activeSection, setActiveSection] = useState(boot.activeSection);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(boot.isSidebarCollapsed);
   const [rouletteMode, setRouletteMode] = useState(boot.rouletteMode || "vertical");
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
@@ -3189,6 +3288,10 @@ function App() {
     },
     [isMobileLayout]
   );
+  const openSupport = useCallback(() => {
+    setIsSupportOpen(true);
+    if (isMobileLayout) setIsSidebarCollapsed(true);
+  }, [isMobileLayout]);
 
   const todayKey = new Date().toDateString();
   const userRollsToday = countRollSessions(rollHistory, (entry) => new Date(entry.timestamp).toDateString() === todayKey);
@@ -3322,6 +3425,8 @@ function App() {
               type="button"
               className={`menu-item ${activeSection === item.id ? "active" : ""}`}
               onClick={() => handleMenuItemClick(item.id)}
+              aria-label={item.label}
+              title={item.label}
             >
               <span className="menu-item-icon" aria-hidden="true">
                 <MenuIcon name={item.icon} />
@@ -3329,6 +3434,17 @@ function App() {
               <span className="menu-item-label">{item.label}</span>
             </button>
           ))}
+        </div>
+
+        <div className="sidebar-actions">
+          <button type="button" className="menu-item sidebar-action" onClick={openSupport} aria-label={t.supportMenu} title={t.supportMenu}>
+            <span className="menu-item-icon" aria-hidden="true"><MenuIcon name="support" /></span>
+            <span className="menu-item-label">{t.supportMenu}</span>
+          </button>
+          <button type="button" className={`menu-item sidebar-action ${activeSection === "donate" ? "active" : ""}`} onClick={() => handleMenuItemClick("donate")} aria-label={t.donateMenu} title={t.donateMenu}>
+            <span className="menu-item-icon" aria-hidden="true"><MenuIcon name="donate" /></span>
+            <span className="menu-item-label">{t.donateMenu}</span>
+          </button>
         </div>
 
         <div className="sidebar-footer">
@@ -3509,6 +3625,7 @@ function App() {
                 setSettings={setSettings}
               />
             )}
+            {activeSection === "donate" && <DonationPage t={t} />}
           </>
         )}
       </main>
@@ -3525,6 +3642,7 @@ function App() {
         onHoverDetails={handleHoverDetails}
         effectsEnabled={settings.splashEffects}
       />
+      {isSupportOpen ? <SupportModal t={t} onClose={() => setIsSupportOpen(false)} /> : null}
       <ItemHoverDetail target={hoverTarget} point={hoverPoint} lang={lang} />
     </div>
   );
