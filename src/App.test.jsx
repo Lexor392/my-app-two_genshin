@@ -1,8 +1,10 @@
-﻿import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { expect, test, vi } from "vitest";
 import App from "./App";
 
-jest.mock("./services/genshinApi", () => ({
-  fetchGenshinData: jest.fn().mockResolvedValue({
+vi.mock("./services/genshinApi", () => ({
+  fetchFallbackImage: vi.fn().mockResolvedValue(null),
+  fetchGenshinData: vi.fn().mockResolvedValue({
     characters: [],
     bosses: {
       all: [],
@@ -19,13 +21,13 @@ jest.mock("./services/genshinApi", () => ({
 test("renders app shell", async () => {
   render(<App />);
 
-  expect(screen.getByText(/genshin impact random lab/i)).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /дашборд/i })).toBeInTheDocument();
+  expect(screen.getByRole("progressbar")).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: /главная/i })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /пул персонажей/i })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /пул боссов/i })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /настройки/i })).toBeInTheDocument();
 
-  expect(await screen.findByText(/fandom api/i)).toBeInTheDocument();
+  expect((await screen.findAllByText(/fandom api/i)).length).toBeGreaterThan(0);
 
   fireEvent.click(screen.getByRole("button", { name: /настройки/i }));
   expect(screen.getByRole("option", { name: "English" })).toBeInTheDocument();

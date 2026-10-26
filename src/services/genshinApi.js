@@ -5,6 +5,8 @@ const HAKUSH_UI_BASE = "https://api.hakush.in/gi/UI";
 const DEFAULT_HEADERS = {
   Accept: "application/json",
 };
+const DATA_CACHE_PREFIX = "genshin-random-lab:data:v1:";
+const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
 
 const LOCAL_LEGEND_PAGE = "Local Legend";
 
@@ -83,7 +85,9 @@ const LOCAL_LEGEND_NAME_TRANSLATIONS = {
   },
 };
 
-const withRetry = async (fn, retries = 3, delay = 180) => {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const withRetry = async (fn, retries = 3, delay = 180, signal) => {
   let attempt = 0;
   let lastError = null;
 
@@ -92,9 +96,12 @@ const withRetry = async (fn, retries = 3, delay = 180) => {
       return await fn();
     } catch (error) {
       lastError = error;
+      if (signal?.aborted) {
+        throw error;
+      }
       attempt += 1;
       if (attempt < retries) {
-        await new Promise((resolve) => setTimeout(resolve, delay * attempt));
+        await sleep(delay * attempt);
       }
     }
   }
@@ -102,9 +109,14 @@ const withRetry = async (fn, retries = 3, delay = 180) => {
   throw lastError;
 };
 
-const fetchJson = async (url, retries = 3) =>
+const fetchJson = async (url, retries = 3, signal) =>
   withRetry(async () => {
-    const response = await fetch(url, { headers: DEFAULT_HEADERS });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(new Error("Request timed out")), 12000);
+    const abortRequest = () => controller.abort(signal.reason);
+    signal?.addEventListener("abort", abortRequest, { once: true });
+    try {
+      const response = await fetch(url, { headers: DEFAULT_HEADERS, signal: controller.signal });
     if (!response.ok) {
       throw new Error(`Request failed: ${response.status} ${response.statusText}`);
     }
@@ -114,8 +126,32 @@ const fetchJson = async (url, retries = 3) =>
       throw new Error("Empty response");
     }
 
-    return JSON.parse(text);
-  }, retries);
+      return JSON.parse(text);
+    } finally {
+      clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", abortRequest);
+    }
+  }, retries, 180, signal).then((data) => {
+    try {
+      sessionStorage.setItem(`${DATA_CACHE_PREFIX}${url}`, JSON.stringify({ savedAt: Date.now(), data }));
+    } catch {
+      // Storage can be disabled or full; the live response remains usable.
+    }
+    return data;
+  }).catch((error) => {
+    if (signal?.aborted) {
+      throw error;
+    }
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(`${DATA_CACHE_PREFIX}${url}`) || "null");
+      if (cached?.data && Date.now() - cached.savedAt < DATA_CACHE_MAX_AGE) {
+        return cached.data;
+      }
+    } catch {
+      // Ignore invalid, expired, or unavailable browser storage.
+    }
+    throw error;
+  });
 
 const normalizeSpaces = (value) => value.replace(/\s+/g, " ").trim();
 
@@ -209,6 +245,7 @@ const getCharacterImageCandidates = (entry = {}) =>
     entry.image,
     entry.portrait,
     entry.mihoyo_icon,
+    entry.hoyowiki_icon,
   ]);
 
 const getCharacterSplashCandidates = (entry = {}) =>
@@ -224,6 +261,7 @@ const getCharacterSplashCandidates = (entry = {}) =>
     entry.image,
     entry.portrait,
     entry.mihoyo_sideIcon,
+    entry.hoyowiki_sideIcon,
     ...getCharacterImageCandidates(entry),
   ]);
 
@@ -308,7 +346,6 @@ const mapCharacters = (nameMaps, imageData, metaSourceIndex) => {
         splashFallbacks: splashCandidates.slice(1),
       };
     })
-    .filter((item) => item.image)
     .sort((a, b) => {
       if (a.rarity !== b.rarity) {
         return b.rarity - a.rarity;
@@ -353,12 +390,13 @@ const parseLegendTemplate = (line) => {
   };
 };
 
-const fetchFandomThumb = async (title) => {
+export const fetchFallbackImage = async (title, signal) => {
   const direct = await fetchJson(
     `${FANDOM_API}?action=query&titles=${encodeURIComponent(
       title
     )}&prop=pageimages&piprop=thumbnail&pithumbsize=1024&format=json&origin=*`,
-    2
+    2,
+    signal
   );
 
   const directPage = Object.values(direct?.query?.pages || {})[0];
@@ -370,7 +408,8 @@ const fetchFandomThumb = async (title) => {
     `${FANDOM_API}?action=query&generator=search&gsrsearch=${encodeURIComponent(
       `${title} genshin impact enemy`
     )}&gsrlimit=8&prop=pageimages&piprop=thumbnail&pithumbsize=1024&format=json&origin=*`,
-    2
+    2,
+    signal
   );
 
   const pages = Object.values(search?.query?.pages || {});
@@ -403,21 +442,14 @@ const mapWithConcurrency = async (items, mapper, limit = 8) => {
   return results;
 };
 
-const mapBossList = async (ids, nameMaps, imageMap, group) => {
+const mapBossList = async (ids, nameMaps, imageMap, group, signal) => {
   const mapped = await mapWithConcurrency(ids, async (id) => {
     const entry = imageMap[id] || {};
     const imageCandidates = getEnemyImageCandidates(entry);
     const splashCandidates = getEnemySplashCandidates(entry);
     const name = getNameFromMap(nameMaps.en, id, id);
 
-    let image = imageCandidates[0] || "";
-    if (!image) {
-      try {
-        image = await fetchFandomThumb(name);
-      } catch {
-        image = "";
-      }
-    }
+    const image = imageCandidates[0] || "";
 
     return {
       id,
@@ -435,14 +467,17 @@ const mapBossList = async (ids, nameMaps, imageMap, group) => {
     };
   });
 
-  return dedupeById(mapped.filter((item) => item.image)).sort((a, b) => a.name.localeCompare(b.name));
+  // Keep bosses visible when every remote image source fails.
+  return dedupeById(mapped).sort((a, b) => a.name.localeCompare(b.name));
 };
 
-const mapLocalLegends = async (enemyNameMaps, enemyImageMap) => {
+const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
   const parsed = await fetchJson(
     `${FANDOM_API}?action=parse&page=${encodeURIComponent(
       LOCAL_LEGEND_PAGE
-    )}&prop=wikitext&format=json&origin=*`
+    )}&prop=wikitext&format=json&origin=*`,
+    3,
+    signal
   );
 
   const wikitext = parsed?.parse?.wikitext?.["*"] || "";
@@ -467,22 +502,11 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap) => {
       .map((candidate) => keyify(candidate))
       .find((candidateKey) => Boolean(enemyNameMaps.en[candidateKey]));
 
-    const wikiFallbackCandidates = uniqueUrls([legend.link, legend.source, legend.name].filter(Boolean));
-    let wikiImage = "";
-    for (const candidate of wikiFallbackCandidates) {
-      try {
-        wikiImage = await fetchFandomThumb(candidate);
-      } catch {
-        wikiImage = "";
-      }
-      if (wikiImage) {
-        break;
-      }
-    }
+    const enemyEntry = enemyIdCandidate ? enemyImageMap[enemyIdCandidate] || {} : {};
+    const enemyCandidates = getEnemyImageCandidates(enemyEntry);
+    const wikiImage = "";
 
     if (enemyIdCandidate) {
-      const enemyEntry = enemyImageMap[enemyIdCandidate] || {};
-      const enemyCandidates = getEnemyImageCandidates(enemyEntry);
       const enemySplashCandidates = getEnemySplashCandidates(enemyEntry);
       const enemyImage = enemyCandidates[0] || "";
       const image = enemyImage || wikiImage;
@@ -525,10 +549,10 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap) => {
     };
   });
 
-  return dedupeById(mapped.filter((legend) => legend.image)).sort((a, b) => a.name.localeCompare(b.name));
+  return dedupeById(mapped).sort((a, b) => a.name.localeCompare(b.name));
 };
 
-export const fetchGenshinData = async () => {
+export const fetchGenshinData = async ({ signal } = {}) => {
   const [
     characterIndexEn,
     characterIndexRu,
@@ -543,34 +567,43 @@ export const fetchGenshinData = async () => {
     enemyIndexKo,
     enemyImages,
   ] = await Promise.all([
-    fetchJson(`${GITHUB_DATA_BASE}/index/English/characters.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/Russian/characters.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/ChineseSimplified/characters.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/Japanese/characters.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/Korean/characters.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/image/characters.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/English/enemies.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/Russian/enemies.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/ChineseSimplified/enemies.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/Japanese/enemies.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/index/Korean/enemies.json`),
-    fetchJson(`${GITHUB_DATA_BASE}/image/enemies.json`),
+    fetchJson(`${GITHUB_DATA_BASE}/index/English/characters.json`, 3, signal),
+    fetchJson(`${GITHUB_DATA_BASE}/index/Russian/characters.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/index/ChineseSimplified/characters.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/index/Japanese/characters.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/index/Korean/characters.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/image/characters.json`, 3, signal).catch(() => ({})),
+    fetchJson(`${GITHUB_DATA_BASE}/index/English/enemies.json`, 3, signal),
+    fetchJson(`${GITHUB_DATA_BASE}/index/Russian/enemies.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/index/ChineseSimplified/enemies.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/index/Japanese/enemies.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/index/Korean/enemies.json`, 2, signal).catch(() => null),
+    fetchJson(`${GITHUB_DATA_BASE}/image/enemies.json`, 3, signal).catch(() => ({})),
   ]);
+
+  const characterIndexRuSafe = characterIndexRu || characterIndexEn;
+  const characterIndexZhSafe = characterIndexZh || characterIndexEn;
+  const characterIndexJaSafe = characterIndexJa || characterIndexEn;
+  const characterIndexKoSafe = characterIndexKo || characterIndexEn;
+  const enemyIndexRuSafe = enemyIndexRu || enemyIndexEn;
+  const enemyIndexZhSafe = enemyIndexZh || enemyIndexEn;
+  const enemyIndexJaSafe = enemyIndexJa || enemyIndexEn;
+  const enemyIndexKoSafe = enemyIndexKo || enemyIndexEn;
 
   const characterNameMaps = {
     en: getNameMap(characterIndexEn),
-    ru: getNameMap(characterIndexRu),
-    zh: getNameMap(characterIndexZh),
-    ja: getNameMap(characterIndexJa),
-    ko: getNameMap(characterIndexKo),
+    ru: getNameMap(characterIndexRuSafe),
+    zh: getNameMap(characterIndexZhSafe),
+    ja: getNameMap(characterIndexJaSafe),
+    ko: getNameMap(characterIndexKoSafe),
   };
 
   const enemyNameMaps = {
     en: getNameMap(enemyIndexEn),
-    ru: getNameMap(enemyIndexRu),
-    zh: getNameMap(enemyIndexZh),
-    ja: getNameMap(enemyIndexJa),
-    ko: getNameMap(enemyIndexKo),
+    ru: getNameMap(enemyIndexRuSafe),
+    zh: getNameMap(enemyIndexZhSafe),
+    ja: getNameMap(enemyIndexJaSafe),
+    ko: getNameMap(enemyIndexKoSafe),
   };
 
   const characters = mapCharacters(characterNameMaps, characterImages, characterIndexEn);
@@ -581,9 +614,9 @@ export const fetchGenshinData = async () => {
   const allBossIds = enemyCategoryMap.BOSS || [];
   const ascensionIds = allBossIds.filter((id) => !weeklySet.has(id));
 
-  const weeklyBosses = await mapBossList(weeklyIds, enemyNameMaps, enemyImages, "weekly");
-  const ascensionBosses = await mapBossList(ascensionIds, enemyNameMaps, enemyImages, "ascension");
-  const localLegends = await mapLocalLegends(enemyNameMaps, enemyImages);
+  const weeklyBosses = await mapBossList(weeklyIds, enemyNameMaps, enemyImages, "weekly", signal);
+  const ascensionBosses = await mapBossList(ascensionIds, enemyNameMaps, enemyImages, "ascension", signal);
+  const localLegends = await mapLocalLegends(enemyNameMaps, enemyImages, signal).catch(() => []);
 
   const bossPool = dedupeById([...weeklyBosses, ...ascensionBosses, ...localLegends]).sort((a, b) =>
     a.name.localeCompare(b.name)
