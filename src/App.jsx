@@ -2515,11 +2515,15 @@ const MENU_ICON_PATHS = {
   bossPool: "M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4M15 9l6-6M9 15l-6 6",
   history: "M4 19V5M4 19h17M8 16v-5M13 16V7M18 16V3",
   settings: "M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.07-.94l2.03-1.58-2-3.46-2.39.96a7.02 7.02 0 0 0-1.63-.94L14.78 3h-4l-.36 3.04c-.59.23-1.14.55-1.63.94L6.4 6.02l-2 3.46 2.03 1.58a6.6 6.6 0 0 0 0 1.88L4.4 14.52l2 3.46 2.39-.96c.49.39 1.04.71 1.63.94L10.78 21h4l.36-3.04c.59-.23 1.14-.55 1.63-.94l2.39.96 2-3.46-2.02-1.58ZM12.78 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z",
-  support: "M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-5 4v-4.2A2.5 2.5 0 0 1 4 13.5zM8 8h8M8 11h5",
   donate: "M12 3v18M17 7.5c0-1.4-2.2-2.5-5-2.5S7 6.1 7 7.5 9.2 10 12 10s5 1.1 5 2.5-2.2 2.5-5 2.5-5 1.1-5 2.5S9.2 20 12 20s5-1.1 5-2.5",
 };
 
-const MenuIcon = ({ name }) => (
+const MenuIcon = ({ name }) => name === "support" ? (
+  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2" />
+    <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9 9 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.4 10.4 0 0 1-.524 2.318l-.003.011a11 11 0 0 1-.244.637c-.079.186.074.394.273.362a22 22 0 0 0 .693-.125m.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6-3.004 6-7 6a8 8 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a11 11 0 0 0 .398-2" />
+  </svg>
+) : (
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
     <path d={MENU_ICON_PATHS[name]} stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
@@ -2563,7 +2567,7 @@ const SupportModal = ({ t, onClose }) => {
   };
 
   return (
-    <div className="splash-backdrop support-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="modal-backdrop splash-backdrop support-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="splash-modal support-modal" role="dialog" aria-modal="true" aria-labelledby="support-title">
         <div className="support-modal-head">
           <div><span className="eyebrow">{t.supportMenu}</span><h2 id="support-title">{t.supportTitle}</h2></div>
