@@ -63,8 +63,8 @@ test("opens the donation page from the sidebar", async () => {
 
   fireEvent.click(await screen.findByRole("button", { name: /поддержать проект/i }));
   expect(screen.getByRole("heading", { name: /поддержать проект/i })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: /создать страницу ko-fi/i })).toHaveAttribute("href", "https://ko-fi.com/");
-  expect(screen.getByRole("link", { name: /создать страницу patreon/i })).toHaveAttribute("href", "https://www.patreon.com/create");
+  expect(screen.getByRole("link", { name: /открыть ko-fi/i })).toHaveAttribute("href", "https://ko-fi.com/alex302");
+  expect(screen.getByRole("link", { name: /открыть patreon/i })).toHaveAttribute("href", "https://www.patreon.com/Alex9757");
   expect(screen.getByText(/платежи из рф и от банков под санкциями могут быть отклонены/i)).toBeInTheDocument();
 });
 
