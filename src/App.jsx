@@ -8,6 +8,7 @@ import { countRollSessions, createRollHistoryEntries } from "./services/rollHist
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
 import { fetchHoverDetails, getLocalBossDetails } from "./services/hoverDetails";
+import { claimSupportSubmission, isSupportHoneypotFilled } from "./services/supportProtection";
 import { NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
 import {
   buildRollSequence,
@@ -2533,6 +2534,7 @@ const SupportModal = ({ t, onClose }) => {
   const [topic, setTopic] = useState("suggestion");
   const [status, setStatus] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const openedAt = useRef(Date.now());
 
   useEffect(() => {
     const onKeyDown = (event) => { if (event.key === "Escape") onClose(); };
@@ -2545,6 +2547,10 @@ const SupportModal = ({ t, onClose }) => {
     if (!SUPPORT_EMAIL) return;
     const form = event.currentTarget;
     const formData = new FormData(form);
+    if (isSupportHoneypotFilled(formData.get("_honey")) || Date.now() - openedAt.current < 2500 || !claimSupportSubmission()) {
+      setStatus("limited");
+      return;
+    }
     formData.set("topic", topic === "suggestion" ? t.supportSuggestion : topic === "bug" ? t.supportBug : t.supportOther);
     const replyTo = formData.get("email");
     if (replyTo) formData.set("_replyto", replyTo);
@@ -2592,7 +2598,7 @@ const SupportModal = ({ t, onClose }) => {
           <label>{t.supportMessage}<textarea name="message" required minLength={8} maxLength={4000} rows={5} /></label>
           <input type="text" name="_honey" className="support-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           <input type="hidden" name="_subject" value="Genshin Impact Random Lab — feedback" />
-          {status ? <p className={`support-status ${status}`} role="status">{status === "sent" ? t.supportSent : t.supportError}</p> : null}
+          {status ? <p className={`support-status ${status}`} role="status">{status === "sent" ? t.supportSent : status === "limited" ? t.supportRateLimited : t.supportError}</p> : null}
           <div className="support-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>{t.supportClose}</button>
             <button type="submit" className="btn-primary" disabled={!SUPPORT_EMAIL || isSending}>{isSending ? t.supportSending : t.supportSend}</button>
