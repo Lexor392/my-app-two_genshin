@@ -2492,14 +2492,12 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .roulette-engine-grid.is-cases .lane-add-button { align-self: center; }
 .wheel-pointer { transform: translateX(-50%) rotate(180deg); }
 .wheel-countdown { position: absolute; z-index: 5; top: -29px; left: 50%; display: grid; place-items: center; width: 28px; height: 28px; transform: translateX(-50%); border: 1px solid rgba(240, 216, 153, .88); border-radius: 50%; color: #fff1c6; background: rgba(19, 31, 38, .92); box-shadow: 0 0 14px rgba(226, 196, 129, .3); font-weight: 800; font-variant-numeric: tabular-nums; }
-.roulette-refresh-button, .lane-refresh-button { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; padding: 0; border: 1px solid rgba(224, 195, 133, .54); border-radius: 50%; color: #ead9aa; background: rgba(20, 34, 43, .82); cursor: pointer; transition: transform .2s ease, color .2s ease, border-color .2s ease, background .2s ease; }
-.roulette-refresh-button svg, .lane-refresh-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.roulette-refresh-button:hover:not(:disabled), .lane-refresh-button:hover:not(:disabled) { transform: rotate(-35deg); color: #fff2c6; border-color: #f2d995; background: rgba(221, 190, 123, .18); }
-.roulette-refresh-button:disabled, .lane-refresh-button:disabled { opacity: .45; cursor: default; }
+.roulette-refresh-button { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; padding: 0; border: 1px solid rgba(224, 195, 133, .54); border-radius: 50%; color: #ead9aa; background: rgba(20, 34, 43, .82); cursor: pointer; transition: transform .2s ease, color .2s ease, border-color .2s ease, background .2s ease; }
+.roulette-refresh-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.roulette-refresh-button:hover:not(:disabled) { transform: rotate(-35deg); color: #fff2c6; border-color: #f2d995; background: rgba(221, 190, 123, .18); }
+.roulette-refresh-button:disabled { opacity: .45; cursor: default; }
 .roulette-engine .roulette-toolbar { justify-content: center; }
-.roulette-engine .lane-refresh-button { position: absolute; z-index: 8; top: 7px; right: 7px; width: 34px; height: 34px; }
 .roulette-engine .lane-remove-button { left: 7px; right: auto; z-index: 9; }
-.roulette-engine .roulette-engine-lane.is-spinning .lane-refresh-button { opacity: .45; }
 @media (max-width: 680px) {
   .character-pool-panel .filter-toolbar { flex-wrap: wrap; }
   .character-pool-panel .filter-toolbar > .search-box { flex: 1 1 calc(100% - 54px); }

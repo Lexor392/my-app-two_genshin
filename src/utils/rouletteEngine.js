@@ -43,20 +43,22 @@ export const getWheelTargetRotation = (segmentIndex, segmentCount, currentRotati
   return currentRotation + Math.max(1, fullTurns) * 360 + alignment;
 };
 
-export const getRollProgress = (elapsedMs, cruiseDurationMs, rampDurationMs) => {
+export const getRollProgress = (elapsedMs, cruiseDurationMs, accelerationDurationMs, decelerationDurationMs) => {
   const cruise = Math.max(0, Number(cruiseDurationMs) || 0);
-  const ramp = Math.max(0, Number(rampDurationMs) || 0);
-  const elapsed = Math.max(0, Math.min(cruise + ramp * 2, Number(elapsedMs) || 0));
-  if (!ramp) return cruise ? elapsed / cruise : 1;
+  const acceleration = Math.max(0, Number(accelerationDurationMs) || 0);
+  const deceleration = Math.max(0, Number(decelerationDurationMs) || 0);
+  const elapsed = Math.max(0, Math.min(acceleration + cruise + deceleration, Number(elapsedMs) || 0));
+  if (!acceleration && !deceleration) return cruise ? elapsed / cruise : 1;
 
   const smoothRampIntegral = (time) => time ** 3 - 0.5 * time ** 4;
-  const totalDistance = cruise + ramp;
-  if (elapsed <= ramp) {
-    const progress = elapsed / ramp;
-    return (ramp * smoothRampIntegral(progress)) / totalDistance;
+  const totalDistance = cruise + acceleration / 2 + deceleration / 2;
+  if (acceleration && elapsed <= acceleration) {
+    const progress = elapsed / acceleration;
+    return (acceleration * smoothRampIntegral(progress)) / totalDistance;
   }
-  if (elapsed <= ramp + cruise) return (ramp / 2 + elapsed - ramp) / totalDistance;
-  const progress = (elapsed - ramp - cruise) / ramp;
+  if (elapsed <= acceleration + cruise) return (acceleration / 2 + elapsed - acceleration) / totalDistance;
+  if (!deceleration) return 1;
+  const progress = (elapsed - acceleration - cruise) / deceleration;
   const decelerationDistance = progress - smoothRampIntegral(progress);
-  return (ramp / 2 + cruise + ramp * decelerationDistance) / totalDistance;
+  return (acceleration / 2 + cruise + deceleration * decelerationDistance) / totalDistance;
 };

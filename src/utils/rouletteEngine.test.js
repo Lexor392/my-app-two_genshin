@@ -45,13 +45,16 @@ describe("roulette engine math", () => {
     expect(end % 360).toBeCloseTo(targetRemainder, 8);
   });
 
-  it("uses long, synchronized acceleration and braking ramps around the selected roll duration", () => {
+  it("uses a three-second acceleration, selected cruise duration, and five-second braking ramp", () => {
     const cruise = 5000;
-    const ramp = 1400;
-    expect(getRollProgress(0, cruise, ramp)).toBe(0);
-    expect(getRollProgress(cruise + ramp * 2, cruise, ramp)).toBeCloseTo(1, 8);
-    expect(getRollProgress(100, cruise, ramp)).toBeLessThan(100 / (cruise + ramp * 2));
-    expect(getRollProgress(cruise + ramp * 2 - 100, cruise, ramp)).toBeGreaterThan(1 - 100 / (cruise + ramp * 2));
-    expect(getRollProgress(ramp, cruise, ramp)).toBeCloseTo(ramp / 2 / (cruise + ramp), 8);
+    const acceleration = 3000;
+    const deceleration = 5000;
+    const totalDuration = acceleration + cruise + deceleration;
+    expect(getRollProgress(0, cruise, acceleration, deceleration)).toBe(0);
+    expect(getRollProgress(totalDuration, cruise, acceleration, deceleration)).toBeCloseTo(1, 8);
+    expect(getRollProgress(100, cruise, acceleration, deceleration)).toBeLessThan(100 / totalDuration);
+    expect(getRollProgress(totalDuration - 100, cruise, acceleration, deceleration)).toBeGreaterThan(1 - 100 / totalDuration);
+    expect(getRollProgress(acceleration, cruise, acceleration, deceleration)).toBeCloseTo(acceleration / 2 / (cruise + (acceleration + deceleration) / 2), 8);
+    expect(getRollProgress(acceleration + cruise, cruise, acceleration, deceleration)).toBeCloseTo((acceleration / 2 + cruise) / (cruise + (acceleration + deceleration) / 2), 8);
   });
 });
