@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { translations } from "./i18n/translations";
 import { fetchFallbackImage, fetchGenshinData } from "./services/genshinApi";
+import { cacheImageAsset, getCachedImageSource } from "./services/imageCache";
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 
 const LANGS = ["ru", "en", "zh", "ja", "ko"];
@@ -54,7 +55,7 @@ const SECTION_IDS = [
   "history",
   "settings",
 ];
-const ROLL_SPEEDS = ["normal", "long", "epic"];
+const ROLL_SPEEDS = ["fast", "normal", "long", "epic"];
 const HISTORY_LIMIT_OPTIONS = [30, 60, 90];
 
 const DEFAULT_CHARACTER_FILTERS = {
@@ -89,6 +90,7 @@ const DEFAULT_SETTINGS = {
 };
 
 const ROLL_DURATION_BY_SPEED = {
+  fast: 3800,
   normal: 7400,
   long: 9200,
   epic: 11200,
@@ -268,27 +270,33 @@ const loadImageAsset = (url, signal) => new Promise((resolve, reject) => {
     return;
   }
 
-  const image = new Image();
-  const timeoutId = window.setTimeout(() => finish(false, new Error("Image load timed out")), PRELOAD_TIMEOUT_MS);
-  const abort = () => finish(false, new Error("Image load cancelled"));
-  let settled = false;
-
-  const finish = (success, error) => {
-    if (settled) return;
-    settled = true;
-    window.clearTimeout(timeoutId);
-    signal?.removeEventListener("abort", abort);
-    image.onload = null;
-    image.onerror = null;
-    if (success) resolve(url);
-    else reject(error);
-  };
-
-  image.onload = () => finish(true);
-  image.onerror = () => finish(false, new Error("Image unavailable"));
-  signal?.addEventListener("abort", abort, { once: true });
-  image.src = url;
-  if (image.complete && image.naturalWidth > 0) finish(true);
+  cacheImageAsset(url, signal)
+    .then(resolve)
+    .catch((cacheError) => {
+      if (signal?.aborted) {
+        reject(cacheError);
+        return;
+      }
+      const image = new Image();
+      const timeoutId = window.setTimeout(() => finish(false, new Error("Image load timed out")), PRELOAD_TIMEOUT_MS);
+      let settled = false;
+      const finish = (success, error) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        signal?.removeEventListener("abort", abort);
+        image.onload = null;
+        image.onerror = null;
+        if (success) resolve(url);
+        else reject(error);
+      };
+      const abort = () => finish(false, cacheError);
+      image.onload = () => finish(true);
+      image.onerror = () => finish(false, cacheError);
+      signal?.addEventListener("abort", abort, { once: true });
+      image.src = url;
+      if (image.complete && image.naturalWidth > 0) finish(true);
+    });
 });
 
 const preloadCatalogImages = async (catalog, { signal, onProgress }) => {
@@ -814,6 +822,7 @@ const ImageWithFallback = ({
   }, [src, fallbackSrcs]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
+  const [displaySource, setDisplaySource] = useState("");
 
   useEffect(() => {
     setSourceIndex(0);
@@ -821,7 +830,20 @@ const ImageWithFallback = ({
 
   const currentSource = sources[sourceIndex] || "";
 
-  if (!currentSource) {
+  useEffect(() => {
+    let active = true;
+    setDisplaySource("");
+    if (currentSource) {
+      getCachedImageSource(currentSource).then((source) => {
+        if (active) setDisplaySource(source);
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, [currentSource]);
+
+  if (!currentSource || !displaySource) {
     const initials = String(alt || "?").trim().slice(0, 1).toUpperCase() || "✦";
     return <div className={`image-fallback ${className || ""}`} role="img" aria-label={alt}>
       <span aria-hidden="true">{initials}</span>
@@ -830,7 +852,7 @@ const ImageWithFallback = ({
 
   return (
     <img
-      src={currentSource}
+      src={displaySource}
       alt={alt}
       className={className}
       loading={loading}
@@ -1451,7 +1473,7 @@ const SettingsPanel = ({ t, lang, setLang, theme, setTheme, settings, setSetting
                 className={settings.rollSpeed === speed ? "is-active" : ""}
                 onClick={() => setSettings((prev) => ({ ...prev, rollSpeed: speed }))}
               >
-                {speed === "normal" ? t.rollSpeedNormal : speed === "long" ? t.rollSpeedLong : t.rollSpeedEpic}
+                {speed === "fast" ? t.rollSpeedFast : speed === "normal" ? t.rollSpeedNormal : speed === "long" ? t.rollSpeedLong : t.rollSpeedEpic}
               </button>
             ))}
           </div>
@@ -2647,6 +2669,22 @@ const Roulette = ({
   );
 };
 
+const MENU_ICON_PATHS = {
+  dashboard: "M3 10.5 12 3l9 7.5M5 9v11h14V9M9 20v-6h6v6",
+  characters: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0",
+  characterPool: "M4 4h11v14H4zM8 7h3M8 10h3M8 13h3M17 7h3v13h-9",
+  bosses: "M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3ZM9 12h6M12 9v6",
+  bossPool: "M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4M15 9l6-6M9 15l-6 6",
+  history: "M4 19V5M4 19h17M8 16v-5M13 16V7M18 16V3",
+  settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 0 0-1.8 0l-.2.1h-3.4l-.1-.2a1.7 1.7 0 0 0-1.5-1l-.2.1-2.9-1.7.1-.2a1.7 1.7 0 0 0 0-1.8l-.1-.2v-3.4l.2-.1a1.7 1.7 0 0 0 1-1.5l-.1-.2 1.7-2.9.2.1a1.7 1.7 0 0 0 1.8 0l.2-.1h3.4l.1.2a1.7 1.7 0 0 0 1.5 1l.2-.1 2.9 1.7-.1.2a1.7 1.7 0 0 0 0 1.8l.1.2v3.4l-.2.1a1.7 1.7 0 0 0-1 1.5Z",
+};
+
+const MenuIcon = ({ name }) => (
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+    <path d={MENU_ICON_PATHS[name]} stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 function App() {
   const bootRef = useRef(null);
   if (!bootRef.current) {
@@ -3195,13 +3233,13 @@ function App() {
   }, [savedSquads]);
 
   const menuItems = [
-    { id: "dashboard", label: getHomeMenuLabel(lang), icon: "🏠" },
-    { id: "characters", label: t.characters, icon: "🧙" },
-    { id: "characterPool", label: t.characterPoolMenu, icon: "🗂" },
-    { id: "bosses", label: t.bosses, icon: "👾" },
-    { id: "bossPool", label: t.bossPoolMenu, icon: "🧭" },
-    { id: "history", label: t.historyMenu, icon: "📊" },
-    { id: "settings", label: t.settingsMenu, icon: "⚙" },
+    { id: "dashboard", label: getHomeMenuLabel(lang), icon: "dashboard" },
+    { id: "characters", label: t.characters, icon: "characters" },
+    { id: "characterPool", label: t.characterPoolMenu, icon: "characterPool" },
+    { id: "bosses", label: t.bosses, icon: "bosses" },
+    { id: "bossPool", label: t.bossPoolMenu, icon: "bossPool" },
+    { id: "history", label: t.historyMenu, icon: "history" },
+    { id: "settings", label: t.settingsMenu, icon: "settings" },
   ];
 
   const handleMenuItemClick = useCallback(
@@ -3353,7 +3391,7 @@ function App() {
               onClick={() => handleMenuItemClick(item.id)}
             >
               <span className="menu-item-icon" aria-hidden="true">
-                {item.icon}
+                <MenuIcon name={item.icon} />
               </span>
               <span className="menu-item-label">{item.label}</span>
             </button>

@@ -2261,3 +2261,79 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Scenic Teyvat atmosphere, translucent panels, and accessible focus motion. */
+.app-shell {
+  background-color: #263f4d;
+  background-image: linear-gradient(115deg, rgba(17, 33, 44, .28), rgba(23, 40, 49, .48)), url("./assets/teyvat-bg.svg");
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+.sidebar {
+  background: rgba(20, 35, 45, .76);
+  backdrop-filter: blur(18px) saturate(1.14);
+  -webkit-backdrop-filter: blur(18px) saturate(1.14);
+}
+.state-screen, .stage-panel {
+  background: rgba(247, 245, 236, .84);
+  backdrop-filter: blur(11px) saturate(1.08);
+  -webkit-backdrop-filter: blur(11px) saturate(1.08);
+  animation: teyvat-panel-enter .42s cubic-bezier(.2,.7,.25,1) both;
+}
+:root[data-theme="dark"] .state-screen,
+:root[data-theme="dark"] .stage-panel {
+  background: rgba(20, 31, 39, .84);
+}
+.menu-item-icon { display: inline-grid; place-items: center; flex: 0 0 23px; }
+.menu-item-icon svg { width: 20px; height: 20px; }
+.menu-item, .btn-primary, .btn-secondary, .toggle-row button, .option-item, .choice-card, .stat-card, .dashboard-stat-card {
+  transition: transform .2s ease, box-shadow .25s ease, border-color .2s ease, background-color .2s ease, color .2s ease;
+}
+.menu-item:hover, .btn-primary:hover, .btn-secondary:hover, .toggle-row button:hover:not(.is-active), .option-item:hover {
+  transform: translateY(-2px);
+}
+.btn-primary:hover, .option-item:hover { box-shadow: 0 12px 26px rgba(23, 36, 45, .17); }
+.btn-primary:focus-visible, .btn-secondary:focus-visible, .menu-item:focus-visible, .toggle-row button:focus-visible, .option-item:focus-visible {
+  outline: 2px solid #d8bd7d;
+  outline-offset: 3px;
+}
+.character-roulette-window, .roulette-window { border-radius: 2px; }
+.character-roulette-window { box-shadow: inset 0 0 0 1px rgba(220, 195, 143, .33), 0 10px 32px rgba(9, 22, 32, .2); }
+.roulette-card img, .option-item img { transition: transform .35s ease, filter .35s ease; }
+.option-item:hover img { transform: scale(1.035); }
+.splash-backdrop { animation: splash-backdrop-in .28s ease both; }
+.splash-modal { animation: splash-modal-in .38s cubic-bezier(.16,.75,.25,1) both; }
+.teyvat-preloader {
+  background-image: linear-gradient(120deg, rgba(14, 30, 42, .72), rgba(18, 36, 46, .62)), url("./assets/teyvat-bg.svg");
+  background-position: center;
+  background-size: cover;
+}
+.preloader-orbit { animation: orbit-breathe 9s ease-in-out infinite alternate; }
+.preloader-card { backdrop-filter: blur(12px); }
+.preloader-emblem { position: relative; }
+.preloader-emblem::after { content: ""; position: absolute; inset: -7px; border: 1px solid rgba(225, 202, 155, .28); border-radius: 50%; animation: emblem-ring 3.2s ease-in-out infinite; }
+.preloader-stars span { animation: preloader-star-glow 1.8s ease-in-out infinite alternate; }
+.preloader-stars span:nth-child(2) { animation-delay: .45s; }
+.preloader-stars span:nth-child(3) { animation-delay: .9s; }
+@keyframes teyvat-panel-enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes splash-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splash-modal-in { from { opacity: 0; transform: translateY(18px) scale(.975); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes orbit-breathe { to { transform: rotate(65deg) scale(1.06); opacity: .66; } }
+@keyframes emblem-ring { 50% { transform: scale(1.12); opacity: .35; } }
+@keyframes preloader-star-glow { to { opacity: .48; transform: translateY(-3px); } }
+@media (max-width: 900px) {
+  .app-shell { background-attachment: scroll; }
+  .sidebar { background: rgba(20, 35, 45, .96); }
+  .stage-panel { backdrop-filter: blur(8px); }
+}
+@media (max-width: 540px) {
+  .settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .toggle-row { flex-wrap: wrap; }
+  .toggle-row button { flex: 1 1 auto; }
+  .character-roulette-grid.is-mobile .character-roulette-window { min-width: 0; }
+  .preloader-counts { font-size: .7rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .state-screen, .stage-panel, .splash-backdrop, .splash-modal, .preloader-orbit, .preloader-emblem::after, .preloader-stars span { animation: none; }
+}

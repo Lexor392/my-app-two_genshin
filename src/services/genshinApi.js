@@ -1,6 +1,7 @@
 const GITHUB_DATA_BASE = "https://raw.githubusercontent.com/theBowja/genshin-db/main/src/data";
 const FANDOM_API = "https://genshin-impact.fandom.com/api.php";
 const HAKUSH_UI_BASE = "https://api.hakush.in/gi/UI";
+const AMBR_UI_BASE = "https://api.ambr.top/assets/UI";
 
 const DEFAULT_HEADERS = {
   Accept: "application/json",
@@ -184,6 +185,9 @@ const toSlug = (value = "") =>
 
 const buildHakushImage = (filename) => (filename ? `${HAKUSH_UI_BASE}/${filename}.webp` : "");
 const buildHakushPng = (filename) => (filename ? `${HAKUSH_UI_BASE}/${filename}.png` : "");
+const buildAmbrImage = (filename) => (filename ? `${AMBR_UI_BASE}/${filename}.png` : "");
+export const repairWikiImageUrl = (url = "") =>
+  url.replace("static.wikia.nocookie.net/gensin-impact/", "static.wikia.nocookie.net/genshin-impact/");
 const uniqueUrls = (list) => Array.from(new Set(list.filter(Boolean)));
 
 const getNameMap = (indexData) => indexData?.namemap || {};
@@ -235,21 +239,25 @@ const dedupeById = (items) => {
   return Array.from(map.values());
 };
 
-const getCharacterImageCandidates = (entry = {}) =>
+export const getCharacterImageCandidates = (entry = {}) =>
   uniqueUrls([
+    buildAmbrImage(entry.filename_icon),
     buildHakushImage(entry.filename_icon),
+    buildAmbrImage(entry.filename_iconCard),
     buildHakushImage(entry.filename_iconCard),
+    buildAmbrImage(entry.filename_icon),
     buildHakushPng(entry.filename_icon),
     buildHakushPng(entry.filename_iconCard),
-    entry.card,
-    entry.image,
-    entry.portrait,
+    repairWikiImageUrl(entry.card),
+    repairWikiImageUrl(entry.image),
+    repairWikiImageUrl(entry.portrait),
     entry.mihoyo_icon,
     entry.hoyowiki_icon,
   ]);
 
 const getCharacterSplashCandidates = (entry = {}) =>
   uniqueUrls([
+    buildAmbrImage(entry.filename_gachaSplash),
     buildHakushImage(entry.filename_gachaSplash),
     buildHakushPng(entry.filename_gachaSplash),
     buildHakushImage(entry.filename_sideIcon),
@@ -265,8 +273,10 @@ const getCharacterSplashCandidates = (entry = {}) =>
     ...getCharacterImageCandidates(entry),
   ]);
 
-const getEnemyImageCandidates = (entry = {}) =>
+export const getEnemyImageCandidates = (entry = {}) =>
   uniqueUrls([
+    buildAmbrImage(entry.filename_icon),
+    buildAmbrImage(entry.filename_investigationIcon),
     buildHakushImage(entry.filename_icon),
     buildHakushImage(entry.filename_investigationIcon),
     buildHakushPng(entry.filename_icon),
@@ -275,12 +285,15 @@ const getEnemyImageCandidates = (entry = {}) =>
 
 const getEnemySplashCandidates = (entry = {}) =>
   uniqueUrls([
+    buildAmbrImage(entry.filename_iconBig),
     buildHakushImage(entry.filename_iconBig),
+    buildAmbrImage(entry.filename_investigationIcon),
     buildHakushPng(entry.filename_iconBig),
     buildHakushImage(entry.filename_investigationIcon),
     buildHakushPng(entry.filename_investigationIcon),
     buildHakushImage(entry.filename_icon),
     buildHakushPng(entry.filename_icon),
+    buildAmbrImage(entry.filename_icon),
     ...getEnemyImageCandidates(entry),
   ]);
 
@@ -401,7 +414,7 @@ export const fetchFallbackImage = async (title, signal) => {
 
   const directPage = Object.values(direct?.query?.pages || {})[0];
   if (directPage?.thumbnail?.source) {
-    return directPage.thumbnail.source;
+    return repairWikiImageUrl(directPage.thumbnail.source);
   }
 
   const search = await fetchJson(
@@ -423,7 +436,7 @@ export const fetchFallbackImage = async (title, signal) => {
       return leftPenalty - rightPenalty;
     });
 
-  return ranked[0]?.thumbnail?.source || "";
+  return repairWikiImageUrl(ranked[0]?.thumbnail?.source || "");
 };
 
 const mapWithConcurrency = async (items, mapper, limit = 8) => {

@@ -27,6 +27,6 @@ The production output is written to `dist/`. `npm run deploy` publishes that out
 
 ## Data and images
 
-The catalog is loaded from [genshin-db](https://github.com/theBowja/genshin-db); local-legend data and some fallback images use the Genshin Impact Fandom API. Character and boss images are preloaded before the application opens. Responses are cached in session storage for up to 14 days. Remote image and data availability depends on those services.
+The catalog is refreshed from [genshin-db](https://github.com/theBowja/genshin-db) on every visit, so newly added characters are picked up automatically; local-legend data and some fallback images use the Genshin Impact Fandom API. Character and boss images are preloaded before the application opens and cached as image files in IndexedDB for faster later visits. Catalog responses use session storage as a 14-day offline fallback. Image loading falls back between Ambr, Hakush, and repaired Fandom image URLs.
 
 Settings, selected pools, saved squads, and history are stored in browser cookies. The application does not require an account.
