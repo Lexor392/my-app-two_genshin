@@ -1,3 +1,5 @@
+import bossDetailsCatalog from "../data/bossDetails.json" with { type: "json" };
+
 const DETAIL_CACHE_KEY = "genshin-random-lab:hover-details:v4";
 const DETAIL_CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
 const DETAIL_CACHE_LIMIT = 120;
@@ -7,25 +9,42 @@ const APP_BASE_URL = import.meta.env?.BASE_URL || "/";
 const RESULT_LANGUAGES = { ru: "russian", en: "english", zh: "chinese", ja: "japanese", ko: "korean" };
 const memoryCache = new Map();
 const pendingRequests = new Map();
-let bossDetailsPromise;
-
-const loadBossDetails = () => {
-  bossDetailsPromise ||= import("../data/bossDetails.json", { with: { type: "json" } }).then((module) => module.default);
-  return bossDetailsPromise;
-};
-
 const normalizeBossKey = (value = "") => String(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
-const findLocalBoss = (catalog, item) => {
+const findLocalBoss = (item) => {
   const itemId = normalizeBossKey(item?.id);
   const itemNames = [item?.name, item?.nameRu, item?.nameZh, item?.nameJa, item?.nameKo]
     .filter(Boolean).map(normalizeBossKey);
-  return catalog[item?.id]
-    || Object.values(catalog).find((record) => {
+  return bossDetailsCatalog[item?.id]
+    || Object.values(bossDetailsCatalog).find((record) => {
       const aliases = [record.id, record.name, ...Object.values(record.names || {})].filter(Boolean).map(normalizeBossKey);
       return aliases.includes(itemId) || itemNames.some((name) => aliases.includes(name));
     })
     || null;
+};
+
+export const getLocalBossDetails = (item, lang = "en") => {
+  const local = findLocalBoss(item);
+  if (!local) return null;
+  const location = local.location?.[lang] || local.localizedLocation?.[lang] || {};
+  const description = typeof local.description === "string"
+    ? local.description
+    : (local.description?.[lang] || local.description?.en || Object.values(local.description || {}).find(Boolean) || "");
+  return {
+    title: local.names?.[lang] || local.name || item.name,
+    description,
+    additionalInfo: local.details?.[lang] || local.details?.en || "",
+    affiliation: "",
+    region: location.region || local.location?.region || "",
+    area: location.area || local.location?.area || "",
+    subarea: location.subarea || local.location?.subarea || "",
+    constellation: "",
+    birthday: "",
+    weapon: "",
+    element: "",
+    mapImage: local.map ? `${APP_BASE_URL}${local.map.replace(/^\//, "")}` : "",
+    sourceUrl: local.sourcePage || "",
+  };
 };
 
 const cleanWikiValue = (value = "") => value
@@ -180,29 +199,8 @@ const fetchBossLocation = async (item, signal) => {
 
 const loadHoverDetails = async (item, kind, lang, signal) => {
   if (kind === "bosses") {
-    const bossDetails = await loadBossDetails();
-    const local = findLocalBoss(bossDetails, item);
-    if (local) {
-      const description = typeof local.description === "string"
-        ? local.description
-        : (local.description?.[lang] || local.description?.en || Object.values(local.description || {}).find(Boolean) || "");
-      const location = local.location?.[lang] || local.localizedLocation?.[lang] || {};
-      return {
-        title: local.names?.[lang] || local.name || item.name,
-        description,
-        additionalInfo: local.details?.[lang] || local.details?.en || "",
-        affiliation: "",
-        region: location.region || local.location?.region || "",
-        area: location.area || local.location?.area || "",
-        subarea: location.subarea || local.location?.subarea || "",
-        constellation: "",
-        birthday: "",
-        weapon: "",
-        element: "",
-        mapImage: local.map ? `${APP_BASE_URL}${local.map.replace(/^\//, "")}` : "",
-        sourceUrl: local.sourcePage || "",
-      };
-    }
+    const local = getLocalBossDetails(item, lang);
+    if (local) return local;
   }
 
   const entry = await fetchDatabaseEntry(item, kind, lang, signal);
@@ -225,6 +223,10 @@ const loadHoverDetails = async (item, kind, lang, signal) => {
 
 export const fetchHoverDetails = (item, kind, lang, signal) => {
   if (!item?.id || !["characters", "bosses"].includes(kind)) return Promise.resolve(null);
+  if (kind === "bosses") {
+    const localDetails = getLocalBossDetails(item, lang);
+    if (localDetails) return Promise.resolve(localDetails);
+  }
   const key = `${kind}:${lang}:${item.id}`;
   const useCache = kind !== "bosses";
   if (useCache && memoryCache.has(key)) return Promise.resolve(memoryCache.get(key));

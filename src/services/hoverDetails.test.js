@@ -44,6 +44,17 @@ describe("boss hover details", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it("returns the bundled localized description and map for every boss record", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const details = await Promise.all(Object.values(bossDetails).map((boss) => (
+      fetchHoverDetails({ id: boss.id, name: boss.name }, "bosses", "ru")
+    )));
+
+    expect(details).toHaveLength(Object.keys(bossDetails).length);
+    expect(details.every((entry) => entry.description && entry.mapImage)).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("has useful local details for every boss entry", () => {
     const records = Object.values(bossDetails);
     expect(records).toHaveLength(113);

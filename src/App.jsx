@@ -2,12 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import "./App.css";
 import { translations } from "./i18n/translations";
-import { fetchFallbackImage, fetchGenshinData } from "./services/genshinApi";
+import { applyBundledCharacterImages, fetchFallbackImage, fetchGenshinData } from "./services/genshinApi";
 import { cacheImageAsset, getCachedImageSource, readCatalogSnapshot, saveCatalogSnapshot } from "./services/imageCache";
 import { countRollSessions, createRollHistoryEntries } from "./services/rollHistory";
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
-import { fetchHoverDetails } from "./services/hoverDetails";
+import { fetchHoverDetails, getLocalBossDetails } from "./services/hoverDetails";
 import {
   buildRollSequence,
   getCenteredReelPosition,
@@ -312,7 +312,8 @@ const PRELOAD_CONCURRENCY = 8;
 const prioritizeImageCandidates = (candidates) => Array.from(new Set(candidates.filter(Boolean)))
   .map((url, index) => ({ url, index }))
   .sort((left, right) => {
-    const rank = (url) => url.includes("hoyowiki.com") ? 0
+  const rank = (url) => url.includes("/assets/characters/") ? -1
+    : url.includes("hoyowiki.com") ? 0
       : url.includes("upload-os-bbs.mihoyo.com") ? 5
         : url.includes("static.wikia.nocookie.net") ? 2
           : url.includes("api.ambr.top") || url.includes("api.hakush.in") ? 4 : 3;
@@ -1038,6 +1039,7 @@ const ItemHoverDetail = ({ target, point, lang }) => {
   const [size, setSize] = useState({ width: 340, height: 320 });
   const item = target?.item;
   const isBoss = target?.kind === "bosses";
+  const localBossDetails = isBoss && item ? getLocalBossDetails(item, lang) : null;
   const detailKey = item ? `${target.kind}:${item.id}` : "";
   const [visibleDetailKey, setVisibleDetailKey] = useState("");
 
@@ -1092,12 +1094,12 @@ const ItemHoverDetail = ({ target, point, lang }) => {
     ? Math.min(viewportWidth - size.width - margin, point.x + gap)
     : Math.max(margin, point.x - size.width - gap);
   const top = Math.max(margin, Math.min(point.y - 42, viewportHeight - size.height - margin));
-  const description = details?.description || item.description || "";
+  const description = details?.description || localBossDetails?.description || item.description || "";
   const rows = isBoss
     ? [
-        [getExtraLabel("detailRegion", lang), details?.region],
-        [getExtraLabel("detailArea", lang), details?.area],
-        [getExtraLabel("detailSubarea", lang), details?.subarea],
+        [getExtraLabel("detailRegion", lang), details?.region || localBossDetails?.region],
+        [getExtraLabel("detailArea", lang), details?.area || localBossDetails?.area],
+        [getExtraLabel("detailSubarea", lang), details?.subarea || localBossDetails?.subarea],
       ]
     : [
         [getExtraLabel("detailAffiliation", lang), details?.affiliation],
@@ -1128,10 +1130,10 @@ const ItemHoverDetail = ({ target, point, lang }) => {
 
       <div className="item-hover-detail-content">
         {description ? <p className="item-hover-description">{description}</p> : <p className="item-hover-description is-muted">{getExtraLabel(details ? "detailUnavailable" : "detailLoading", lang)}</p>}
-        {details?.additionalInfo ? (
+        {details?.additionalInfo || localBossDetails?.additionalInfo ? (
           <div className="item-hover-additional-info">
             <strong>{getExtraLabel("detailNotes", lang)}</strong>
-            <p>{details.additionalInfo}</p>
+            <p>{details?.additionalInfo || localBossDetails?.additionalInfo}</p>
           </div>
         ) : null}
         {rows.length ? (
@@ -1144,8 +1146,8 @@ const ItemHoverDetail = ({ target, point, lang }) => {
         {isBoss ? (
           <div className="item-hover-map">
             <strong>{getExtraLabel("detailMap", lang)}</strong>
-            {details?.mapImage && !mapFailed ? (
-              <img src={details.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} loading="lazy" onError={() => setMapFailed(true)} />
+            {(details?.mapImage || localBossDetails?.mapImage) && !mapFailed ? (
+              <img src={details?.mapImage || localBossDetails?.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} loading="lazy" onError={() => setMapFailed(true)} />
             ) : (
               <p className="is-muted">{details ? getExtraLabel("detailMapUnavailable", lang) : getExtraLabel("detailLoading", lang)}</p>
             )}
@@ -2541,7 +2543,7 @@ function App() {
 
   const [data, setData] = useState(() => {
     const snapshot = readCatalogSnapshot();
-    return snapshot ? { ...snapshot, characters: buildTravelerDuoCharacters(snapshot.characters) } : null;
+    return snapshot ? { ...snapshot, characters: buildTravelerDuoCharacters(applyBundledCharacterImages(snapshot.characters)) } : null;
   });
   const dataRef = useRef(data);
   const hasCatalogRef = useRef(Boolean(data));
@@ -2679,7 +2681,9 @@ function App() {
       }
       setError("");
       const payload = await fetchGenshinData({ signal: controller.signal });
-      const safeCharacters = Array.isArray(payload?.characters) ? buildTravelerDuoCharacters(payload.characters) : [];
+      const safeCharacters = Array.isArray(payload?.characters)
+        ? buildTravelerDuoCharacters(applyBundledCharacterImages(payload.characters))
+        : [];
       const safeBosses = {
         all: Array.isArray(payload?.bosses?.all) ? payload.bosses.all : [],
         weekly: Array.isArray(payload?.bosses?.weekly) ? payload.bosses.weekly : [],

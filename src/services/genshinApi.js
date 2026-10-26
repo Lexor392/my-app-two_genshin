@@ -1,3 +1,6 @@
+import characterImageManifest from "../data/characterImageManifest.json" with { type: "json" };
+import bossDetailsCatalog from "../data/bossDetails.json" with { type: "json" };
+
 const GITHUB_DATA_BASE = "https://raw.githubusercontent.com/theBowja/genshin-db/main/src/data";
 const FANDOM_API = "https://genshin-impact.fandom.com/api.php";
 const HAKUSH_UI_BASE = "https://api.hakush.in/gi/UI";
@@ -10,12 +13,6 @@ const DEFAULT_HEADERS = {
 };
 const DATA_CACHE_PREFIX = "genshin-random-lab:data:v7:";
 const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
-let bossDetailsPromise;
-const loadBossDetails = () => {
-  bossDetailsPromise ||= import("../data/bossDetails.json", { with: { type: "json" } }).then((module) => module.default);
-  return bossDetailsPromise;
-};
-
 const LOCAL_LEGEND_PAGE = "Local Legend";
 
 const LOCAL_LEGEND_NAME_TRANSLATIONS = {
@@ -406,6 +403,7 @@ const mapCharacters = (nameMaps, imageData, metaSourceIndex) => {
       const meta = metaMap[id] || {};
       const imageCandidates = getCharacterImageCandidates(imageEntry);
       const splashCandidates = getCharacterSplashCandidates(imageEntry);
+      const bundledImage = characterImageManifest[id] ? `${APP_BASE_URL}${characterImageManifest[id]}` : "";
 
       return {
         id,
@@ -418,8 +416,8 @@ const mapCharacters = (nameMaps, imageData, metaSourceIndex) => {
         rarity: meta.rarity || 4,
         element: meta.element || "NONE",
         weapon: meta.weapon || "WEAPON_SWORD_ONE_HAND",
-        image: imageCandidates[0] || "",
-        imageFallbacks: imageCandidates.slice(1),
+        image: bundledImage || imageCandidates[0] || "",
+        imageFallbacks: imageCandidates.filter((url) => url !== bundledImage),
         splash: splashCandidates[0] || imageCandidates[0] || "",
         splashFallbacks: splashCandidates.slice(1),
       };
@@ -431,6 +429,18 @@ const mapCharacters = (nameMaps, imageData, metaSourceIndex) => {
       return a.name.localeCompare(b.name);
     });
 };
+
+export const applyBundledCharacterImages = (characters = []) => characters.map((character) => {
+  const localPath = characterImageManifest[character.id];
+  if (!localPath) return character;
+  const localImage = `${APP_BASE_URL}${localPath}`;
+  return {
+    ...character,
+    image: localImage,
+    imageFallbacks: uniqueUrls([...(character.imageFallbacks || []), character.image, character.splash, ...(character.splashFallbacks || [])]
+      .filter((url) => url && url !== localImage)),
+  };
+});
 
 const parseLegendTemplate = (line) => {
   const raw = line.trim().replace(/^\*\s*\{\{Enemy\|/, "").replace(/\}\}\s*$/, "");
@@ -640,7 +650,6 @@ const mapLocalLegends = async (enemyNameMaps, enemyImageMap, signal) => {
 };
 
 export const fetchGenshinData = async ({ signal } = {}) => {
-  const bossDetailsPromise = loadBossDetails();
   const [
     characterIndexEn,
     characterIndexRu,
@@ -668,7 +677,7 @@ export const fetchGenshinData = async ({ signal } = {}) => {
     fetchJson(`${GITHUB_DATA_BASE}/index/Korean/enemies.json`, 2, signal).catch(() => null),
     fetchJson(`${GITHUB_DATA_BASE}/image/enemies.json`, 3, signal).catch(() => ({})),
   ]);
-  const bossDetails = await bossDetailsPromise;
+  const bossDetails = bossDetailsCatalog;
 
   const characterIndexRuSafe = characterIndexRu || characterIndexEn;
   const characterIndexZhSafe = characterIndexZh || characterIndexEn;

@@ -10,6 +10,7 @@ vi.mock("./services/locale", () => ({
 }));
 
 vi.mock("./services/genshinApi", () => ({
+  applyBundledCharacterImages: (characters = []) => characters,
   fetchFallbackImage: vi.fn().mockResolvedValue(null),
   fetchGenshinData: vi.fn().mockResolvedValue({
     characters: [],
