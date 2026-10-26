@@ -8,7 +8,7 @@ import { countRollSessions, createRollHistoryEntries } from "./services/rollHist
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
 import { fetchHoverDetails, getLocalBossDetails } from "./services/hoverDetails";
-import { KOFI_SIGNUP_URL, KOFI_URL, NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
+import { DONATELLO_URL, NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
 import {
   buildRollSequence,
   getCenteredReelPosition,
@@ -2606,7 +2606,7 @@ const DonationPage = ({ t }) => (
     <p className="donation-country-note" role="note">{t.donateCountryLimit}</p>
     <div className="donation-services">
       {[
-        { name: "Ko-fi", description: t.donateKofi, methods: ["PayPal", t.donateCards, "Apple Pay", "Google Pay", t.donateLocalPayments], href: KOFI_URL || KOFI_SIGNUP_URL, configured: Boolean(KOFI_URL), openLabel: t.donateOpenKofi, createLabel: t.donateCreateKofi, terms: "https://help.ko-fi.com/hc/en-us/articles/360002506494-Does-Ko-fi-take-a-fee" },
+        { name: "Donatello", description: t.donateDonatello, methods: ["Visa", "Mastercard"], href: DONATELLO_URL, configured: Boolean(DONATELLO_URL), openLabel: t.donateOpenDonatello, createLabel: t.donateOpenDonatello, terms: "https://donatello.me/individuals" },
         { name: "NOWPayments", description: t.donateNowpayments, methods: ["BTC", "ETH", "USDT", t.donateManyCoins], href: NOWPAYMENTS_URL, configured: Boolean(NOWPAYMENTS_URL), openLabel: t.donateOpenNowpayments, createLabel: t.donateOpenNowpayments, terms: "https://nowpayments.io/donation-tools" },
       ].map((service) => (
         <article className="donation-card" key={service.name}>
