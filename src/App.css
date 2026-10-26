@@ -2448,13 +2448,15 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .preloader-stars span:nth-child(3) { animation-delay: .9s; }
 .sidebar { display: flex; flex-direction: column; }
 .menu-list { flex: 0 0 auto; }
-.sidebar-actions { display: grid; gap: 5px; margin-top: auto; padding-top: 16px; }
-.sidebar-action { width: 100%; }
+.sidebar-actions { display: grid; gap: 5px; min-width: 0; margin-top: auto; padding-top: 16px; }
+.sidebar-action { width: 100%; min-width: 0; gap: 8px; padding: 8px; font-size: .82rem; }
+.sidebar-actions .menu-item-icon { width: 20px; height: 20px; flex: 0 0 20px; }
+.sidebar-actions .menu-item-label { min-width: 0; overflow: hidden; overflow-wrap: anywhere; white-space: normal; text-overflow: clip; font-size: .82rem; line-height: 1.2; }
 .app-shell.sidebar-collapsed .sidebar-actions .menu-item { justify-content: center; padding: 9px 8px; }
 .app-shell.sidebar-collapsed .sidebar-actions .menu-item-label { display: none; }
 .sidebar-footer { position: static; margin-top: 12px; }
 .support-backdrop { z-index: 1100; }
-.support-modal { width: min(620px, 100%); gap: 12px; }
+.support-modal { width: min(620px, 100%); max-height: min(88vh, 820px); overflow-y: auto; overscroll-behavior: contain; gap: 12px; }
 .support-modal { animation: splash-modal-in .32s cubic-bezier(.16,.75,.25,1) both; }
 .support-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
 .support-modal-head h2 { margin: 4px 0 0; font-family: var(--font-display); font-size: clamp(1.35rem, 4vw, 1.8rem); }
