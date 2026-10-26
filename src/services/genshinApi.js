@@ -7,7 +7,7 @@ const GITHUB_MONSTER_ICON_BASE = "https://raw.githubusercontent.com/CMHopeSunshi
 const DEFAULT_HEADERS = {
   Accept: "application/json",
 };
-const DATA_CACHE_PREFIX = "genshin-random-lab:data:v6:";
+const DATA_CACHE_PREFIX = "genshin-random-lab:data:v7:";
 const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
 
 const LOCAL_LEGEND_PAGE = "Local Legend";
@@ -216,6 +216,7 @@ const BOSS_IMAGE_LOOKUP_TITLES = {
   "The Homesick Lone Wolf": ['"The Homesick Lone Wolf"'],
 };
 const BOSS_IMAGE_FALLBACKS = {
+  "Lupus Boreas, Dominator of Wolves": ["https://static.wikia.nocookie.net/gensin-impact/images/a/a4/Andrius_Icon.png/revision/latest/scale-to-width-down/574?cb=20200724104034"],
   "Ironbeard": ["https://static.wikia.nocookie.net/gensin-impact/images/4/40/Qucusaurus_Warrior_Heartstar_Hammer_Icon.png/revision/latest?cb=20241120023203"],
   "Liam": ["https://static.wikia.nocookie.net/gensin-impact/images/9/91/Liam_Icon.png/revision/latest?cb=20260214054408"],
   "Super-Heavy Landrover: Mechanized Fortress": ["https://static.wikia.nocookie.net/gensin-impact/images/2/23/Super-Heavy_Landrover_Mechanized_Fortress_Icon.png/revision/latest?cb=20251203041232"],
@@ -712,9 +713,10 @@ export const fetchGenshinData = async ({ signal } = {}) => {
     const fallbackImage = getImageLookupTitles(boss)
       .map((title) => bossImages.get(keyify(title)))
       .find(Boolean) || bossImages.get(keyify(boss.nameRu)) || "";
-    // Prefer the wiki's full boss artwork over API icon filenames, which are often absent from mirrors.
-    const image = fallbackImage || boss.image;
-    const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), boss.image, fallbackImage].filter((candidate) => candidate !== image));
+    // Prefer explicit Fandom image mappings, then Fandom page thumbnails over API filenames that may be absent from mirrors.
+    const explicitWikiImage = BOSS_IMAGE_FALLBACKS[boss.name]?.[0] || "";
+    const image = explicitWikiImage || fallbackImage || boss.image;
+    const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), fallbackImage, boss.image, ...(BOSS_IMAGE_FALLBACKS[boss.name] || [])].filter((candidate) => candidate !== image));
     const splash = fallbackImage || boss.splash || image;
     const splashFallbacks = uniqueUrls([...(boss.splashFallbacks || []), boss.splash, fallbackImage].filter((candidate) => candidate && candidate !== splash));
     return { ...boss, image, imageFallbacks, splash, splashFallbacks };

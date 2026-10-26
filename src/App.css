@@ -990,7 +990,7 @@ h4 {
 .option-item.special-magenta {
   border-color: rgba(190, 151, 224, 0.92);
   box-shadow: inset 0 0 0 1px rgba(225, 202, 245, 0.24), 0 0 18px rgba(116, 78, 151, 0.12);
-  background: radial-gradient(ellipse at 50% 12%, rgba(114, 80, 147, 0.32), transparent 62%), linear-gradient(160deg, rgba(49, 42, 66, 0.82), rgba(25, 41, 55, 0.96));
+  background: radial-gradient(ellipse at 50% 12%, rgb(222 73 73 / 77%), transparent 62%), linear-gradient(160deg, rgb(218 88 88 / 82%), rgb(55 25 25 / 96%));
 }
 
 .roulette-card img {
