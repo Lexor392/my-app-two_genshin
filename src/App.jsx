@@ -1033,7 +1033,15 @@ const ItemHoverDetail = ({ target, point, lang }) => {
   const [size, setSize] = useState({ width: 340, height: 320 });
   const item = target?.item;
   const isBoss = target?.kind === "bosses";
-  const t = translations[lang] || translations.en;
+  const detailKey = item ? `${target.kind}:${item.id}` : "";
+  const [visibleDetailKey, setVisibleDetailKey] = useState("");
+
+  useEffect(() => {
+    setVisibleDetailKey("");
+    if (!detailKey) return undefined;
+    const timer = window.setTimeout(() => setVisibleDetailKey(detailKey), 460);
+    return () => window.clearTimeout(timer);
+  }, [detailKey]);
 
   useEffect(() => {
     if (!item) return undefined;
@@ -1068,7 +1076,7 @@ const ItemHoverDetail = ({ target, point, lang }) => {
 
   useEffect(() => setMapFailed(false), [item?.id, details?.mapImage]);
 
-  if (!item || typeof document === "undefined") return null;
+  if (!item || visibleDetailKey !== detailKey || typeof document === "undefined") return null;
 
   const viewportWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
   const viewportHeight = typeof window === "undefined" ? 800 : window.innerHeight;
@@ -1133,7 +1141,6 @@ const ItemHoverDetail = ({ target, point, lang }) => {
             )}
           </div>
         ) : null}
-        {details?.sourceUrl ? <a className="item-hover-source" href={details.sourceUrl} target="_blank" rel="noreferrer">{t.sourceLabel}</a> : null}
       </div>
     </aside>,
     document.body

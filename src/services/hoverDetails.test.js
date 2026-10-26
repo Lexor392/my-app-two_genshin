@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import bossHoverDetails from "../data/bossHoverDetails.json" with { type: "json" };
+import bossDetails from "../data/bossDetails.json" with { type: "json" };
 import { fetchHoverDetails } from "./hoverDetails";
 
 describe("boss hover details", () => {
@@ -18,15 +18,17 @@ describe("boss hover details", () => {
     expect(andrius.region).toBe("Mondstadt");
     expect(andrius.area).toBe("Windwail Highland");
     expect(andrius.subarea).toBe("Wolvendom");
+    expect(andrius.description).toBe(bossDetails.lupusboreasdominatorofwolves.description.en);
     expect(andrius.mapImage).toMatch(/assets\/boss-maps\/lupusboreasdominatorofwolves\.png$/);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("has useful local details for every boss entry", () => {
-    const records = Object.values(bossHoverDetails);
+    const records = Object.values(bossDetails);
     expect(records).toHaveLength(113);
     expect(records.every((record) => (
-      record.description || record.location?.region || record.location?.area || record.map
+      record.description?.ru && record.description?.en && record.description?.zh && record.description?.ja && record.description?.ko
+      && (record.location?.region || record.location?.area || record.map)
     ))).toBe(true);
   });
 });

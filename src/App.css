@@ -2392,7 +2392,6 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .item-hover-map > strong { color: #e8d6aa; font-size: .75rem; }
 .item-hover-map img { display: block; width: 100%; max-height: 220px; object-fit: contain; border: 1px solid rgba(225, 201, 150, .25); background: rgba(7, 15, 21, .78); }
 .item-hover-map > p { margin: 0; font-size: .72rem; line-height: 1.4; }
-.item-hover-source { justify-self: end; color: #e5cd92; font-size: .7rem; text-decoration: underline; pointer-events: auto; }
 @keyframes hover-detail-enter { from { opacity: 0; transform: translate3d(0, 5px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 .menu-item-icon { display: inline-grid; place-items: center; flex: 0 0 23px; }
 .menu-item-icon svg { width: 20px; height: 20px; }

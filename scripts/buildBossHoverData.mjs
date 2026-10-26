@@ -8,7 +8,9 @@ const WIKI_API = "https://genshin-impact.fandom.com/api.php";
 const DATA_BASE = "https://raw.githubusercontent.com/theBowja/genshin-db/main/src/data";
 const ENEMY_API = "https://genshin-db-api.vercel.app/api/v5/enemies";
 const MAP_DIR = path.join(ROOT, "public", "assets", "boss-maps");
-const DATA_FILE = path.join(ROOT, "src", "data", "bossHoverDetails.json");
+const DATA_FILE = path.join(ROOT, "src", "data", "bossDetails.generated.json");
+const DESCRIPTION_LANGUAGES = { ru: "russian", en: "english", zh: "chinese", ja: "japanese", ko: "korean" };
+const TRANSLATE_LANGUAGES = { ru: "ru", zh: "zh-CN", ja: "ja", ko: "ko" };
 const aliases = {
   lupusboreasdominatorofwolves: ["Andrius"],
   stormterror: ["Dvalin"],
@@ -16,6 +18,13 @@ const aliases = {
   theknave: ["Arlecchino"],
   lasignora: ["Signora"],
   azhdaha: ["Azhdaha (Weekly Boss)"],
+};
+const bossLocationOverrides = {
+  bolteaterbathysmalvishap: { region: "Inazuma", area: "Enkanomiya", subarea: "Dainichi Mikoshi" },
+  rimebiterbathysmalvishap: { region: "Inazuma", area: "Enkanomiya", subarea: "Dainichi Mikoshi" },
+};
+const localLocationAliases = {
+  "local-legend-huntersray": "The Fairy Knight Twins",
 };
 
 const fetchJson = async (url) => {
@@ -116,6 +125,43 @@ const fetchDatabaseDescription = async (record) => {
   return "";
 };
 
+const fetchDatabaseDescriptionForLanguage = async (query, language) => {
+  const params = new URLSearchParams({ query, matchNames: "true", resultLanguage: DESCRIPTION_LANGUAGES[language] });
+  const entry = await fetchJson(`${ENEMY_API}?${params}`);
+  return entry?.description || entry?.investigation?.description || "";
+};
+
+const translateDescription = async (text, language) => {
+  if (!text || language === "en") return text || "";
+  const params = new URLSearchParams({ client: "gtx", sl: "en", tl: TRANSLATE_LANGUAGES[language], dt: "t", q: text });
+  const result = await fetchJson(`https://translate.googleapis.com/translate_a/single?${params}`);
+  return (result?.[0] || []).map((part) => part?.[0] || "").join("").trim();
+};
+
+const getLocalizedDescription = async (record, wikiDescription) => {
+  let english = wikiDescription || "";
+  let officialEnglish = false;
+  try {
+    const entry = await fetchJson(`${ENEMY_API}?${new URLSearchParams({ query: record.name, matchNames: "true", resultLanguage: "english" })}`);
+    if (entry?.name && keyify(entry.name) === keyify(record.name)) {
+      english = entry.description || entry.investigation?.description || english;
+      officialEnglish = Boolean(english);
+    }
+  } catch { /* Keep the wiki description and translate it below. */ }
+  const descriptions = { en: cleanWiki(english) };
+  await Promise.all(Object.keys(DESCRIPTION_LANGUAGES).filter((language) => language !== "en").map(async (language) => {
+    let value = "";
+    if (officialEnglish) {
+      try { value = cleanWiki(await fetchDatabaseDescriptionForLanguage(record.name, language)); } catch { /* Use the translation fallback. */ }
+    }
+    if (!value) {
+      try { value = await translateDescription(descriptions.en, language); } catch { /* Keep the source text if the translator is unavailable. */ }
+    }
+    descriptions[language] = value || descriptions.en;
+  }));
+  return descriptions;
+};
+
 const saveMap = async (recordId, mapFilename) => {
   if (!mapFilename) return "";
   const remoteUrl = await readImageUrl(mapFilename).catch(() => "");
@@ -163,7 +209,10 @@ const getBossRecords = async () => {
         id,
         name,
         titles: [...new Set([linkedName, source, name].filter(Boolean))],
-        localLocation: localLegendLocations.get(keyify(name)) || localLegendLocations.get(keyify(linkedName)) || localLegendLocations.get(keyify(source)),
+        localLocation: localLegendLocations.get(keyify(name))
+          || localLegendLocations.get(keyify(linkedName))
+          || localLegendLocations.get(keyify(source))
+          || localLegendLocations.get(keyify(localLocationAliases[id] || "")),
       });
     }
   }
@@ -174,7 +223,14 @@ const getBossRecords = async () => {
     if (records.some((record) => record.id === id)) continue;
     const baseId = id.replace(/^local-legend-/, "");
     const name = nameMap[baseId] || baseId.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-    records.push({ id, name, titles: [name], localLocation: localLegendLocations.get(keyify(name)) || localLegendLocations.get(keyify(baseId)) });
+    records.push({
+      id,
+      name,
+      titles: [name],
+      localLocation: localLegendLocations.get(keyify(name))
+        || localLegendLocations.get(keyify(baseId))
+        || localLegendLocations.get(keyify(localLocationAliases[id] || "")),
+    });
   }
   return [...new Map(records.map((record) => [record.id, record])).values()];
 };
@@ -223,25 +279,27 @@ const workers = Array.from({ length: 5 }, async () => {
       const page = await resolvePage(record);
       if (!page) {
         const location = {
-          region: record.localLocation?.region || "",
-          area: record.localLocation?.area || "",
-          subarea: "",
+          region: bossLocationOverrides[record.id]?.region || record.localLocation?.region || "",
+          area: bossLocationOverrides[record.id]?.area || record.localLocation?.area || "",
+          subarea: bossLocationOverrides[record.id]?.subarea || "",
         };
         const map = await saveMap(record.id, record.localLocation?.mapFilename);
-        output[record.id] = { name: record.name, location, description: await fetchDatabaseDescription(record), map, sourcePage: "https://genshin-impact.fandom.com/wiki/Local_Legend" };
+        const description = await fetchDatabaseDescription(record);
+        output[record.id] = { name: record.name, location, description: await getLocalizedDescription(record, description), map, sourcePage: "https://genshin-impact.fandom.com/wiki/Local_Legend" };
         console.log(`${map ? "MAP" : "INFO"} ${record.name}: ${location.region || "?"} / ${location.area || "?"}${map ? ` → ${map}` : ""}`);
         continue;
       }
       const location = {
-        region: getField(page.wikitext, "region") || record.localLocation?.region || "",
+        region: bossLocationOverrides[record.id]?.region || getField(page.wikitext, "region") || record.localLocation?.region || "",
         area: record.id.startsWith("local-legend-")
-          ? (record.localLocation?.area || getField(page.wikitext, "area") || getField(page.wikitext, "location") || "")
-          : (getField(page.wikitext, "area") || getField(page.wikitext, "location") || ""),
-        subarea: getField(page.wikitext, "subarea"),
+          ? (record.localLocation?.area || bossLocationOverrides[record.id]?.area || getField(page.wikitext, "area") || getField(page.wikitext, "location") || "")
+          : (bossLocationOverrides[record.id]?.area || getField(page.wikitext, "area") || getField(page.wikitext, "location") || ""),
+        subarea: bossLocationOverrides[record.id]?.subarea || getField(page.wikitext, "subarea"),
       };
       const map = await saveMap(record.id, record.localLocation?.mapFilename || chooseMap(page.images));
       const description = extractDescription(page.wikitext) || await fetchDatabaseDescription(record);
-      output[record.id] = { name: record.name, location, description, map, sourcePage: `https://genshin-impact.fandom.com/wiki/${encodeURIComponent(page.title.replaceAll(" ", "_"))}` };
+      const localizedDescription = await getLocalizedDescription(record, description);
+      output[record.id] = { name: record.name, location, description: localizedDescription, map, sourcePage: `https://genshin-impact.fandom.com/wiki/${encodeURIComponent(page.title.replaceAll(" ", "_"))}` };
       console.log(`${map ? "MAP" : "INFO"} ${record.name}: ${location.region || "?"} / ${location.area || "?"} / ${location.subarea || "?"}${map ? ` → ${map}` : ""}`);
     } catch (error) {
       output[record.id] = { name: record.name, location: {}, description: "", map: "", sourcePage: "" };

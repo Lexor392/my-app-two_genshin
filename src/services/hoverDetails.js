@@ -1,4 +1,4 @@
-import bossHoverDetails from "../data/bossHoverDetails.json" with { type: "json" };
+import bossDetails from "../data/bossDetails.json" with { type: "json" };
 
 const DETAIL_CACHE_KEY = "genshin-random-lab:hover-details:v2";
 const DETAIL_CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
@@ -162,11 +162,14 @@ const fetchBossLocation = async (item, signal) => {
 
 const loadHoverDetails = async (item, kind, lang, signal) => {
   if (kind === "bosses") {
-    const local = bossHoverDetails[item.id];
+    const local = bossDetails[item.id];
     if (local) {
+      const description = typeof local.description === "string"
+        ? local.description
+        : (local.description?.[lang] || local.description?.en || Object.values(local.description || {}).find(Boolean) || "");
       return {
         title: local.name || item.name,
-        description: local.description || "",
+        description,
         affiliation: "",
         region: local.location?.region || "",
         area: local.location?.area || "",
