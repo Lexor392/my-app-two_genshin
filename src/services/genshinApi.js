@@ -1,8 +1,11 @@
+import bossImageAssets from "../data/bossImageAssets.json" with { type: "json" };
+
 const GITHUB_DATA_BASE = "https://raw.githubusercontent.com/theBowja/genshin-db/main/src/data";
 const FANDOM_API = "https://genshin-impact.fandom.com/api.php";
 const HAKUSH_UI_BASE = "https://api.hakush.in/gi/UI";
 const AMBR_UI_BASE = "https://api.ambr.top/assets/UI";
 const GITHUB_MONSTER_ICON_BASE = "https://raw.githubusercontent.com/CMHopeSunshine/GenshinWikiMap/master/resources/monster";
+const APP_BASE_URL = import.meta.env?.BASE_URL || "/";
 
 const DEFAULT_HEADERS = {
   Accept: "application/json",
@@ -216,7 +219,7 @@ const BOSS_IMAGE_LOOKUP_TITLES = {
   "The Homesick Lone Wolf": ['"The Homesick Lone Wolf"'],
 };
 const BOSS_IMAGE_FALLBACKS = {
-  "Lupus Boreas, Dominator of Wolves": ["https://static.wikia.nocookie.net/gensin-impact/images/a/a4/Andrius_Icon.png/revision/latest/scale-to-width-down/574?cb=20200724104034"],
+  "Lupus Boreas, Dominator of Wolves": ["https://static.wikia.nocookie.net/gensin-impact/images/a/a4/Andrius_Icon.png"],
   "Ironbeard": ["https://static.wikia.nocookie.net/gensin-impact/images/4/40/Qucusaurus_Warrior_Heartstar_Hammer_Icon.png/revision/latest?cb=20241120023203"],
   "Liam": ["https://static.wikia.nocookie.net/gensin-impact/images/9/91/Liam_Icon.png/revision/latest?cb=20260214054408"],
   "Super-Heavy Landrover: Mechanized Fortress": ["https://static.wikia.nocookie.net/gensin-impact/images/2/23/Super-Heavy_Landrover_Mechanized_Fortress_Icon.png/revision/latest?cb=20251203041232"],
@@ -701,25 +704,10 @@ export const fetchGenshinData = async ({ signal } = {}) => {
   const bossPool = dedupeById([...weeklyBosses, ...ascensionBosses, ...localLegends]).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
-  let bossImages = new Map();
-  try {
-    // A data record can have an icon URL that exists syntactically but returns 404.
-    // Add wiki thumbnails as fallbacks for every boss so broken asset filenames do not leave blanks.
-    if (bossPool.length) bossImages = await fetchPageImageMap(bossPool, signal);
-  } catch {
-    // Per-item Fandom lookup is retried during the initial image preparation.
-  }
   const resolvedBossPool = bossPool.map((boss) => {
-    const fallbackImage = getImageLookupTitles(boss)
-      .map((title) => bossImages.get(keyify(title)))
-      .find(Boolean) || bossImages.get(keyify(boss.nameRu)) || "";
-    // Prefer explicit Fandom image mappings, then Fandom page thumbnails over API filenames that may be absent from mirrors.
-    const explicitWikiImage = BOSS_IMAGE_FALLBACKS[boss.name]?.[0] || "";
-    const image = explicitWikiImage || fallbackImage || boss.image;
-    const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), fallbackImage, boss.image, ...(BOSS_IMAGE_FALLBACKS[boss.name] || [])].filter((candidate) => candidate !== image));
-    const splash = fallbackImage || boss.splash || image;
-    const splashFallbacks = uniqueUrls([...(boss.splashFallbacks || []), boss.splash, fallbackImage].filter((candidate) => candidate && candidate !== splash));
-    return { ...boss, image, imageFallbacks, splash, splashFallbacks };
+    const localAsset = bossImageAssets[boss.id];
+    const image = localAsset ? `${APP_BASE_URL}${localAsset}` : "";
+    return { ...boss, image, imageFallbacks: [], splash: image, splashFallbacks: [] };
   });
   const bossById = new Map(resolvedBossPool.map((boss) => [boss.id, boss]));
 

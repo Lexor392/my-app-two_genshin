@@ -91,10 +91,8 @@ const DEFAULT_CHARACTER_FILTERS = {
 
 const DEFAULT_BOSS_FILTERS = {
   search: "",
-  viewMode: "cards",
+  viewMode: "list",
   groups: [],
-  nameShapes: [],
-  nameLengths: [],
 };
 
 const DEFAULT_HISTORY_FILTERS = {
@@ -361,7 +359,7 @@ const preloadCatalogImages = async (catalog, { signal, onProgress }) => {
         }
       }
 
-      if (!workingImage && !signal?.aborted) {
+      if (!workingImage && !signal?.aborted && index < catalog.characters.length) {
         try {
           const wikiImage = await fetchFallbackImage(item.name, signal);
           if (wikiImage) workingImage = await loadImageAsset(wikiImage, signal);
@@ -666,19 +664,10 @@ const normalizeCharacterFilters = (value) => {
 
 const normalizeBossFilters = (value) => {
   const source = value && typeof value === "object" ? value : {};
-  const nameShapes = uniqueStringArray(source.nameShapes).filter(
-    (entry) => entry === "single" || entry === "multi"
-  );
-  const nameLengths = uniqueStringArray(source.nameLengths).filter(
-    (entry) => entry === "short" || entry === "medium" || entry === "long"
-  );
-
   return {
     search: typeof source.search === "string" ? source.search : DEFAULT_BOSS_FILTERS.search,
-    viewMode: source.viewMode === "list" ? "list" : "cards",
+    viewMode: "list",
     groups: uniqueStringArray(source.groups),
-    nameShapes,
-    nameLengths,
   };
 };
 
@@ -774,22 +763,6 @@ const trimHistoryForCookie = (entries) => {
   return [];
 };
 
-const getBossNameShape = (value) => {
-  const words = value.trim().split(/\s+/).filter(Boolean).length;
-  return words > 1 ? "multi" : "single";
-};
-
-const getBossNameLength = (value) => {
-  const length = value.trim().length;
-  if (length <= 10) {
-    return "short";
-  }
-  if (length <= 18) {
-    return "medium";
-  }
-  return "long";
-};
-
 const matchesCharacterFilters = (item, filters, lang) => {
   if (!filters.includeSpecial && isSpecialMagentaCharacter(item)) {
     return false;
@@ -817,16 +790,6 @@ const matchesBossFilters = (item, filters, lang) => {
   }
 
   const name = getItemName(item, lang);
-  const nameShape = getBossNameShape(name);
-  const nameLength = getBossNameLength(name);
-
-  if (filters.nameShapes.length && !filters.nameShapes.includes(nameShape)) {
-    return false;
-  }
-  if (filters.nameLengths.length && !filters.nameLengths.includes(nameLength)) {
-    return false;
-  }
-
   const search = filters.search.trim().toLowerCase();
   if (!search) {
     return true;
@@ -1281,7 +1244,7 @@ const BossPoolPanel = ({
   };
 
   const groupKeys = Object.keys(BOSS_TYPE_LABELS);
-  const activeFilterCount = Number(activeFilters.groups.length > 0) + Number(activeFilters.nameShapes.length > 0) + Number(activeFilters.nameLengths.length > 0);
+  const activeFilterCount = Number(activeFilters.groups.length > 0);
 
   return (
     <section className="stage-panel character-pool-panel" id="boss-pool">
@@ -1317,26 +1280,6 @@ const BossPoolPanel = ({
             />
           </label>
 
-          <div className="view-toggle">
-            <span>{t.view}</span>
-            <div className="toggle-row">
-              <button
-                type="button"
-                className={activeFilters.viewMode === "cards" ? "is-active" : ""}
-                onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "cards" }))}
-              >
-                {t.viewCards}
-              </button>
-              <button
-                type="button"
-                className={activeFilters.viewMode === "list" ? "is-active" : ""}
-                onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "list" }))}
-              >
-                {t.viewList}
-              </button>
-            </div>
-          </div>
-
         <details className="pool-filter-dropdown">
           <summary className="pool-filter-toggle" aria-label={getExtraLabel("poolFilters", lang)} title={getExtraLabel("poolFilters", lang)}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.2v5.1l-3.6 1.8v-6.9L4 5Z" /></svg>
@@ -1358,42 +1301,6 @@ const BossPoolPanel = ({
             </div>
           </div>
 
-          <div className="filter-group">
-            <p>{t.nameShape}</p>
-            <div className="chip-row">
-              <FilterChip
-                label={t.oneWord}
-                active={activeFilters.nameShapes.includes("single")}
-                onClick={() => toggleFilterArray("nameShapes", "single")}
-              />
-              <FilterChip
-                label={t.multiWord}
-                active={activeFilters.nameShapes.includes("multi")}
-                onClick={() => toggleFilterArray("nameShapes", "multi")}
-              />
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <p>{t.nameLength}</p>
-            <div className="chip-row">
-              <FilterChip
-                label={t.shortName}
-                active={activeFilters.nameLengths.includes("short")}
-                onClick={() => toggleFilterArray("nameLengths", "short")}
-              />
-              <FilterChip
-                label={t.mediumName}
-                active={activeFilters.nameLengths.includes("medium")}
-                onClick={() => toggleFilterArray("nameLengths", "medium")}
-              />
-              <FilterChip
-                label={t.longName}
-                active={activeFilters.nameLengths.includes("long")}
-                onClick={() => toggleFilterArray("nameLengths", "long")}
-              />
-            </div>
-          </div>
         </div>
 
         <div className="filter-actions">
@@ -1417,7 +1324,7 @@ const BossPoolPanel = ({
 
         {visibleItems.length ? (
           <div className="options-scroll">
-            <div className={`options-grid ${activeFilters.viewMode === "list" ? "is-list" : ""}`}>
+            <div className="options-grid is-list">
               {visibleItems.map((item) => (
                 <BossOption
                   key={item.id}
@@ -1425,7 +1332,7 @@ const BossPoolPanel = ({
                   lang={lang}
                   selected={selectedIds.has(item.id)}
                   onToggle={toggleSelection}
-                  viewMode={activeFilters.viewMode}
+                  viewMode="list"
                   t={t}
                 />
               ))}
