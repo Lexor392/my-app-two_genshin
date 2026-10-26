@@ -4,7 +4,7 @@ const STORE_NAME = "images";
 const MEMORY_URLS = new Map();
 const MEMORY_SOURCES = new Map();
 const IMAGE_TIMEOUT_MS = 6500;
-const CATALOG_STORAGE_KEY = "teyvat-random-lab:catalog:v1";
+const CATALOG_STORAGE_KEY = "teyvat-random-lab:catalog:v2";
 
 let databasePromise;
 

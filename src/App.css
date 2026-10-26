@@ -2473,6 +2473,34 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .wheel-hover-card strong { display: block; font-size: .9rem; }
 .wheel-hover-card p { margin: 5px 0 0; color: #c0cac6; font-size: .76rem; line-height: 1.35; }
 .wheel-hover-card { position: fixed; z-index: 1200; top: 12px; left: 12px; width: min(270px, calc(100vw - 24px)); }
+
+/* Keep pool search visible and put only the filters behind the compact icon. */
+.character-pool-panel .filter-toolbar { position: relative; align-items: flex-end; flex-wrap: nowrap; gap: 10px; }
+.character-pool-panel .filter-toolbar > .search-box { min-width: 0; }
+.character-pool-panel .filter-toolbar > .search-box { order: 1; }
+.character-pool-panel .filter-toolbar > .pool-filter-dropdown { order: 2; }
+.character-pool-panel .filter-toolbar > .view-toggle { order: 3; }
+.pool-filter-dropdown { position: relative; z-index: 30; flex: 0 0 auto; }
+.pool-filter-toggle { position: relative; display: grid; place-items: center; width: 42px; height: 42px; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 3px; color: var(--text-main); background: var(--bg-panel); cursor: pointer; transition: border-color .18s ease, color .18s ease, background .18s ease; }
+.pool-filter-toggle::-webkit-details-marker { display: none; }
+.pool-filter-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.pool-filter-toggle:hover, .pool-filter-dropdown[open] > .pool-filter-toggle { border-color: var(--teyvat-gold); color: #f0d899; background: rgba(218, 190, 132, .12); }
+.active-filter-count { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 10px; color: #172832; background: #e5ca8c; font-size: .68rem; font-weight: 800; }
+.pool-filter-content { position: absolute; z-index: 80; top: calc(100% + 8px); right: 0; display: grid; gap: 10px; width: min(760px, calc(100vw - 40px)); max-height: min(70vh, 620px); overflow: auto; padding: 12px; border: 1px solid rgba(225, 201, 150, .72); border-radius: 3px; background: rgba(20, 34, 43, .98); box-shadow: 0 16px 40px rgba(0, 0, 0, .48); animation: teyvat-panel-enter .16s ease both; }
+.pool-filter-content .filter-actions { justify-content: flex-end; }
+.pool-selection-actions { margin-top: 10px; }
+.roulette-engine-grid.is-cases .lane-add-button { align-self: center; }
+.wheel-pointer { transform: translateX(-50%) rotate(180deg); }
+.wheel-countdown { position: absolute; z-index: 5; top: -29px; left: 50%; display: grid; place-items: center; width: 28px; height: 28px; transform: translateX(-50%); border: 1px solid rgba(240, 216, 153, .88); border-radius: 50%; color: #fff1c6; background: rgba(19, 31, 38, .92); box-shadow: 0 0 14px rgba(226, 196, 129, .3); font-weight: 800; font-variant-numeric: tabular-nums; }
+.wheel-center.has-current-item { border-radius: 50%; }
+.wheel-center .traveler-duo-portrait { width: 100%; height: 100%; aspect-ratio: 1; }
+@media (max-width: 680px) {
+  .character-pool-panel .filter-toolbar { flex-wrap: wrap; }
+  .character-pool-panel .filter-toolbar > .search-box { flex: 1 1 calc(100% - 54px); }
+  .character-pool-panel .view-toggle { order: 3; width: 100%; }
+  .character-pool-panel .pool-filter-dropdown { order: 2; }
+  .pool-filter-content { right: -2px; width: min(92vw, 520px); padding: 9px; }
+}
 .traveler-duo-portrait { background: transparent; }
 .traveler-duo-portrait::before { display: none; }
 .traveler-element-sigil { z-index: 0; right: 1%; top: 2%; width: 94%; height: 94%; opacity: .2; filter: drop-shadow(0 0 12px currentColor); }

@@ -45,7 +45,8 @@ const EXTRA_LABELS = {
   spinCount: { ru: "Количество рулеток", en: "Spin count", zh: "转盘数量", ja: "ルーレット数", ko: "룰렛 개수" },
   rouletteModes: { ru: "Выбери способ розыгрыша", en: "Choose a roulette style", zh: "选择抽取方式", ja: "ルーレットの形式を選択", ko: "룰렛 방식 선택" },
   rouletteVertical: { ru: "Вертикальная", en: "Vertical", zh: "垂直卷轴", ja: "縦型", ko: "세로형" },
-  rouletteHorizontal: { ru: "Кейсы", en: "Case roll", zh: "横向卷轴", ja: "ケースロール", ko: "케이스 롤" },
+  rouletteHorizontal: { ru: "Горизонтальная", en: "Horizontal", zh: "横向", ja: "横型", ko: "가로형" },
+  poolFilters: { ru: "Фильтры", en: "Filters", zh: "筛选", ja: "フィルター", ko: "필터" },
   rouletteWheel: { ru: "Колесо", en: "Wheel", zh: "幸运转盘", ja: "ルーレット", ko: "룰렛 휠" },
   wheelResults: { ru: "Выпавшие персонажи", en: "Selected characters", zh: "抽取结果", ja: "選ばれたキャラクター", ko: "선택된 캐릭터" },
   needLanes: { ru: "В пуле должно быть не менее {count} разных персонажей для {count} рулеток.", en: "Add at least {count} different characters to spin {count} lanes.", zh: "角色池至少需要 {count} 名不同角色才能转动 {count} 个转盘。", ja: "{count} 個のルーレットを回すには、異なるキャラクターが {count} 人以上必要です。", ko: "룰렛 {count}개를 돌리려면 서로 다른 캐릭터가 {count}명 이상 필요합니다." },
@@ -1021,6 +1022,19 @@ const CharacterPoolPanel = ({
     });
   };
 
+  const selectVisible = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      visibleItems.forEach((item) => next.add(item.id));
+      return next;
+    });
+  };
+
+  const deselectVisible = () => {
+    const visibleIds = new Set(visibleItems.map((item) => item.id));
+    setSelectedIds((prev) => new Set([...prev].filter((id) => !visibleIds.has(id))));
+  };
+
   const toggleFilterArray = (key, value) => {
     setActiveFilters((prev) => {
       const hasValue = prev[key].includes(value);
@@ -1037,6 +1051,7 @@ const CharacterPoolPanel = ({
 
   const weaponKeys = Object.keys(WEAPON_LABELS);
   const elementKeys = Object.keys(ELEMENT_LABELS).filter((key) => key !== "NONE");
+  const activeFilterCount = Number(activeFilters.rarities.length > 0) + Number(activeFilters.weapons.length > 0) + Number(activeFilters.elements.length > 0);
 
   return (
     <section className="stage-panel character-pool-panel" id="character-pool">
@@ -1091,8 +1106,13 @@ const CharacterPoolPanel = ({
               </button>
             </div>
           </div>
-        </div>
 
+        <details className="pool-filter-dropdown">
+          <summary className="pool-filter-toggle" aria-label={getExtraLabel("poolFilters", lang)} title={getExtraLabel("poolFilters", lang)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.2v5.1l-3.6 1.8v-6.9L4 5Z" /></svg>
+            {activeFilterCount ? <span className="active-filter-count">{activeFilterCount}</span> : null}
+          </summary>
+          <div className="pool-filter-content">
         <div className="filter-groups">
           <div className="filter-group">
             <p>{t.rarity}</p>
@@ -1140,19 +1160,17 @@ const CharacterPoolPanel = ({
         </div>
 
         <div className="filter-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setSelectedIds(new Set(allItems.map((item) => item.id)))}
-          >
-            {t.selectAll}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => setSelectedIds(new Set())}>
-            {t.deselectAll}
-          </button>
           <button type="button" className="btn-secondary" onClick={resetFilters}>
             {t.resetFilters}
           </button>
+        </div>
+          </div>
+        </details>
+        </div>
+
+        <div className="filter-actions pool-selection-actions">
+          <button type="button" className="btn-secondary" onClick={selectVisible}>{t.selectAll}</button>
+          <button type="button" className="btn-secondary" onClick={deselectVisible}>{t.deselectAll}</button>
         </div>
 
         <p className="filter-counter">
@@ -1240,6 +1258,7 @@ const BossPoolPanel = ({
   };
 
   const groupKeys = Object.keys(BOSS_TYPE_LABELS);
+  const activeFilterCount = Number(activeFilters.groups.length > 0) + Number(activeFilters.nameShapes.length > 0) + Number(activeFilters.nameLengths.length > 0);
 
   return (
     <section className="stage-panel character-pool-panel" id="boss-pool">
@@ -1294,8 +1313,13 @@ const BossPoolPanel = ({
               </button>
             </div>
           </div>
-        </div>
 
+        <details className="pool-filter-dropdown">
+          <summary className="pool-filter-toggle" aria-label={getExtraLabel("poolFilters", lang)} title={getExtraLabel("poolFilters", lang)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.2v5.1l-3.6 1.8v-6.9L4 5Z" /></svg>
+            {activeFilterCount ? <span className="active-filter-count">{activeFilterCount}</span> : null}
+          </summary>
+          <div className="pool-filter-content">
         <div className="filter-groups">
           <div className="filter-group">
             <p>{t.bossType}</p>
@@ -1350,25 +1374,17 @@ const BossPoolPanel = ({
         </div>
 
         <div className="filter-actions">
-          <button type="button" className="btn-secondary" onClick={selectVisible}>
-            {t.selectVisible}
-          </button>
-          <button type="button" className="btn-secondary" onClick={deselectVisible}>
-            {t.deselectVisible}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setSelectedIds(new Set(allItems.map((item) => item.id)))}
-          >
-            {t.selectAll}
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => setSelectedIds(new Set())}>
-            {t.deselectAll}
-          </button>
           <button type="button" className="btn-secondary" onClick={resetFilters}>
             {t.resetFilters}
           </button>
+        </div>
+          </div>
+        </details>
+        </div>
+
+        <div className="filter-actions pool-selection-actions">
+          <button type="button" className="btn-secondary" onClick={selectVisible}>{t.selectAll}</button>
+          <button type="button" className="btn-secondary" onClick={deselectVisible}>{t.deselectAll}</button>
         </div>
 
         <p className="filter-counter">
@@ -1860,7 +1876,7 @@ const wheelSlicePath = (index, count) => {
   return `M50 50 L${startX} ${startY} A50 50 0 ${largeArc} 1 ${endX} ${endY} Z`;
 };
 
-const WHEEL_SEGMENT_COLORS = ["#aa8b58", "#455c63", "#758477", "#344953"];
+const getWheelRarityColor = (item) => Number(item?.rarity) >= 5 ? "#c8a85f" : Number(item?.rarity) === 4 ? "#9365b5" : "#506873";
 
 const RouletteEngine = ({
   items,
@@ -1883,6 +1899,8 @@ const RouletteEngine = ({
   const [spinPlan, setSpinPlan] = useState(null);
   const [lastWinners, setLastWinners] = useState([]);
   const [wheelResults, setWheelResults] = useState([]);
+  const [wheelCurrentItem, setWheelCurrentItem] = useState(null);
+  const [wheelCountdown, setWheelCountdown] = useState(null);
   const [hoveredWheelItem, setHoveredWheelItem] = useState(null);
   const [wheelHoverPosition, setWheelHoverPosition] = useState({ left: 12, top: 12 });
   const viewportRefs = useRef([]);
@@ -1897,6 +1915,7 @@ const RouletteEngine = ({
   const externalTriggerRef = useRef(0);
   const lastTickRefs = useRef(Array.from({ length: maxLanes }, () => null));
   const completedWheelStepRef = useRef(-1);
+  const currentWheelStepRef = useRef(-1);
 
   const uniqueItems = useMemo(() => {
     const seen = new Set();
@@ -1921,11 +1940,6 @@ const RouletteEngine = ({
     const tail = Array.from({ length: 3 }, (_, index) => ordered[index % tailLength]);
     return [...ordered, ...tail];
   }), [safeLaneCount, uniqueItems]);
-  const wheelBackground = useMemo(() => {
-    if (!uniqueItems.length) return "conic-gradient(#6d7774 0deg 360deg)";
-    const segment = 360 / uniqueItems.length;
-    return `conic-gradient(${uniqueItems.map((_, index) => `${WHEEL_SEGMENT_COLORS[index % WHEEL_SEGMENT_COLORS.length]} ${index * segment}deg ${(index + 1) * segment}deg`).join(",")})`;
-  }, [uniqueItems]);
   const winnerById = useMemo(() => new Map(lastWinners.map((winner) => [winner.id, winner])), [lastWinners]);
 
   const setTrackPosition = useCallback((index, value) => {
@@ -2027,10 +2041,14 @@ const RouletteEngine = ({
     setSelectedItem(null);
     setLastWinners([]);
     setWheelResults([]);
+    setWheelCountdown(null);
     setHoveredWheelItem(null);
     completedWheelStepRef.current = -1;
+    currentWheelStepRef.current = -1;
     const durationPerStep = Math.max(1200, rollDurationMs / safeLaneCount);
     if (mode === "wheel") {
+      setWheelCurrentItem(winners[0]);
+      setWheelCountdown(3);
       let rotation = wheelRotationRefs.current[0] || 0;
       const steps = winners.map((winner) => {
         const segmentIndex = uniqueItems.findIndex((item) => item.id === winner.id);
@@ -2038,7 +2056,7 @@ const RouletteEngine = ({
         rotation = getWheelTargetRotation(segmentIndex, uniqueItems.length, rotation, 6);
         return { winner, segmentIndex, fromRotation, toRotation: rotation };
       });
-      setSpinPlan({ id, mode, steps, durationPerStep, stepGap: 180 });
+      setSpinPlan({ id, mode, steps, durationPerStep, countdownDuration: 3000, stepGap: 0 });
       return;
     }
     const lanes = winners.map((winner, index) => {
@@ -2070,20 +2088,27 @@ const RouletteEngine = ({
       if (spinPlan.mode === "wheel") {
         const firstStep = spinPlan.steps[0];
         setWheelRotation(0, firstStep?.fromRotation || 0);
-        const stepStride = spinPlan.durationPerStep + spinPlan.stepGap;
-        const totalDuration = spinPlan.steps.length * spinPlan.durationPerStep + Math.max(0, spinPlan.steps.length - 1) * spinPlan.stepGap;
+        const stepStride = spinPlan.durationPerStep + spinPlan.countdownDuration + spinPlan.stepGap;
+        const totalDuration = spinPlan.steps.length * (spinPlan.durationPerStep + spinPlan.countdownDuration) + Math.max(0, spinPlan.steps.length - 1) * spinPlan.stepGap;
         const animateWheel = (now) => {
           if (!alive || spinPlan.id !== sessionRef.current) return;
           const elapsed = Math.max(0, now - startTime);
           const stepIndex = Math.min(spinPlan.steps.length - 1, Math.floor(elapsed / stepStride));
           const step = spinPlan.steps[stepIndex];
+          if (currentWheelStepRef.current !== stepIndex) {
+            currentWheelStepRef.current = stepIndex;
+            setWheelCurrentItem(step.winner);
+          }
           for (let completed = completedWheelStepRef.current + 1; completed < stepIndex; completed += 1) {
             setWheelResults((current) => [...current.slice(0, completed), spinPlan.steps[completed].winner]);
             completedWheelStepRef.current = completed;
           }
           const stepElapsed = elapsed - stepIndex * stepStride;
-          const progress = Math.min(1, stepElapsed / spinPlan.durationPerStep);
-          const rotation = step.fromRotation + (step.toRotation - step.fromRotation) * easeRouletteProgress(progress);
+          const countdownRemaining = Math.max(0, Math.ceil((spinPlan.countdownDuration - stepElapsed) / 1000));
+          setWheelCountdown(countdownRemaining || null);
+          const progress = Math.max(0, Math.min(1, (stepElapsed - spinPlan.countdownDuration) / spinPlan.durationPerStep));
+          const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+          const rotation = step.fromRotation + (step.toRotation - step.fromRotation) * eased;
           setWheelRotation(0, rotation);
           if (progress >= 1 && completedWheelStepRef.current < stepIndex) {
             setWheelResults((current) => [...current.slice(0, stepIndex), step.winner]);
@@ -2092,6 +2117,8 @@ const RouletteEngine = ({
           if (elapsed >= totalDuration) {
             const winners = spinPlan.steps.map((entry) => entry.winner);
             setWheelResults(winners);
+            setWheelCountdown(null);
+            setWheelCurrentItem(winners.at(-1) || null);
             setWheelRotation(0, spinPlan.steps.at(-1)?.toRotation || 0);
             rollingRef.current = false;
             setIsRolling(false);
@@ -2163,6 +2190,8 @@ const RouletteEngine = ({
     frameRef.current = 0;
     setSpinPlan(null);
     setIsRolling(false);
+    setWheelCountdown(null);
+    setWheelCurrentItem(null);
     setSelectedItem(null);
   }, [setSelectedItem]);
 
@@ -2209,17 +2238,18 @@ const RouletteEngine = ({
               <div className="wheel-main">
                 <div className="wheel-viewport" ref={(node) => (viewportRefs.current[0] = node)}>
                   <div className="wheel-pointer" aria-hidden="true" />
-                  <div className="wheel-disc" ref={(node) => (wheelRefs.current[0] = node)} style={{ background: wheelBackground, transform: `rotate(${wheelRotationRefs.current[0] || 0}deg)` }}>
+                    <div className="wheel-disc" ref={(node) => (wheelRefs.current[0] = node)} style={{ transform: `rotate(${wheelRotationRefs.current[0] || 0}deg)` }}>
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
                       {uniqueItems.map((item, index) => (
-                        <path key={item.id} d={wheelSlicePath(index, uniqueItems.length)} fill={WHEEL_SEGMENT_COLORS[index % WHEEL_SEGMENT_COLORS.length]} onMouseEnter={(event) => showWheelItem(item, event)} onMouseMove={(event) => showWheelItem(item, event)} onMouseLeave={() => setHoveredWheelItem(null)} onFocus={(event) => showWheelItem(item, event)} onBlur={() => setHoveredWheelItem(null)} tabIndex={0} aria-label={getItemName(item, lang)}>
+                        <path key={item.id} d={wheelSlicePath(index, uniqueItems.length)} fill={getWheelRarityColor(item)} onMouseEnter={(event) => showWheelItem(item, event)} onMouseMove={(event) => showWheelItem(item, event)} onMouseLeave={() => setHoveredWheelItem(null)} onFocus={(event) => showWheelItem(item, event)} onBlur={() => setHoveredWheelItem(null)} tabIndex={0} aria-label={getItemName(item, lang)}>
                           <title>{getItemName(item, lang)}</title>
                         </path>
                       ))}
                     </svg>
                   </div>
-                  <div className="wheel-center" aria-hidden="true"><span>✦</span></div>
+                  <div className={`wheel-center ${wheelCurrentItem ? "has-current-item" : ""}`} aria-hidden="true">{wheelCurrentItem ? <ItemImage item={wheelCurrentItem} alt={getItemName(wheelCurrentItem, lang)} loading="eager" /> : <span>✦</span>}</div>
+                  {wheelCountdown !== null ? <div className="wheel-countdown" aria-live="polite">{wheelCountdown}</div> : null}
                 </div>
                 {hoveredWheelItem ? (
                   <div className="wheel-hover-card" role="status" style={wheelHoverPosition}>
@@ -2230,7 +2260,7 @@ const RouletteEngine = ({
               </div>
               <aside className="wheel-results" aria-label={getExtraLabel("wheelResults", lang)}>
                 <h3>{getExtraLabel("wheelResults", lang)}</h3>
-                {Array.from({ length: maxLanes }, (_, index) => {
+                {Array.from({ length: safeLaneCount }, (_, index) => {
                   const result = wheelResults[index];
                   return (
                     <div key={`wheel-result-${index}`} className={`wheel-result-slot ${result ? "has-result" : ""} ${isRolling && index === wheelResults.length ? "is-current" : ""}`}>

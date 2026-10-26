@@ -2,11 +2,12 @@ const GITHUB_DATA_BASE = "https://raw.githubusercontent.com/theBowja/genshin-db/
 const FANDOM_API = "https://genshin-impact.fandom.com/api.php";
 const HAKUSH_UI_BASE = "https://api.hakush.in/gi/UI";
 const AMBR_UI_BASE = "https://api.ambr.top/assets/UI";
+const GITHUB_MONSTER_ICON_BASE = "https://raw.githubusercontent.com/CMHopeSunshine/GenshinWikiMap/master/resources/monster";
 
 const DEFAULT_HEADERS = {
   Accept: "application/json",
 };
-const DATA_CACHE_PREFIX = "genshin-random-lab:data:v1:";
+const DATA_CACHE_PREFIX = "genshin-random-lab:data:v2:";
 const DATA_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 14;
 
 const LOCAL_LEGEND_PAGE = "Local Legend";
@@ -186,6 +187,9 @@ const toSlug = (value = "") =>
 const buildHakushImage = (filename) => (filename ? `${HAKUSH_UI_BASE}/${filename}.webp` : "");
 const buildHakushPng = (filename) => (filename ? `${HAKUSH_UI_BASE}/${filename}.png` : "");
 const buildAmbrImage = (filename) => (filename ? `${AMBR_UI_BASE}/${filename}.png` : "");
+const buildMonsterIcon = (base, filename, extension) => filename
+  ? `${base}/${String(filename).replace(/\.(png|webp)$/i, "")}.${extension}`
+  : "";
 const buildMihoyoIcon = (filename) => filename
   ? `https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/${String(filename).replace(/\.(png|webp)$/i, "")}.png`
   : "";
@@ -272,6 +276,13 @@ const getCharacterSplashCandidates = (entry = {}) =>
 
 export const getEnemyImageCandidates = (entry = {}) =>
   uniqueUrls([
+    buildMonsterIcon(GITHUB_MONSTER_ICON_BASE, entry.filename_icon, "png"),
+    buildMonsterIcon(GITHUB_MONSTER_ICON_BASE, entry.filename_iconBig, "png"),
+    buildMonsterIcon(GITHUB_MONSTER_ICON_BASE, entry.filename_investigationIcon, "png"),
+    buildMonsterIcon(AMBR_UI_BASE, entry.filename_icon, "png"),
+    buildMonsterIcon(AMBR_UI_BASE, entry.filename_investigationIcon, "png"),
+    buildMonsterIcon(HAKUSH_UI_BASE, entry.filename_icon, "webp"),
+    buildMonsterIcon(HAKUSH_UI_BASE, entry.filename_investigationIcon, "webp"),
     entry.image,
     entry.mihoyo_icon,
     entry.hoyowiki_icon,
@@ -649,16 +660,19 @@ export const fetchGenshinData = async ({ signal } = {}) => {
     a.name.localeCompare(b.name)
   );
   let bossImages = new Map();
+  const bossesMissingImages = bossPool.filter((boss) => !boss.image && !(boss.imageFallbacks || []).length);
   try {
-    bossImages = await fetchPageImageMap(bossPool, signal);
+    if (bossesMissingImages.length) bossImages = await fetchPageImageMap(bossesMissingImages, signal);
   } catch {
     // Per-item Fandom lookup is retried during the initial image preparation.
   }
   const resolvedBossPool = bossPool.map((boss) => {
-    const image = bossImages.get(keyify(boss.name)) || "";
-    return image
-      ? { ...boss, image, imageFallbacks: [...(boss.imageFallbacks || [])], splash: image, splashFallbacks: [...(boss.splashFallbacks || [])] }
-      : boss;
+    const fallbackImage = bossImages.get(keyify(boss.name)) || "";
+    const image = boss.image || fallbackImage;
+    const imageFallbacks = uniqueUrls([...(boss.imageFallbacks || []), fallbackImage].filter((candidate) => candidate !== image));
+    const splash = boss.splash || image;
+    const splashFallbacks = uniqueUrls([...(boss.splashFallbacks || []), fallbackImage].filter((candidate) => candidate !== splash));
+    return { ...boss, image, imageFallbacks, splash, splashFallbacks };
   });
   const bossById = new Map(resolvedBossPool.map((boss) => [boss.id, boss]));
 

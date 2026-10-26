@@ -22,8 +22,11 @@ describe("Genshin image sources", () => {
     expect(aether[0]).not.toBe(lumine[0]);
   });
 
-  it("does not rely on unavailable icon CDNs for boss artwork", () => {
-    expect(getEnemyImageCandidates({ filename_icon: "UI_MonsterIcon_Dvalin" })).toEqual([]);
+  it("prioritizes hosted monster icons and keeps CDN fallbacks for boss artwork", () => {
+    const candidates = getEnemyImageCandidates({ filename_icon: "UI_MonsterIcon_Dvalin" });
+    expect(candidates[0]).toBe("https://raw.githubusercontent.com/CMHopeSunshine/GenshinWikiMap/master/resources/monster/UI_MonsterIcon_Dvalin.png");
+    expect(candidates).toContain("https://api.ambr.top/assets/UI/UI_MonsterIcon_Dvalin.png");
+    expect(candidates).toContain("https://api.hakush.in/gi/UI/UI_MonsterIcon_Dvalin.webp");
     expect(getEnemyImageCandidates({ image: "https://static.wikia.nocookie.net/genshin-impact/images/1/2c/Dvalin.png" }))
       .toEqual(["https://static.wikia.nocookie.net/genshin-impact/images/1/2c/Dvalin.png"]);
   });
