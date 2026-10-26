@@ -1,6 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import App, { buildTravelerDuoCharacters } from "./App";
+import App, { BossOption, buildTravelerDuoCharacters } from "./App";
+import { translations } from "./i18n/translations";
+
+vi.mock("./services/locale", () => ({
+  fetchVisitorCountry: vi.fn().mockResolvedValue(null),
+  getBrowserLanguage: vi.fn().mockReturnValue("ru"),
+  getLanguageForCountry: vi.fn().mockReturnValue(null),
+}));
 
 vi.mock("./services/genshinApi", () => ({
   fetchFallbackImage: vi.fn().mockResolvedValue(null),
@@ -63,4 +70,19 @@ test("combines both Travelers into one API-driven card for every available eleme
   expect(reloadedCatalog.filter((item) => item.id.startsWith("traveler-duo-")).map((item) => item.id)).toEqual([
     "traveler-duo-anemo", "traveler-duo-geo", "traveler-duo-cryo",
   ]);
+});
+
+test("renders a boss pool row without referencing removed name-shape filters", () => {
+  render(
+    <BossOption
+      item={{ id: "weekly-boss", name: "Test Weekly Boss", group: "weekly", image: "/assets/bosses/andrius.webp" }}
+      lang="en"
+      selected={false}
+      onToggle={vi.fn()}
+      viewMode="list"
+      t={translations.en}
+    />
+  );
+
+  expect(screen.getByText("Test Weekly Boss")).toBeInTheDocument();
 });

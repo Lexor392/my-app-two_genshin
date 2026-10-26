@@ -5,6 +5,7 @@ import { fetchFallbackImage, fetchGenshinData } from "./services/genshinApi";
 import { cacheImageAsset, getCachedImageSource, readCatalogSnapshot, saveCatalogSnapshot } from "./services/imageCache";
 import { countRollSessions, createRollHistoryEntries } from "./services/rollHistory";
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
+import { fetchVisitorCountry, getBrowserLanguage, getLanguageForCountry } from "./services/locale";
 import {
   buildRollSequence,
   getCenteredReelPosition,
@@ -60,7 +61,6 @@ const EXTRA_LABELS = {
 };
 const getExtraLabel = (key, lang) => EXTRA_LABELS[key]?.[lang] || EXTRA_LABELS[key]?.en || "";
 const getLocale = (lang) => ({ ru: "ru-RU", en: "en-GB", zh: "zh-CN", ja: "ja-JP", ko: "ko-KR" }[lang] || "en-GB");
-const THEMES = ["light", "dark"];
 const LANG_OPTIONS = [
   { value: "ru", label: "Русский" },
   { value: "en", label: "English" },
@@ -293,8 +293,8 @@ const PRELOAD_CONCURRENCY = 8;
 const prioritizeImageCandidates = (candidates) => Array.from(new Set(candidates.filter(Boolean)))
   .map((url, index) => ({ url, index }))
   .sort((left, right) => {
-    const rank = (url) => url.includes("upload-os-bbs.mihoyo.com") ? 0
-      : url.includes("hoyowiki.com") ? 1
+    const rank = (url) => url.includes("hoyowiki.com") ? 0
+      : url.includes("upload-os-bbs.mihoyo.com") ? 5
         : url.includes("static.wikia.nocookie.net") ? 2
           : url.includes("api.ambr.top") || url.includes("api.hakush.in") ? 4 : 3;
     return rank(left.url) - rank(right.url) || left.index - right.index;
@@ -816,12 +816,15 @@ const loadInitialState = () => {
   );
   const savedSquads = normalizeSavedSquads(readCookieJson(COOKIE_KEYS.savedSquads, []));
 
-  const lang = LANGS.includes(settingsCookie.lang) ? settingsCookie.lang : "ru";
-  const theme = THEMES.includes(settingsCookie.theme) ? settingsCookie.theme : "dark";
+  const languageMode = settingsCookie.languageMode === "manual" ? "manual" : "auto";
+  const lang = languageMode === "manual" && LANGS.includes(settingsCookie.lang)
+    ? settingsCookie.lang
+    : getBrowserLanguage();
 
   return {
     lang,
-    theme,
+    languageMode,
+    theme: "dark",
     settings,
     activeSection: SECTION_IDS.includes(uiCookie.activeSection) ? uiCookie.activeSection : "dashboard",
     isSidebarCollapsed: Boolean(uiCookie.isSidebarCollapsed),
@@ -964,7 +967,7 @@ const CharacterOption = ({ item, lang, selected, onToggle, viewMode }) => {
   );
 };
 
-const BossOption = ({ item, lang, selected, onToggle, viewMode, t }) => {
+export const BossOption = ({ item, lang, selected, onToggle, viewMode, t }) => {
   const wrapperClass = viewMode === "cards" ? "option-card boss-option" : "option-list";
 
   return (
@@ -984,7 +987,6 @@ const BossOption = ({ item, lang, selected, onToggle, viewMode, t }) => {
         <p>{getItemName(item, lang)}</p>
         <div className="option-badges">
           <ItemBadge text={formatBossType(item.group, lang)} />
-          <ItemBadge text={getBossNameShape(getItemName(item, lang)) === "single" ? t.oneWord : t.multiWord} />
         </div>
       </div>
       <span className="option-check">{selected ? "✓" : "○"}</span>
@@ -1346,7 +1348,7 @@ const BossPoolPanel = ({
   );
 };
 
-const SettingsPanel = ({ t, lang, setLang, theme, setTheme, settings, setSettings }) => (
+const SettingsPanel = ({ t, lang, setLang, languageMode, setAutoLanguage, settings, setSettings }) => (
   <section className="stage-panel settings-panel" id="settings">
     <div className="panel-head">
       <h2>{t.settingsMenu}</h2>
@@ -1360,7 +1362,11 @@ const SettingsPanel = ({ t, lang, setLang, theme, setTheme, settings, setSetting
           {/* <p>{t.language}</p> */}
           <label className="select-wrap">
             <span>{t.languageSelect}</span>
-            <select className="select-field" value={lang} onChange={(event) => setLang(event.target.value)}>
+            <select className="select-field" value={languageMode === "auto" ? "auto" : lang} onChange={(event) => {
+              if (event.target.value === "auto") setAutoLanguage();
+              else setLang(event.target.value);
+            }}>
+              <option value="auto">{t.languageAuto}</option>
               {LANG_OPTIONS.map((entry) => (
                 <option key={entry.value} value={entry.value}>
                   {entry.label}
@@ -1368,22 +1374,7 @@ const SettingsPanel = ({ t, lang, setLang, theme, setTheme, settings, setSetting
               ))}
             </select>
           </label>
-        </div>
-
-        <div className="settings-block">
-          <p>{t.theme}</p>
-          <div className="toggle-row">
-            {THEMES.map((entry) => (
-              <button
-                key={entry}
-                type="button"
-                className={theme === entry ? "is-active" : ""}
-                onClick={() => setTheme(entry)}
-              >
-                {entry === "light" ? t.light : t.dark}
-              </button>
-            ))}
-          </div>
+          <p className="settings-note">{t.languageAutoHint}</p>
         </div>
       </article>
 
@@ -2300,7 +2291,7 @@ const MENU_ICON_PATHS = {
   bosses: "M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3ZM9 12h6M12 9v6",
   bossPool: "M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4M15 9l6-6M9 15l-6 6",
   history: "M4 19V5M4 19h17M8 16v-5M13 16V7M18 16V3",
-  settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 0 0-1.8 0l-.2.1h-3.4l-.1-.2a1.7 1.7 0 0 0-1.5-1l-.2.1-2.9-1.7.1-.2a1.7 1.7 0 0 0 0-1.8l-.1-.2v-3.4l.2-.1a1.7 1.7 0 0 0 1-1.5l-.1-.2 1.7-2.9.2.1a1.7 1.7 0 0 0 1.8 0l.2-.1h3.4l.1.2a1.7 1.7 0 0 0 1.5 1l.2-.1 2.9 1.7-.1.2a1.7 1.7 0 0 0 0 1.8l.1.2v3.4l-.2.1a1.7 1.7 0 0 0-1 1.5Z",
+  settings: "M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.07-.94l2.03-1.58-2-3.46-2.39.96a7.02 7.02 0 0 0-1.63-.94L14.78 3h-4l-.36 3.04c-.59.23-1.14.55-1.63.94L6.4 6.02l-2 3.46 2.03 1.58a6.6 6.6 0 0 0 0 1.88L4.4 14.52l2 3.46 2.39-.96c.49.39 1.04.71 1.63.94L10.78 21h4l.36-3.04c.59-.23 1.14-.55 1.63-.94l2.39.96 2-3.46-2.02-1.58ZM12.78 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z",
 };
 
 const MenuIcon = ({ name }) => (
@@ -2317,7 +2308,9 @@ function App() {
   const boot = bootRef.current;
 
   const [lang, setLang] = useState(boot.lang);
-  const [theme, setTheme] = useState(boot.theme);
+  const [theme] = useState("dark");
+  const [languageMode, setLanguageMode] = useState(boot.languageMode || "auto");
+  const languageModeRef = useRef(languageMode);
   const [settings, setSettings] = useState(boot.settings);
   const [activeSection, setActiveSection] = useState(boot.activeSection);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(boot.isSidebarCollapsed);
@@ -2357,6 +2350,16 @@ function App() {
   const loadControllerRef = useRef(null);
 
   const t = translations[lang] || translations.en;
+  const changeLanguage = (nextLanguage) => {
+    languageModeRef.current = "manual";
+    setLanguageMode("manual");
+    setLang(nextLanguage);
+  };
+  const setAutoLanguage = () => {
+    languageModeRef.current = "auto";
+    setLanguageMode("auto");
+    setLang(getBrowserLanguage());
+  };
   const sourceCharacters = data?.meta?.source?.characters || "genshin-db";
   const sourceLegends = data?.meta?.source?.localLegends || "Fandom API";
   const rollDurationMs = settings.rollDurationSeconds * 1000;
@@ -2364,6 +2367,17 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (languageMode !== "auto") return undefined;
+    let cancelled = false;
+    fetchVisitorCountry().then((countryCode) => {
+      if (!cancelled && languageModeRef.current === "auto") {
+        setLang(getLanguageForCountry(countryCode) || getBrowserLanguage());
+      }
+    });
+    return () => { cancelled = true; };
+  }, [languageMode]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -2812,10 +2826,11 @@ function App() {
   useEffect(() => {
     setCookieJson(COOKIE_KEYS.settings, {
       lang,
-      theme,
+      theme: "dark",
+      languageMode,
       ...settings,
     });
-  }, [lang, theme, settings]);
+  }, [lang, languageMode, settings]);
 
   useEffect(() => {
     setCookieJson(COOKIE_KEYS.ui, {
@@ -2978,7 +2993,7 @@ function App() {
   }
 
   return (
-    <div className={`app-shell ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`} onClickCapture={handleGlobalClickCapture}>
+    <div className={`app-shell ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`} style={{ "--teyvat-world": `url("${import.meta.env.BASE_URL}assets/teyvat-world.png")`, "--teyvat-ruins": `url("${import.meta.env.BASE_URL}assets/teyvat-ruins.jpg")` }} onClickCapture={handleGlobalClickCapture}>
       {isMobileLayout ? (
         <>
           <button
@@ -3201,9 +3216,9 @@ function App() {
               <SettingsPanel
                 t={t}
                 lang={lang}
-                setLang={setLang}
-                theme={theme}
-                setTheme={setTheme}
+                setLang={changeLanguage}
+                languageMode={languageMode}
+                setAutoLanguage={setAutoLanguage}
                 settings={settings}
                 setSettings={setSettings}
               />
