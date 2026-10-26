@@ -1744,7 +1744,7 @@ h4 {
 
 @media (max-width: 900px) {
   .main-content {
-    padding: 62px 12px 12px;
+    padding: 12px 12px 12px;
   }
 
   .sidebar {
@@ -2277,7 +2277,8 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 @media (max-width: 900px) {
   .app-shell, .app-shell.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
   .sidebar { height: 100dvh; }
-  .main-content { padding: 62px 13px 18px; }
+  .main-content { padding: 12px 13px 18px; }
+  .mobile-menu-toggle { left: auto; right: 10px; }
   .dashboard-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-hero { align-items: flex-start; }
   .dashboard-hero-actions { width: 100%; }

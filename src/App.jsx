@@ -3,6 +3,7 @@ import "./App.css";
 import { translations } from "./i18n/translations";
 import { fetchFallbackImage, fetchGenshinData } from "./services/genshinApi";
 import { cacheImageAsset, getCachedImageSource, readCatalogSnapshot, saveCatalogSnapshot } from "./services/imageCache";
+import { countRollSessions, createRollHistoryEntries } from "./services/rollHistory";
 import { sortCharactersNewestFirst } from "./data/characterReleaseOrder";
 import {
   buildRollSequence,
@@ -81,7 +82,7 @@ const HISTORY_LIMIT_OPTIONS = [30, 60, 90];
 
 const DEFAULT_CHARACTER_FILTERS = {
   search: "",
-  viewMode: "cards",
+  viewMode: "list",
   rarities: [],
   weapons: [],
   elements: [],
@@ -116,6 +117,7 @@ const ROLL_DECELERATION_MS = 5000;
 
 const COOKIE_DAYS = 365;
 const COOKIE_HISTORY_SIZE_LIMIT = 3300;
+const HISTORY_STORAGE_KEY = "gi_rl_history_v1";
 const MIN_AUDIO_THRESHOLD = 0.001;
 
 const COOKIE_KEYS = {
@@ -654,7 +656,7 @@ const normalizeCharacterFilters = (value) => {
 
   return {
     search: typeof source.search === "string" ? source.search : DEFAULT_CHARACTER_FILTERS.search,
-    viewMode: source.viewMode === "list" ? "list" : "cards",
+    viewMode: "list",
     rarities,
     weapons: uniqueStringArray(source.weapons),
     elements: uniqueStringArray(source.elements),
@@ -687,6 +689,19 @@ const normalizeHistoryFilters = (value) => {
     to: typeof source.to === "string" ? source.to : "",
     stage: source.stage === "characters" || source.stage === "bosses" ? source.stage : "all",
   };
+};
+
+const readStoredHistory = () => {
+  const cookieHistory = readCookieJson(COOKIE_KEYS.history, []);
+  if (typeof window === "undefined") return cookieHistory;
+  try {
+    const storedHistory = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (storedHistory === null) return cookieHistory;
+    const parsed = safeJsonParse(storedHistory, cookieHistory);
+    return Array.isArray(parsed) ? parsed : cookieHistory;
+  } catch {
+    return cookieHistory;
+  }
 };
 
 const normalizeSettings = (value) => {
@@ -734,6 +749,7 @@ const normalizeHistoryEntries = (value) => {
           typeof entry.id === "string"
             ? entry.id
             : `${stage}-${itemId}-${Date.parse(timestamp)}-${Math.random().toString(36).slice(2, 8)}`,
+        rollId: typeof entry.rollId === "string" ? entry.rollId : entry.id || `${stage}-${itemId}-${Date.parse(timestamp)}`,
         stage,
         itemId,
         itemName: typeof entry.itemName === "string" ? entry.itemName : "",
@@ -831,7 +847,7 @@ const loadInitialState = () => {
   );
 
   const settings = normalizeSettings(settingsCookie);
-  const history = normalizeHistoryEntries(readCookieJson(COOKIE_KEYS.history, [])).slice(
+  const history = normalizeHistoryEntries(readStoredHistory()).slice(
     0,
     settings.historyLimit
   );
@@ -1105,26 +1121,6 @@ const CharacterPoolPanel = ({
             />
           </label>
 
-          <div className="view-toggle">
-            <span>{t.view}</span>
-            <div className="toggle-row">
-              <button
-                type="button"
-                className={activeFilters.viewMode === "cards" ? "is-active" : ""}
-                onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "cards" }))}
-              >
-                {t.viewCards}
-              </button>
-              <button
-                type="button"
-                className={activeFilters.viewMode === "list" ? "is-active" : ""}
-                onClick={() => setActiveFilters((prev) => ({ ...prev, viewMode: "list" }))}
-              >
-                {t.viewList}
-              </button>
-            </div>
-          </div>
-
         <details className="pool-filter-dropdown">
           <summary className="pool-filter-toggle" aria-label={getExtraLabel("poolFilters", lang)} title={getExtraLabel("poolFilters", lang)}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.2v5.1l-3.6 1.8v-6.9L4 5Z" /></svg>
@@ -1209,7 +1205,7 @@ const CharacterPoolPanel = ({
 
         {visibleItems.length ? (
           <div className="options-scroll">
-            <div className={`options-grid ${activeFilters.viewMode === "list" ? "is-list" : ""}`}>
+            <div className="options-grid is-list">
               {visibleItems.map((item) => (
                 <CharacterOption
                   key={item.id}
@@ -1217,7 +1213,7 @@ const CharacterPoolPanel = ({
                   lang={lang}
                   selected={selectedIds.has(item.id)}
                   onToggle={toggleSelection}
-                  viewMode={activeFilters.viewMode}
+                  viewMode="list"
                 />
               ))}
             </div>
@@ -2835,25 +2831,16 @@ function App() {
 
   const handleRollComplete = useCallback(
     (stage, winnerOrSquad) => {
-      const squad = stage === "characters" && Array.isArray(winnerOrSquad) ? winnerOrSquad : [];
-      const winner = squad[0] || winnerOrSquad;
-      if (!winner) {
+      const results = Array.isArray(winnerOrSquad) ? winnerOrSquad : [winnerOrSquad];
+      const squad = stage === "characters" ? results.filter(Boolean) : [];
+      const timestamp = new Date().toISOString();
+      const entries = createRollHistoryEntries(stage, results, timestamp);
+      const winner = squad[0] || results[0];
+      if (!entries.length || !winner) {
         return;
       }
 
-      const timestamp = new Date().toISOString();
-      const entry = {
-        id: `${stage}-${winner.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        stage,
-        itemId: winner.id,
-        itemName: winner.name || winner.id,
-        itemNameRu: winner.nameRu || winner.name || winner.id,
-        rarity: winner.rarity || null,
-        group: winner.group || "",
-        timestamp,
-      };
-
-      setRollHistory((prev) => [entry, ...prev].slice(0, settings.historyLimit));
+      setRollHistory((prev) => [...entries, ...prev].slice(0, settings.historyLimit));
 
       if (settings.splashEnabled && stage === "characters" && squad.length) {
         setSplashResult({ stage, item: winner, squad, timestamp });
@@ -2953,6 +2940,7 @@ function App() {
   useEffect(() => {
     const compact = rollHistory.map((entry) => ({
       id: entry.id,
+      rollId: entry.rollId,
       stage: entry.stage,
       itemId: entry.itemId,
       itemName: entry.itemName,
@@ -2962,7 +2950,12 @@ function App() {
       timestamp: entry.timestamp,
     }));
 
-    setCookieJson(COOKIE_KEYS.history, trimHistoryForCookie(compact));
+    try {
+      window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(compact));
+      setCookie(COOKIE_KEYS.history, "", -1);
+    } catch {
+      setCookieJson(COOKIE_KEYS.history, trimHistoryForCookie(compact));
+    }
   }, [rollHistory]);
 
   useEffect(() => {
@@ -2996,9 +2989,10 @@ function App() {
   );
 
   const todayKey = new Date().toDateString();
-  const userRollsToday = rollHistory.filter((entry) => new Date(entry.timestamp).toDateString() === todayKey).length;
-  const userCharacterRolls = rollHistory.filter((entry) => entry.stage === "characters").length;
-  const userBossRolls = rollHistory.filter((entry) => entry.stage === "bosses").length;
+  const userRollsToday = countRollSessions(rollHistory, (entry) => new Date(entry.timestamp).toDateString() === todayKey);
+  const userCharacterRolls = countRollSessions(rollHistory, (entry) => entry.stage === "characters");
+  const userBossRolls = countRollSessions(rollHistory, (entry) => entry.stage === "bosses");
+  const totalRollSessions = countRollSessions(rollHistory);
   const catalogUpdatedAt = data?.meta?.fetchedAt
     ? new Intl.DateTimeFormat(getLocale(lang), { dateStyle: "medium" }).format(new Date(data.meta.fetchedAt))
     : "";
@@ -3201,7 +3195,7 @@ function App() {
                 <div className="dashboard-stat-panels">
                   <article className="dashboard-stat-card">
                     <h3>{getUserStatsTitle(lang)}</h3>
-                    <p>🎯 {getTotalRollsLabel(lang)}: {rollHistory.length}</p>
+                    <p>🎯 {getTotalRollsLabel(lang)}: {totalRollSessions}</p>
                     <p>🧙 {t.characters}: {userCharacterRolls}</p>
                     <p>👾 {t.bosses}: {userBossRolls}</p>
                     <p>💾 {getSavedSquadsShortLabel(lang)}: {savedSquads.length}</p>
