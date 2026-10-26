@@ -2606,15 +2606,23 @@ const DonationPage = ({ t }) => (
     <p className="donation-country-note" role="note">{t.donateCountryLimit}</p>
     <div className="donation-services">
       {[
-        { name: "Ko-fi", description: t.donateKofi, href: KOFI_URL || KOFI_SIGNUP_URL, configured: Boolean(KOFI_URL), openLabel: t.donateOpenKofi, createLabel: t.donateCreateKofi, terms: "https://help.ko-fi.com/hc/en-us/articles/360002506494-Does-Ko-fi-take-a-fee" },
-        { name: "Patreon", description: t.donatePatreon, href: PATREON_URL || PATREON_SIGNUP_URL, configured: Boolean(PATREON_URL), openLabel: t.donateOpenPatreon, createLabel: t.donateCreatePatreon, terms: "https://support.patreon.com/hc/en-us/articles/39694936541965-Payouts-guide-for-creators-outside-of-the-US" },
+        { name: "Ko-fi", description: t.donateKofi, methods: ["PayPal", t.donateCards, "Apple Pay", "Google Pay", t.donateLocalPayments], href: KOFI_URL || KOFI_SIGNUP_URL, configured: Boolean(KOFI_URL), openLabel: t.donateOpenKofi, createLabel: t.donateCreateKofi, terms: "https://help.ko-fi.com/hc/en-us/articles/360002506494-Does-Ko-fi-take-a-fee" },
+        { name: "Patreon", description: t.donatePatreon, methods: [t.donateCards, "PayPal", "Apple Pay", "Venmo"], href: PATREON_URL || PATREON_SIGNUP_URL, configured: Boolean(PATREON_URL), openLabel: t.donateOpenPatreon, createLabel: t.donateCreatePatreon, terms: "https://support.patreon.com/hc/en-us/articles/39694936541965-Payouts-guide-for-creators-outside-of-the-US" },
       ].map((service) => (
         <article className="donation-card" key={service.name}>
-          <span className="donation-emblem" aria-hidden="true">✦</span>
-          <h3>{service.name}</h3>
+          <div className="donation-card-heading">
+            <span className="donation-emblem" aria-hidden="true">✦</span>
+            <h3>{service.name}</h3>
+          </div>
           <p>{service.description}</p>
-          <a className="donation-terms" href={service.terms} target="_blank" rel="noreferrer">{t.donateTerms}<span aria-hidden="true">↗</span></a>
+          <div className="donation-methods" aria-label={t.donateMethods}>
+            <span className="donation-methods-label">{t.donateMethods}</span>
+            <ul>{service.methods.map((method) => <li key={method}>{method}</li>)}</ul>
+          </div>
+          <div className="donation-card-footer">
+            <a className="donation-terms" href={service.terms} target="_blank" rel="noreferrer">{t.donateTerms}<span aria-hidden="true">↗</span></a>
           <a className="btn-primary donation-link" href={service.href} target="_blank" rel="noreferrer">{service.configured ? service.openLabel : service.createLabel}<span aria-hidden="true">↗</span></a>
+          </div>
         </article>
       ))}
     </div>
