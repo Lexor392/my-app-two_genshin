@@ -49,13 +49,13 @@ test("renders app shell", async () => {
   expect(screen.getByRole("option", { name: "한국어" })).toBeInTheDocument();
 });
 
-test("opens the support form from the sidebar and shows the unconfigured state", async () => {
+test("opens the configured support form from the sidebar", async () => {
   render(<App />);
 
   fireEvent.click(await screen.findByRole("button", { name: /написать в поддержку/i }));
   expect(screen.getByRole("dialog", { name: /написать в поддержку/i })).toBeInTheDocument();
-  expect(screen.getByText(/приём обращений ещё не подключён/i)).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /отправить сообщение/i })).toBeDisabled();
+  expect(screen.queryByText(/приём обращений ещё не подключён/i)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /отправить сообщение/i })).toBeEnabled();
 });
 
 test("opens the donation page from the sidebar", async () => {

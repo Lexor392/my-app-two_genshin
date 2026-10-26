@@ -2546,6 +2546,8 @@ const SupportModal = ({ t, onClose }) => {
     const form = event.currentTarget;
     const formData = new FormData(form);
     formData.set("topic", topic === "suggestion" ? t.supportSuggestion : topic === "bug" ? t.supportBug : t.supportOther);
+    const replyTo = formData.get("email");
+    if (replyTo) formData.set("_replyto", replyTo);
     setIsSending(true);
     setStatus("");
     try {
