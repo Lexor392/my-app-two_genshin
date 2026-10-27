@@ -2069,6 +2069,7 @@ const RouletteEngine = ({
   externalRollTrigger = 0,
   externalSingleRollTrigger = 0,
   wheelResultResetTrigger = 0,
+  rouletteResetTrigger = 0,
   onHoverDetails,
   detailType = "characters",
 }) => {
@@ -2091,6 +2092,7 @@ const RouletteEngine = ({
   const externalTriggerRef = useRef(0);
   const externalSingleTriggerRef = useRef(0);
   const wheelResultResetRef = useRef(wheelResultResetTrigger);
+  const rouletteResetRef = useRef(rouletteResetTrigger);
   const animationSessionRef = useRef(null);
   const animationStartTimeRef = useRef(null);
   const animationPreparedSessionRef = useRef(null);
@@ -2415,6 +2417,30 @@ const RouletteEngine = ({
     setLastWinners([]);
   }, [wheelResultResetTrigger]);
 
+  useEffect(() => {
+    if (rouletteResetTrigger === rouletteResetRef.current) return;
+    rouletteResetRef.current = rouletteResetTrigger;
+    rollingRef.current = false;
+    sessionRef.current += 1;
+    animationSessionRef.current = null;
+    animationStartTimeRef.current = null;
+    animationPreparedSessionRef.current = null;
+    completedWheelStepRef.current = -1;
+    if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+    frameRef.current = 0;
+    setSpinPlan(null);
+    setIsRolling(false);
+    setIsEditingLaneCount(false);
+    setWheelCountdown(null);
+    setWheelResults([]);
+    setLastWinners([]);
+    setSelectedItem(null);
+    for (let index = 0; index < maxLanes; index += 1) {
+      setTrackPosition(index, 0);
+      setWheelRotation(index, 0);
+    }
+  }, [maxLanes, rouletteResetTrigger, setSelectedItem, setTrackPosition, setWheelRotation]);
+
   useEffect(() => () => {
     rollingRef.current = false;
     sessionRef.current += 1;
@@ -2736,6 +2762,7 @@ function App() {
   const [characterSingleRollTrigger, setCharacterSingleRollTrigger] = useState(0);
   const [bossRerollTrigger, setBossRerollTrigger] = useState(0);
   const [wheelResultResetTrigger, setWheelResultResetTrigger] = useState(0);
+  const [rouletteResetTrigger, setRouletteResetTrigger] = useState(0);
   const [hoverTarget, setHoverTarget] = useState(null);
   const [hoverPoint, setHoverPoint] = useState({ x: 24, y: 24 });
 
@@ -3386,12 +3413,17 @@ function App() {
 
   const handleMenuItemClick = useCallback(
     (sectionId) => {
+      if (sectionId === "characters" || sectionId === "bosses") {
+        pendingSquadAppendRef.current = null;
+        setSplashResult(null);
+        setRouletteResetTrigger((previous) => previous + 1);
+      }
       setActiveSection(sectionId);
       if (isMobileLayout) {
         setIsSidebarCollapsed(true);
       }
     },
-    [isMobileLayout]
+    [isMobileLayout, setActiveSection]
   );
   const openSupport = useCallback(() => {
     setIsSupportOpen(true);
@@ -3456,6 +3488,7 @@ function App() {
             externalRollTrigger={isCharacterStage ? characterRerollTrigger : bossRerollTrigger}
             externalSingleRollTrigger={isCharacterStage ? characterSingleRollTrigger : 0}
             wheelResultResetTrigger={wheelResultResetTrigger}
+            rouletteResetTrigger={rouletteResetTrigger}
             onHoverDetails={handleHoverDetails}
             detailType={stage}
           />
