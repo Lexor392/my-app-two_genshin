@@ -2973,6 +2973,7 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .saved-boss-main { display: grid; grid-template-columns: 56px minmax(0,1fr); align-items: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--line); background: var(--bg-panel); cursor: help; }
 .saved-boss-main > img, .saved-boss-main > .image-fallback { width: 56px; height: 64px; border: 1px solid rgba(225, 201, 150, .28); border-radius: 2px; object-fit: cover; }
 .saved-boss-main > div { display: grid; gap: 4px; min-width: 0; }
+.saved-boss-main .type-chip { justify-self: start; width: fit-content; max-width: 100%; }
 .saved-boss-main p { overflow: hidden; margin: 0; color: var(--text-main); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .option-item, .history-item, .squad-card:not(.squad-add-slot):not(.boss-splash-card), .wheel-result-slot.has-result, .wheel-segments g, .saved-squad-member, .saved-boss-main { cursor: help; }
 .saved-squads-grid { width: 100%; grid-template-columns: minmax(0, 1fr); align-items: start; }
