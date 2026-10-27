@@ -2290,9 +2290,10 @@ const RouletteEngine = ({
   const idleItemsByLane = useMemo(() => Array.from({ length: safeLaneCount }, () => {
     if (!uniqueItems.length) return [];
     const ordered = shuffleArray(uniqueItems);
-    const tailLength = Math.min(3, ordered.length);
-    const tail = Array.from({ length: 3 }, (_, index) => ordered[index % tailLength]);
-    return [...ordered, ...tail];
+    // Keep several complete cycles in the track so small pools fill the reel
+    // on both sides of the pointer throughout the idle loop.
+    const trackLength = Math.max(36, ordered.length * 4);
+    return Array.from({ length: trackLength }, (_, index) => ordered[index % ordered.length]);
   }), [safeLaneCount, uniqueItems]);
   const winnerById = useMemo(() => new Map(lastWinners.filter(Boolean).map((winner) => [winner.id, winner])), [lastWinners]);
 
@@ -2326,7 +2327,9 @@ const RouletteEngine = ({
     const idleSpeed = mode === "vertical" ? 8 : 9;
     const laneStarts = Array.from({ length: safeLaneCount }, (_, laneIndex) => {
       const viewportWidth = viewportRefs.current[laneIndex]?.clientWidth || 0;
-      return mode === "horizontal" ? Math.max(0, (viewportWidth - cardWidth) / 2) : 0;
+      if (mode !== "horizontal") return 0;
+      const centerIndex = Math.floor((idleItemsByLane[laneIndex]?.length || 0) / 2);
+      return viewportWidth / 2 - cardWidth / 2 - centerIndex * unit;
     });
     for (let laneIndex = 0; laneIndex < safeLaneCount; laneIndex += 1) {
       const start = laneStarts[laneIndex];
@@ -2349,7 +2352,7 @@ const RouletteEngine = ({
       if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
       frameRef.current = 0;
     };
-  }, [isRolling, mode, safeLaneCount, setTrackPosition, uniqueItems.length, unit]);
+  }, [idleItemsByLane, isRolling, mode, safeLaneCount, setTrackPosition, uniqueItems.length, unit]);
 
   useEffect(() => {
     if (isRolling || mode !== "wheel" || !uniqueItems.length) return undefined;
