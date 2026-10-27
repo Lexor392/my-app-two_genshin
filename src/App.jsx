@@ -2153,6 +2153,7 @@ const RouletteEngine = ({
   const animationPreparedSessionRef = useRef(null);
   const lastTickRefs = useRef(Array.from({ length: maxLanes }, () => null));
   const completedWheelStepRef = useRef(-1);
+  const lastWheelTickRef = useRef(null);
 
   const uniqueItems = useMemo(() => {
     const seen = new Set();
@@ -2289,6 +2290,7 @@ const RouletteEngine = ({
     if (mode === "wheel") {
       setWheelCountdown(3);
       let rotation = wheelRotationRefs.current[0] || 0;
+      lastWheelTickRef.current = Math.floor(rotation / (360 / wheelItems.length));
       const steps = winners.map((winner) => {
         const segmentIndex = wheelItems.findIndex((item) => item.id === winner.id);
         const fromRotation = rotation;
@@ -2359,6 +2361,11 @@ const RouletteEngine = ({
           const progress = getRollProgress(stepElapsed - spinPlan.countdownDuration, spinPlan.durationPerStep, spinPlan.accelerationDuration, spinPlan.decelerationDuration);
           const rotation = step.fromRotation + (step.toRotation - step.fromRotation) * progress;
           setWheelRotation(0, rotation);
+          const wheelTick = Math.floor(rotation / (360 / wheelItems.length));
+          if (lastWheelTickRef.current !== wheelTick) {
+            lastWheelTickRef.current = wheelTick;
+            onTick?.();
+          }
           if (progress >= 1 && completedWheelStepRef.current < stepIndex) {
             setWheelResults((current) => [...current.slice(0, stepIndex), step.winner]);
             completedWheelStepRef.current = stepIndex;
@@ -2540,7 +2547,7 @@ const RouletteEngine = ({
             <div className="wheel-layout">
               <div className="wheel-main">
                 <div className="wheel-viewport" ref={(node) => (viewportRefs.current[0] = node)}>
-                  <div className="wheel-pointer" aria-hidden="true" />
+                  <div className={`wheel-pointer ${isRolling ? "is-rolling" : ""}`} aria-hidden="true" />
                     <div className="wheel-disc" ref={(node) => (wheelRefs.current[0] = node)} style={{ transform: `rotate(${wheelRotationRefs.current[0] || 0}deg)` }}>
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
@@ -2552,6 +2559,9 @@ const RouletteEngine = ({
                         const imageRadius = 36;
                         const imageX = 50 + imageRadius * Math.cos(angleRadians) - imageSize / 2;
                         const imageY = 50 + imageRadius * Math.sin(angleRadians) - imageSize / 2;
+                        const markerRadius = 47;
+                        const markerX = 50 + markerRadius * Math.cos(angleRadians);
+                        const markerY = 50 + markerRadius * Math.sin(angleRadians);
                         return (
                           <g
                             key={item.id}
@@ -2562,6 +2572,7 @@ const RouletteEngine = ({
                           >
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={detailType === "bosses" ? (index % 2 === 0 ? "#c8a85f" : "#9365b5") : getWheelRarityColor(item)} />
                             {item.image && arcWidth >= 1.6 && wheelItems.length <= 72 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
+                            <circle className="wheel-sector-marker" cx={markerX} cy={markerY} r={wheelItems.length > 72 ? 0.75 : 1.05} />
                           </g>
                         );
                       })}
