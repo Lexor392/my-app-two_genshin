@@ -2975,7 +2975,8 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .saved-boss-main p { overflow: hidden; margin: 0; color: var(--text-main); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .saved-boss-main small { color: var(--text-muted); font-size: .72rem; }
 .saved-boss-card > button { min-height: 34px; padding: 5px 9px; }
-.saved-squads-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); align-items: start; }
+.saved-squads-grid { width: 100%; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.saved-squad-card { width: 100%; min-width: 0; }
 .wheel-segments path:not([stroke="none"]) { stroke: rgba(241, 222, 176, .72); }
 @media (max-width: 720px) {
   .boss-splash-card { grid-template-columns: minmax(0, 1fr); }
