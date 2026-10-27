@@ -2444,16 +2444,17 @@ const RouletteEngine = ({
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
                       {wheelItems.map((item, index) => {
-                        const angle = ((index + .5) / wheelItems.length) * Math.PI * 2 - Math.PI / 2;
+                        const angle = ((index + .5) / wheelItems.length) * 360 - 90;
+                        const angleRadians = (angle * Math.PI) / 180;
                         const arcWidth = (2 * Math.PI * 36) / wheelItems.length;
                         const imageSize = Math.min(8, arcWidth * .72);
                         const imageRadius = 36;
-                        const imageX = 50 + imageRadius * Math.cos(angle) - imageSize / 2;
-                        const imageY = 50 + imageRadius * Math.sin(angle) - imageSize / 2;
+                        const imageX = 50 + imageRadius * Math.cos(angleRadians) - imageSize / 2;
+                        const imageY = 50 + imageRadius * Math.sin(angleRadians) - imageSize / 2;
                         return (
                           <g key={item.id} aria-hidden="true">
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
-                            {item.image && arcWidth >= 1.6 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} preserveAspectRatio="xMidYMid slice" /> : null}
+                            {item.image && arcWidth >= 1.6 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
                           </g>
                         );
                       })}

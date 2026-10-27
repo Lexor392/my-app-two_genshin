@@ -2879,6 +2879,14 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
   .pool-filter-content { top: 64px; width: min(92vw, 520px); }
 }
 
+.wheel-results { width: min(100%, 148px); justify-self: center; }
+.wheel-result-slot.has-result { width: 100%; max-width: 148px; max-height: 148px; padding: 7px; gap: 4px; }
+.wheel-result-slot.has-result > img,
+.wheel-result-slot.has-result > .traveler-duo-portrait { width: min(76px, 100%); height: 76px; flex: 0 0 76px; aspect-ratio: 1; object-fit: cover; align-self: center; }
+.wheel-result-slot.has-result > div { width: 100%; }
+.wheel-result-slot:not(.has-result) { width: 100%; max-width: 148px; }
+.pool-filter-content { position: absolute; top: calc(100% + 8px); left: 0; right: auto; transform: none; width: min(760px, calc(100vw - 24px)); max-height: min(70vh, 620px); }
+
 @media (max-width: 980px) {
   .wheel-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .wheel-viewport { width: min(100%, 680px); max-width: none; }
