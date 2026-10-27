@@ -2403,7 +2403,7 @@ const RouletteEngine = ({
     if (mode === "wheel") {
       setWheelCountdown(3);
       let rotation = wheelRotationRefs.current[0] || 0;
-      lastWheelTickRef.current = Math.floor(rotation / (360 / wheelItems.length) + 0.5);
+      lastWheelTickRef.current = Math.floor(rotation / (360 / wheelItems.length));
       setWheelPointerHitCount(0);
       const steps = winners.map((winner) => {
         const segmentIndex = wheelItems.findIndex((item) => item.id === winner.id);
@@ -2475,7 +2475,7 @@ const RouletteEngine = ({
           const progress = getRollProgress(stepElapsed - spinPlan.countdownDuration, spinPlan.durationPerStep, spinPlan.accelerationDuration, spinPlan.decelerationDuration);
           const rotation = step.fromRotation + (step.toRotation - step.fromRotation) * progress;
           setWheelRotation(0, rotation);
-          const wheelTick = Math.floor(rotation / (360 / wheelItems.length) + 0.5);
+          const wheelTick = Math.floor(rotation / (360 / wheelItems.length));
           if (lastWheelTickRef.current !== wheelTick) {
             lastWheelTickRef.current = wheelTick;
             setWheelPointerHitCount((count) => count + 1);
