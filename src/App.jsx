@@ -14,9 +14,7 @@ import { NOWPAYMENTS_URL, SUPPORT_EMAIL } from "./config/support";
 import {
   buildRollSequence,
   getCenteredReelPosition,
-  getRollDistanceRatio,
   getRollTravelCardCount,
-  getSequentialLaneDelay,
   getRollProgress,
   getWheelTargetRotation,
   pickUniqueWinners,
@@ -109,7 +107,8 @@ const SECTION_IDS = [
   "settings",
   "donate",
 ];
-const ROLL_DURATION_OPTIONS = [1, 2, 3, 4];
+const ROLL_DURATION_OPTIONS = [2, 3, 4, 5, 8];
+const ROLL_SPEED_OPTIONS = ["slow", "normal", "fast", "veryFast"];
 const HISTORY_LIMIT_OPTIONS = [30, 60, 90];
 
 const DEFAULT_CHARACTER_FILTERS = {
@@ -139,6 +138,7 @@ const DEFAULT_SETTINGS = {
   splashEnabled: true,
   splashEffects: true,
   rollDurationSeconds: 2,
+  rollSpeed: "normal",
   historyLimit: 60,
 };
 
@@ -742,7 +742,8 @@ const normalizeSettings = (value) => {
       typeof source.splashEffects === "boolean" ? source.splashEffects : DEFAULT_SETTINGS.splashEffects,
     rollDurationSeconds: ROLL_DURATION_OPTIONS.includes(Number(source.rollDurationSeconds))
       ? Number(source.rollDurationSeconds)
-      : ({ fast: 3, normal: 5, long: 5, epic: 10 }[source.rollSpeed] || DEFAULT_SETTINGS.rollDurationSeconds),
+      : ({ fast: 2, normal: 2, long: 5, epic: 8 }[source.rollSpeed] || DEFAULT_SETTINGS.rollDurationSeconds),
+    rollSpeed: ROLL_SPEED_OPTIONS.includes(source.rollSpeed) ? source.rollSpeed : (source.rollSpeed === "epic" ? "slow" : DEFAULT_SETTINGS.rollSpeed),
     historyLimit: clampHistoryLimit(source.historyLimit),
   };
 };
@@ -1710,6 +1711,22 @@ const SettingsPanel = ({ t, lang, setLang, languageMode, setAutoLanguage, settin
         <div className="settings-block">
           <p>{getExtraLabel("rollSpeed", lang)}</p>
           <div className="toggle-row">
+            {ROLL_SPEED_OPTIONS.map((speed) => (
+              <button
+                key={speed}
+                type="button"
+                className={settings.rollSpeed === speed ? "is-active" : ""}
+                onClick={() => setSettings((prev) => ({ ...prev, rollSpeed: speed }))}
+              >
+                {getExtraLabel(`speed${speed[0].toUpperCase()}${speed.slice(1)}`, lang)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-block">
+          <p>{t.rollDuration}</p>
+          <div className="toggle-row">
             {ROLL_DURATION_OPTIONS.map((seconds) => (
               <button
                 key={seconds}
@@ -1717,7 +1734,7 @@ const SettingsPanel = ({ t, lang, setLang, languageMode, setAutoLanguage, settin
                 className={settings.rollDurationSeconds === seconds ? "is-active" : ""}
                 onClick={() => setSettings((prev) => ({ ...prev, rollDurationSeconds: seconds }))}
               >
-                {seconds === 1 ? getExtraLabel("speedVeryFast", lang) : seconds === 2 ? getExtraLabel("speedFast", lang) : seconds === 3 ? getExtraLabel("speedNormal", lang) : getExtraLabel("speedSlow", lang)}
+                {seconds} {t.seconds}
               </button>
             ))}
           </div>
@@ -1806,22 +1823,9 @@ const HistoryPanel = ({
           </button>
         </div>
       </div>
-    </div>
 
-    <div className="filter-actions">
-      <button type="button" className="btn-secondary" onClick={() => setHistoryFilters(DEFAULT_HISTORY_FILTERS)}>
-        {t.resetFilters}
-      </button>
-      <button
-        type="button"
-        className="btn-secondary"
-        onClick={onDeleteFiltered}
-        disabled={!filteredHistory.length}
-      >
-        {t.deleteFiltered}
-      </button>
-      <button type="button" className="btn-danger" onClick={onClearAll} disabled={!historyTotal}>
-        {t.deleteAllHistory}
+      <button type="button" className="btn-danger history-clear-button" onClick={onClearAll} disabled={!historyTotal} aria-label={t.deleteAllHistory} title={t.deleteAllHistory}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" /></svg>
       </button>
     </div>
 
@@ -2009,6 +2013,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
 
         {hasSquad ? <div className="splash-actions">
           {!squadSaved ? <button type="button" className="btn-primary splash-save" onClick={() => { onSaveSquad?.(squad); setSquadSaved(true); }}>{getSaveSquadLabel(lang)}</button> : <p className="splash-save-confirmation" role="status">{getExtraLabel("squadSaved", lang)}</p>}
+          <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
         </div> : (
           savedToHistory ? <div className="splash-actions"><button type="button" className="btn-primary" onClick={onGoToHistory}>{getExtraLabel("goToHistory", lang)}</button><button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button></div> : <div className="splash-actions">
             <button type="button" className="btn-secondary splash-save" onClick={() => { onSaveResult?.(result); setSavedToHistory(true); }}>{getExtraLabel("saveRoll", lang)}</button>
@@ -2058,6 +2063,7 @@ const RouletteEngine = ({
   lang,
   rollingLabel,
   rollDurationMs,
+  rollSpeed = "normal",
   onRollComplete,
   onTick,
   externalRollTrigger = 0,
@@ -2111,6 +2117,7 @@ const RouletteEngine = ({
   const cardWidth = vertical ? 152 : 144;
   const cardHeight = vertical ? 204 : 190;
   const gap = 10;
+  const rollSpeedRatio = ({ slow: 0.65, normal: 1, fast: 1.45, veryFast: 1.9 })[rollSpeed] || 1;
   const unit = (vertical ? cardHeight : cardWidth) + gap;
   const idleItemsByLane = useMemo(() => Array.from({ length: safeLaneCount }, () => {
     if (!uniqueItems.length) return [];
@@ -2224,11 +2231,11 @@ const RouletteEngine = ({
       const steps = winners.map((winner) => {
         const segmentIndex = wheelItems.findIndex((item) => item.id === winner.id);
         const fromRotation = rotation;
-        const turns = 6 * getRollDistanceRatio(durationPerStep, ROLL_ACCELERATION_MS, ROLL_DECELERATION_MS);
+        const turns = ({ slow: 5, normal: 8, fast: 11, veryFast: 14 })[rollSpeed] || 8;
         rotation = getWheelTargetRotation(segmentIndex, wheelItems.length, rotation, turns);
         return { winner, segmentIndex, fromRotation, toRotation: rotation };
       });
-      setSpinPlan({ id, mode, steps, durationPerStep, accelerationDuration: ROLL_ACCELERATION_MS, decelerationDuration: ROLL_DECELERATION_MS, countdownDuration: 3000, stepGap: 0 });
+      setSpinPlan({ id, mode, steps, durationPerStep: Math.max(durationPerStep, 3000), accelerationDuration: 1500, decelerationDuration: 7500, countdownDuration: 3000, stepGap: 0 });
       return;
     }
     const lanes = winners.map((winner, index) => {
@@ -2236,7 +2243,7 @@ const RouletteEngine = ({
       const viewport = viewportRefs.current[index];
       const viewportSize = (vertical ? viewport?.clientHeight : viewport?.clientWidth) || (vertical ? 430 : 760);
       const finalIndex = ROULETTE_WINNER_INDEX;
-      const travelCards = getRollTravelCardCount(durationPerStep, ROLL_ACCELERATION_MS, ROLL_DECELERATION_MS, ROULETTE_TRAVEL_CARDS);
+      const travelCards = Math.round(getRollTravelCardCount(durationPerStep, ROLL_ACCELERATION_MS, ROLL_DECELERATION_MS, ROULETTE_TRAVEL_CARDS) * rollSpeedRatio);
       const fromIndex = finalIndex - travelCards;
       return {
         index,
@@ -2251,7 +2258,7 @@ const RouletteEngine = ({
     });
     const plan = { id, mode, lanes, durationPerStep, accelerationDuration: ROLL_ACCELERATION_MS, decelerationDuration: ROLL_DECELERATION_MS };
     setSpinPlan(plan);
-  }, [canRoll, cardHeight, gap, mode, onHoverDetails, rollDurationMs, safeLaneCount, setSelectedItem, uniqueItems, wheelItems]);
+  }, [canRoll, cardHeight, gap, mode, onHoverDetails, rollDurationMs, rollSpeed, rollSpeedRatio, safeLaneCount, setSelectedItem, uniqueItems, wheelItems]);
 
   useEffect(() => {
     if (!spinPlan) return undefined;
@@ -2436,20 +2443,26 @@ const RouletteEngine = ({
                     <div className="wheel-disc" ref={(node) => (wheelRefs.current[0] = node)} style={{ transform: `rotate(${wheelRotationRefs.current[0] || 0}deg)` }}>
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
-                      {wheelItems.map((item, index) => (
-                        <g key={item.id} aria-hidden="true">
-                          <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
-                          {wheelItems.length <= 12 && getItemName(item, lang).length <= 12 ? (() => {
-                            const angle = ((index + .5) / wheelItems.length) * 360 - 90;
-                            const flip = angle > 90 && angle < 270 ? " rotate(180)" : "";
-                            const name = getItemName(item, lang);
-                            return <g transform={`rotate(${angle} 50 50) translate(50 50)${flip}`}>
-                              {wheelItems.length <= 8 && item.image ? <image href={item.image} x="-5.5" y="-43" width="11" height="11" preserveAspectRatio="xMidYMid slice" /> : null}
-                              <text x="0" y={wheelItems.length <= 8 && item.image ? "-28" : "-39"} textAnchor="middle" className="wheel-segment-label">{name}</text>
-                            </g>;
-                          })() : null}
-                        </g>
-                      ))}
+                      {wheelItems.map((item, index) => {
+                        const name = getItemName(item, lang);
+                        const labelRadius = 34;
+                        const arcWidth = (2 * Math.PI * labelRadius) / wheelItems.length;
+                        const fitsName = name.length <= Math.floor(arcWidth / 1.6);
+                        if (!fitsName) return <path key={item.id} d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} aria-hidden="true" />;
+                        const angle = ((index + .5) / wheelItems.length) * 360 - 90;
+                        const normalizedAngle = (angle + 360) % 360;
+                        const flip = normalizedAngle > 90 && normalizedAngle < 270 ? " rotate(180)" : "";
+                        const fitsImage = arcWidth >= 7 && Boolean(item.image);
+                        return (
+                          <g key={item.id} aria-hidden="true">
+                            <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
+                            <g transform={`rotate(${angle} 50 50) translate(50 50)${flip}`}>
+                              {fitsImage ? <image href={item.image} x="-3" y="-46" width="6" height="6" preserveAspectRatio="xMidYMid slice" /> : null}
+                              <text x="0" y={fitsImage ? "-36" : "-40"} textAnchor="middle" className="wheel-segment-label">{name}</text>
+                            </g>
+                          </g>
+                        );
+                      })}
                     </svg>
                   </div>
                   <div className="wheel-center" aria-hidden="true"><span>✦</span></div>
@@ -3397,6 +3410,7 @@ function App() {
             lang={lang}
             rollingLabel={t.rolling}
             rollDurationMs={rollDurationMs}
+            rollSpeed={settings.rollSpeed}
             onRollComplete={isCharacterStage ? handleCharacterRollComplete : handleBossRollComplete}
             onTick={playRollTickSound}
             externalRollTrigger={isCharacterStage ? characterRerollTrigger : bossRerollTrigger}
