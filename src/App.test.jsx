@@ -32,15 +32,15 @@ test("renders app shell", async () => {
   render(<App />);
 
   expect(screen.getByRole("progressbar")).toBeInTheDocument();
-  expect(await screen.findByRole("button", { name: /главная/i })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /пул персонажей/i })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /пул боссов/i })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /настройки/i })).toBeInTheDocument();
+  expect(await screen.findByRole("link", { name: /главная/i })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /пул персонажей/i })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /пул боссов/i })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /настройки/i })).toBeInTheDocument();
 
   expect((await screen.findAllByText(/fandom api/i)).length).toBeGreaterThan(0);
 
-  fireEvent.click(screen.getByRole("button", { name: /настройки/i }));
-  expect(screen.getByRole("button", { name: "5 сек." })).toHaveClass("is-active");
+  fireEvent.click(screen.getByRole("link", { name: /настройки/i }));
+  expect(screen.getByRole("button", { name: "2 сек." })).toHaveClass("is-active");
   fireEvent.click(screen.getByRole("button", { name: "8 сек." }));
   expect(screen.getByRole("button", { name: "8 сек." })).toHaveClass("is-active");
   expect(screen.getByRole("option", { name: "English" })).toBeInTheDocument();
@@ -61,7 +61,7 @@ test("opens the configured support form from the sidebar", async () => {
 test("opens the donation page from the sidebar", async () => {
   render(<App />);
 
-  fireEvent.click(await screen.findByRole("button", { name: /поддержать проект/i }));
+  fireEvent.click(await screen.findByRole("link", { name: /поддержать проект/i }));
   expect(screen.getByRole("heading", { name: /поддержать проект/i })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /открыть nowpayments/i })).toHaveAttribute("href", "https://nowpayments.io/donation/alex");
   expect(screen.queryByRole("link", { name: /donatello/i })).not.toBeInTheDocument();
