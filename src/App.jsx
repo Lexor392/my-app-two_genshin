@@ -2150,10 +2150,10 @@ const RouletteEngine = ({
   }, [detailType, onHoverDetails]);
 
   useEffect(() => {
-    setLaneCount((current) => Math.max(1, Math.min(maxLanes, current)));
+    updateLaneCount((current) => Math.max(1, Math.min(maxLanes, current)));
     reelPositionRefs.current = Array.from({ length: maxLanes }, (_, index) => reelPositionRefs.current[index] || 0);
     wheelRotationRefs.current = Array.from({ length: maxLanes }, (_, index) => wheelRotationRefs.current[index] || 0);
-  }, [maxLanes]);
+  }, [maxLanes, updateLaneCount]);
 
   useEffect(() => {
     if (isRolling || mode === "wheel" || !uniqueItems.length) return undefined;
