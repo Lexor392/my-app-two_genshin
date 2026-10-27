@@ -2670,9 +2670,9 @@ const RouletteEngine = ({
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
                       <defs>
-                        <pattern id="wheel-sector-pattern" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
-                          <path d="M0 0V5" fill="none" stroke="#fff0c5" strokeOpacity=".17" strokeWidth=".65" />
-                          <path d="M2.5 .55 2.96 2.04 4.45 2.5 2.96 2.96 2.5 4.45 2.04 2.96 .55 2.5 2.04 2.04Z" fill="#fff4d2" fillOpacity=".42" />
+                        <pattern id="wheel-sector-pattern" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+                          <path d="M0 0V12" fill="none" stroke="#fff0c5" strokeOpacity=".17" strokeWidth=".65" />
+                          <path d="M6 4.35 6.48 5.52 7.65 6 6.48 6.48 6 7.65 5.52 6.48 4.35 6 5.52 5.52Z" fill="#fff4d2" fillOpacity=".42" />
                         </pattern>
                       </defs>
                       {wheelItems.map((item, index) => {
