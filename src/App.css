@@ -2715,6 +2715,11 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .dashboard-kpi-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .donation-services { display: flex; justify-content: center; }
 .donation-card { width: min(100%, 540px); }
+.donation-card > *,
+.donation-card-footer > * { min-width: 0; max-width: 100%; }
+.donation-card-footer { flex-wrap: wrap; }
+.donation-link,
+.donation-terms { white-space: normal; overflow-wrap: anywhere; }
 .wheel-layout { grid-template-columns: minmax(0, 1.3fr) minmax(210px, .65fr); }
 
 /* Keep the mobile layout in one column after the desktop shell defaults. */
@@ -3070,4 +3075,71 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
   .roulette-engine-grid.is-cases .reel-viewport.is-horizontal .reel-pointer { width: 128px; }
   .wheel-results { grid-template-columns: minmax(0, 1fr); }
   .wheel-viewport { max-width: 88vw; }
+}
+
+/* Final responsive guardrails for narrow screens and content with long labels. */
+@media (max-width: 900px) {
+  .app-shell,
+  .app-shell.sidebar-collapsed {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .main-content {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .pool-filter-content {
+    position: fixed !important;
+    top: 64px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(92vw, 520px) !important;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 78px);
+  }
+
+  .donation-panel,
+  .donation-services-crypto,
+  .donation-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .donation-card > *,
+  .donation-card-footer > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .donation-card-footer { flex-wrap: wrap; }
+  .donation-link,
+  .donation-terms { white-space: normal; overflow-wrap: anywhere; }
+}
+
+@media (max-width: 560px) {
+  .reel-lanes.is-vertical {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .roulette-engine-lane,
+  .reel-viewport,
+  .reel-track.is-vertical {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .reel-track.is-vertical .roulette-card {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+  }
 }

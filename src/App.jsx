@@ -932,7 +932,7 @@ const loadInitialState = () => {
     bossFilters,
     selectedCharacters: uniqueStringArray(selectedCookie.characters),
     selectedBosses: uniqueStringArray(selectedCookie.bosses),
-    hasCharacterSelection: Array.isArray(selectedCookie.characters),
+    hasCharacterSelection: Array.isArray(selectedCookie.characters) && selectedCookie.characters.length > 0,
     hasBossSelection: Array.isArray(selectedCookie.bosses),
     history,
     historyFilters,
@@ -1050,6 +1050,7 @@ const CharacterOption = ({ item, lang, selected, onToggle, viewMode, onHoverDeta
     <button
       type="button"
       className={`option-item ${wrapperClass} ${rarityClass} ${specialClass} ${selected ? "is-selected" : ""}`}
+      aria-label={getItemName(item, lang)}
       aria-pressed={selected}
       onClick={() => onToggle(item.id)}
       onMouseEnter={(event) => onHoverDetails?.(item, "characters", event)}
@@ -1079,6 +1080,7 @@ export const BossOption = ({ item, lang, selected, onToggle, viewMode, t, onHove
     <button
       type="button"
       className={`option-item ${wrapperClass} ${selected ? "is-selected" : ""}`}
+      aria-label={getItemName(item, lang)}
       aria-pressed={selected}
       onClick={() => onToggle(item.id)}
       onMouseEnter={(event) => onHoverDetails?.(item, "bosses", event)}
