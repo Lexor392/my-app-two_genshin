@@ -1140,7 +1140,7 @@ const ItemHoverDetail = ({ target, point, lang }) => {
       ref={detailRef}
       className={`item-hover-detail ${isBoss ? "is-boss-detail" : "is-character-detail"}`}
       role="tooltip"
-      style={{ left, top, width: Math.min(360, viewportWidth - 24) }}
+      style={{ left: 0, top: 0, width: Math.min(360, viewportWidth - 24), transform: `translate3d(${left}px, ${top}px, 0)` }}
     >
       <div className="item-hover-detail-head">
         <ItemImage item={item} alt={getItemName(item, lang)} loading="eager" />
@@ -2235,7 +2235,7 @@ const RouletteEngine = ({
         rotation = getWheelTargetRotation(segmentIndex, wheelItems.length, rotation, turns);
         return { winner, segmentIndex, fromRotation, toRotation: rotation };
       });
-      setSpinPlan({ id, mode, steps, durationPerStep: Math.max(durationPerStep, 3000), accelerationDuration: 1500, decelerationDuration: 7500, countdownDuration: 3000, stepGap: 0 });
+      setSpinPlan({ id, mode, steps, durationPerStep: Math.max(durationPerStep, 3000), accelerationDuration: 1500, decelerationDuration: 7500, countdownDuration: 1000, stepGap: 0 });
       return;
     }
     const lanes = winners.map((winner, index) => {
@@ -2444,22 +2444,16 @@ const RouletteEngine = ({
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
                       {wheelItems.map((item, index) => {
-                        const name = getItemName(item, lang);
-                        const labelRadius = 34;
-                        const arcWidth = (2 * Math.PI * labelRadius) / wheelItems.length;
-                        const fitsName = name.length <= Math.floor(arcWidth / 1.6);
-                        if (!fitsName) return <path key={item.id} d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} aria-hidden="true" />;
-                        const angle = ((index + .5) / wheelItems.length) * 360 - 90;
-                        const normalizedAngle = (angle + 360) % 360;
-                        const flip = normalizedAngle > 90 && normalizedAngle < 270 ? " rotate(180)" : "";
-                        const fitsImage = arcWidth >= 7 && Boolean(item.image);
+                        const angle = ((index + .5) / wheelItems.length) * Math.PI * 2 - Math.PI / 2;
+                        const arcWidth = (2 * Math.PI * 36) / wheelItems.length;
+                        const imageSize = Math.min(8, arcWidth * .72);
+                        const imageRadius = 36;
+                        const imageX = 50 + imageRadius * Math.cos(angle) - imageSize / 2;
+                        const imageY = 50 + imageRadius * Math.sin(angle) - imageSize / 2;
                         return (
                           <g key={item.id} aria-hidden="true">
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
-                            <g transform={`rotate(${angle} 50 50) translate(50 50)${flip}`}>
-                              {fitsImage ? <image href={item.image} x="-3" y="-46" width="6" height="6" preserveAspectRatio="xMidYMid slice" /> : null}
-                              <text x="0" y={fitsImage ? "-36" : "-40"} textAnchor="middle" className="wheel-segment-label">{name}</text>
-                            </g>
+                            {item.image && arcWidth >= 1.6 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} preserveAspectRatio="xMidYMid slice" /> : null}
                           </g>
                         );
                       })}
