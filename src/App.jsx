@@ -2067,6 +2067,8 @@ const RouletteEngine = ({
   onRollComplete,
   onTick,
   externalRollTrigger = 0,
+  externalSingleRollTrigger = 0,
+  wheelResultResetTrigger = 0,
   onHoverDetails,
   detailType = "characters",
 }) => {
@@ -2087,6 +2089,8 @@ const RouletteEngine = ({
   const sessionRef = useRef(0);
   const rollingRef = useRef(false);
   const externalTriggerRef = useRef(0);
+  const externalSingleTriggerRef = useRef(0);
+  const wheelResultResetRef = useRef(wheelResultResetTrigger);
   const animationSessionRef = useRef(null);
   const animationStartTimeRef = useRef(null);
   const animationPreparedSessionRef = useRef(null);
@@ -2206,9 +2210,9 @@ const RouletteEngine = ({
     onHoverDetails?.(null);
   }, [onHoverDetails, wheelItems]);
 
-  const roll = useCallback(() => {
+  const roll = useCallback((requestedCount = safeLaneCount) => {
     if (!canRoll || rollingRef.current) return;
-    const winners = pickUniqueWinners(uniqueItems, safeLaneCount);
+    const winners = pickUniqueWinners(uniqueItems, Math.min(safeLaneCount, requestedCount));
     if (!winners.length) return;
 
     const id = sessionRef.current + 1;
@@ -2260,6 +2264,8 @@ const RouletteEngine = ({
     setSpinPlan(plan);
   }, [canRoll, cardHeight, gap, mode, onHoverDetails, rollDurationMs, rollSpeed, rollSpeedRatio, safeLaneCount, setSelectedItem, uniqueItems, wheelItems]);
 
+  const rollSingle = useCallback(() => roll(1), [roll]);
+
   useEffect(() => {
     if (!spinPlan) return undefined;
     if (animationSessionRef.current !== spinPlan.id) {
@@ -2302,7 +2308,7 @@ const RouletteEngine = ({
           }
           if (elapsed >= totalDuration) {
             const winners = spinPlan.steps.map((entry) => entry.winner);
-            setWheelResults(winners);
+            setWheelResults([]);
             setWheelCountdown(null);
             setWheelRotation(0, spinPlan.steps.at(-1)?.toRotation || 0);
             rollingRef.current = false;
@@ -2396,6 +2402,19 @@ const RouletteEngine = ({
     roll();
   }, [externalRollTrigger, roll]);
 
+  useEffect(() => {
+    if (externalSingleRollTrigger === externalSingleTriggerRef.current) return;
+    externalSingleTriggerRef.current = externalSingleRollTrigger;
+    rollSingle();
+  }, [externalSingleRollTrigger, rollSingle]);
+
+  useEffect(() => {
+    if (wheelResultResetTrigger === wheelResultResetRef.current) return;
+    wheelResultResetRef.current = wheelResultResetTrigger;
+    setWheelResults([]);
+    setLastWinners([]);
+  }, [wheelResultResetTrigger]);
+
   useEffect(() => () => {
     rollingRef.current = false;
     sessionRef.current += 1;
@@ -2454,7 +2473,7 @@ const RouletteEngine = ({
                         return (
                           <g key={item.id} aria-hidden="true">
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
-                            {item.image && arcWidth >= 1.6 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
+                            {item.image && arcWidth >= 1.6 && wheelItems.length <= 72 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
                           </g>
                         );
                       })}
@@ -2714,7 +2733,9 @@ function App() {
   const [selectedBoss, setSelectedBoss] = useState(null);
   const [splashResult, setSplashResult] = useState(null);
   const [characterRerollTrigger, setCharacterRerollTrigger] = useState(0);
+  const [characterSingleRollTrigger, setCharacterSingleRollTrigger] = useState(0);
   const [bossRerollTrigger, setBossRerollTrigger] = useState(0);
+  const [wheelResultResetTrigger, setWheelResultResetTrigger] = useState(0);
   const [hoverTarget, setHoverTarget] = useState(null);
   const [hoverPoint, setHoverPoint] = useState({ x: 24, y: 24 });
 
@@ -2733,6 +2754,7 @@ function App() {
   const loadControllerRef = useRef(null);
   const hoverFrameRef = useRef(0);
   const pendingHoverPointRef = useRef({ x: 24, y: 24 });
+  const pendingSquadAppendRef = useRef(null);
 
   const t = translations[lang] || translations.en;
   const handleHoverDetails = useCallback((item, kind, event) => {
@@ -3161,10 +3183,13 @@ function App() {
   const handleRollComplete = useCallback(
     (stage, winnerOrSquad) => {
       const results = Array.isArray(winnerOrSquad) ? winnerOrSquad : [winnerOrSquad];
-      const squad = stage === "characters" ? results.filter(Boolean) : [];
+      const newlyRolledCharacters = stage === "characters" ? results.filter(Boolean) : [];
+      const previousSquad = stage === "characters" ? pendingSquadAppendRef.current : null;
+      pendingSquadAppendRef.current = null;
+      const squad = previousSquad ? [...previousSquad, ...newlyRolledCharacters].slice(0, 4) : newlyRolledCharacters;
       const timestamp = new Date().toISOString();
       const entries = createRollHistoryEntries(stage, results, timestamp);
-      const winner = squad[0] || results[0];
+      const winner = newlyRolledCharacters[0] || results[0];
       if (!entries.length || !winner) {
         return;
       }
@@ -3205,7 +3230,9 @@ function App() {
 
   const openRollHistory = useCallback(() => {
     setHoverTarget(null);
+    pendingSquadAppendRef.current = null;
     setSplashResult(null);
+    setWheelResultResetTrigger((previous) => previous + 1);
     setActiveSection("history");
   }, []);
 
@@ -3229,6 +3256,7 @@ function App() {
 
   const rerollFromSplash = useCallback(() => {
     const stage = splashResult?.stage || "characters";
+    pendingSquadAppendRef.current = null;
     setSplashResult(null);
     if (stage === "bosses") {
       setActiveSection("bosses");
@@ -3240,6 +3268,23 @@ function App() {
     setSelectedCharacter(null);
     setCharacterRerollTrigger((prev) => prev + 1);
   }, [splashResult?.stage]);
+
+  const rollNextSquadMember = useCallback(() => {
+    if (!splashResult || splashResult.stage !== "characters") return;
+    const squad = Array.isArray(splashResult.squad) ? splashResult.squad : [];
+    if (!squad.length || squad.length >= 4) return;
+    pendingSquadAppendRef.current = squad;
+    setActiveSection("characters");
+    setSplashResult(null);
+    setSelectedCharacter(null);
+    setCharacterSingleRollTrigger((previous) => previous + 1);
+  }, [setActiveSection, splashResult]);
+
+  const closeSplash = useCallback(() => {
+    pendingSquadAppendRef.current = null;
+    setSplashResult(null);
+    setWheelResultResetTrigger((previous) => previous + 1);
+  }, []);
 
   useEffect(() => {
     if (!splashResult) return;
@@ -3409,6 +3454,8 @@ function App() {
             onRollComplete={isCharacterStage ? handleCharacterRollComplete : handleBossRollComplete}
             onTick={playRollTickSound}
             externalRollTrigger={isCharacterStage ? characterRerollTrigger : bossRerollTrigger}
+            externalSingleRollTrigger={isCharacterStage ? characterSingleRollTrigger : 0}
+            wheelResultResetTrigger={wheelResultResetTrigger}
             onHoverDetails={handleHoverDetails}
             detailType={stage}
           />
@@ -3683,11 +3730,11 @@ function App() {
         result={splashResult}
         t={t}
         lang={lang}
-        onClose={() => setSplashResult(null)}
+        onClose={closeSplash}
         onSaveSquad={saveCurrentSquad}
         onSaveResult={saveRollResult}
         onGoToHistory={openRollHistory}
-        onReroll={rerollFromSplash}
+        onReroll={splashResult?.stage === "characters" && Array.isArray(splashResult.squad) && splashResult.squad.length ? rollNextSquadMember : rerollFromSplash}
         onHoverDetails={handleHoverDetails}
         effectsEnabled={settings.splashEffects}
       />
