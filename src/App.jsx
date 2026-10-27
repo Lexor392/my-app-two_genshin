@@ -2683,11 +2683,6 @@ const RouletteEngine = ({
                         const imageRadius = 36;
                         const imageX = 50 + imageRadius * Math.cos(angleRadians) - imageSize / 2;
                         const imageY = 50 + imageRadius * Math.sin(angleRadians) - imageSize / 2;
-                        const markerRadius = 47;
-                        const markerAngle = (index / wheelItems.length) * 360 - 90;
-                        const markerRadians = (markerAngle * Math.PI) / 180;
-                        const markerX = 50 + markerRadius * Math.cos(markerRadians);
-                        const markerY = 50 + markerRadius * Math.sin(markerRadians);
                         return (
                           <g
                             key={item.id}
@@ -2699,9 +2694,14 @@ const RouletteEngine = ({
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={detailType === "bosses" ? (index % 2 === 0 ? "#c8a85f" : "#9365b5") : getWheelRarityColor(item)} />
                             <path d={wheelSlicePath(index, wheelItems.length)} fill="url(#wheel-sector-pattern)" stroke="none" pointerEvents="none" />
                             {item.image && arcWidth >= 1.6 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
-                            <circle className="wheel-sector-marker" cx={markerX} cy={markerY} r={wheelItems.length > 72 ? 0.75 : 1.05} />
                           </g>
                         );
+                      })}
+                      {wheelItems.map((item, index) => {
+                        const markerAngle = (index / wheelItems.length) * 360 - 90;
+                        const markerRadians = (markerAngle * Math.PI) / 180;
+                        const markerRadius = 47;
+                        return <circle key={`wheel-marker-${item.id}`} className="wheel-sector-marker" cx={50 + markerRadius * Math.cos(markerRadians)} cy={50 + markerRadius * Math.sin(markerRadians)} r={wheelItems.length > 72 ? 0.75 : 1.05} />;
                       })}
                     </svg>
                   </div>
