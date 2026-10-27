@@ -2900,11 +2900,35 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .wheel-segments path { pointer-events: visiblePainted; cursor: pointer; transition: filter .16s ease, stroke .16s ease; }
 .wheel-segments path:hover { filter: brightness(1.4); stroke: #fff0bd; stroke-width: 1px; }
 .wheel-sector-marker { fill: #fff2c6; stroke: rgba(20, 32, 39, .92); stroke-width: .7px; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 2px rgba(255, 235, 177, .9)); pointer-events: none; }
-.wheel-pointer { transform-origin: 50% 0; }
-.wheel-pointer.is-rolling { animation: wheel-pointer-rattle 90ms ease-in-out infinite alternate; }
-@keyframes wheel-pointer-rattle {
-  from { transform: translateX(-50%) rotate(180deg) rotate(-5deg) translateY(-1px); }
-  to { transform: translateX(-50%) rotate(180deg) rotate(5deg) translateY(0); }
+.wheel-viewport { container-type: inline-size; isolation: isolate; }
+.wheel-viewport::before, .wheel-viewport::after { content: ""; position: absolute; z-index: 2; inset: .3%; border-radius: 50%; pointer-events: none; }
+.wheel-viewport::before {
+  background: repeating-conic-gradient(from -1deg, rgba(245, 222, 166, .94) 0deg 1deg, rgba(129, 94, 53, .9) 1.2deg 1.7deg, transparent 2deg 7.5deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+  filter: drop-shadow(0 0 3px rgba(238, 207, 137, .55));
+}
+.wheel-viewport::after { inset: 1.2%; border: 1px solid rgba(245, 222, 166, .62); box-shadow: 0 0 0 2px rgba(34, 28, 20, .58), inset 0 0 0 1px rgba(245, 222, 166, .18); }
+.roulette-engine .wheel-pointer {
+  z-index: 4; top: 0; left: 50%; width: calc(5cqi + 7px); height: calc(5cqi + 7px); border: 0; background: transparent;
+  transform: translateX(-50%); transform-origin: 50% 0; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .72));
+}
+.roulette-engine .wheel-pointer::before {
+  content: ""; position: absolute; inset: 3px 2px 0; clip-path: polygon(50% 100%, 0 0, 100% 0);
+  background: linear-gradient(90deg, #805b2c 0%, #f8e5a8 24%, #f2d27c 51%, #d1a855 76%, #805b2c 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 248, 211, .78);
+}
+.roulette-engine .wheel-pointer::after { content: ""; position: absolute; top: 7px; left: calc(50% - 1px); width: 2px; height: 48%; background: rgba(255, 250, 224, .72); }
+.wheel-pointer-pin { position: absolute; z-index: 1; top: -2px; left: 50%; width: 9px; height: 9px; transform: translateX(-50%); border: 2px solid #f4dfaa; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3ce, #b27c38 68%, #493019); box-shadow: 0 1px 4px rgba(0, 0, 0, .65); }
+.roulette-engine .wheel-pointer.is-hitting { animation: wheel-pointer-impact 190ms cubic-bezier(.16, .72, .2, 1) both; }
+@keyframes wheel-pointer-impact {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  14% { transform: translateX(-50%) rotate(-15deg); }
+  31% { transform: translateX(-50%) rotate(7deg); }
+  48% { transform: translateX(-50%) rotate(-3.5deg); }
+  68% { transform: translateX(-50%) rotate(1.6deg); }
+  84% { transform: translateX(-50%) rotate(-.6deg); }
+  100% { transform: translateX(-50%) rotate(0deg); }
 }
 .boss-splash-card { grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); width: 100%; border-color: rgba(225, 201, 150, .5); }
 .boss-splash-card > img, .boss-splash-card > .image-fallback { width: 100%; min-height: 320px; height: 100%; border-right: 1px solid var(--line); }
@@ -2935,7 +2959,7 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
   .boss-map-lightbox { padding: 58px 12px 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wheel-pointer.is-rolling { animation-duration: 220ms; }
+  .roulette-engine .wheel-pointer.is-hitting { animation-duration: 280ms; }
 }
 
 @media (max-width: 980px) {

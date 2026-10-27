@@ -2135,6 +2135,7 @@ const RouletteEngine = ({
   const [lastWinners, setLastWinners] = useState([]);
   const [wheelResults, setWheelResults] = useState([]);
   const [wheelCountdown, setWheelCountdown] = useState(null);
+  const [wheelPointerHitCount, setWheelPointerHitCount] = useState(0);
   const [wheelOrderIds, setWheelOrderIds] = useState([]);
   const viewportRefs = useRef([]);
   const trackRefs = useRef([]);
@@ -2290,7 +2291,8 @@ const RouletteEngine = ({
     if (mode === "wheel") {
       setWheelCountdown(3);
       let rotation = wheelRotationRefs.current[0] || 0;
-      lastWheelTickRef.current = Math.floor(rotation / (360 / wheelItems.length));
+      lastWheelTickRef.current = Math.floor(rotation / (360 / wheelItems.length) + 0.5);
+      setWheelPointerHitCount(0);
       const steps = winners.map((winner) => {
         const segmentIndex = wheelItems.findIndex((item) => item.id === winner.id);
         const fromRotation = rotation;
@@ -2361,9 +2363,10 @@ const RouletteEngine = ({
           const progress = getRollProgress(stepElapsed - spinPlan.countdownDuration, spinPlan.durationPerStep, spinPlan.accelerationDuration, spinPlan.decelerationDuration);
           const rotation = step.fromRotation + (step.toRotation - step.fromRotation) * progress;
           setWheelRotation(0, rotation);
-          const wheelTick = Math.floor(rotation / (360 / wheelItems.length));
+          const wheelTick = Math.floor(rotation / (360 / wheelItems.length) + 0.5);
           if (lastWheelTickRef.current !== wheelTick) {
             lastWheelTickRef.current = wheelTick;
+            setWheelPointerHitCount((count) => count + 1);
             onTick?.();
           }
           if (progress >= 1 && completedWheelStepRef.current < stepIndex) {
@@ -2477,6 +2480,7 @@ const RouletteEngine = ({
     wheelResultResetRef.current = wheelResultResetTrigger;
     setWheelResults([]);
     setLastWinners([]);
+    setWheelPointerHitCount(0);
   }, [wheelResultResetTrigger]);
 
   useEffect(() => {
@@ -2547,7 +2551,9 @@ const RouletteEngine = ({
             <div className="wheel-layout">
               <div className="wheel-main">
                 <div className="wheel-viewport" ref={(node) => (viewportRefs.current[0] = node)}>
-                  <div className={`wheel-pointer ${isRolling ? "is-rolling" : ""}`} aria-hidden="true" />
+                  <div key={wheelPointerHitCount} className={`wheel-pointer ${isRolling ? "is-rolling" : ""} ${wheelPointerHitCount ? "is-hitting" : ""}`} aria-hidden="true">
+                    <span className="wheel-pointer-pin" />
+                  </div>
                     <div className="wheel-disc" ref={(node) => (wheelRefs.current[0] = node)} style={{ transform: `rotate(${wheelRotationRefs.current[0] || 0}deg)` }}>
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
