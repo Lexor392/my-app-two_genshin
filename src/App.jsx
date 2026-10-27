@@ -38,6 +38,10 @@ const EXTRA_LABELS = {
   goToHistory: { ru: "Перейти в статистику рероллов", en: "Go to reroll statistics", zh: "查看抽取统计", ja: "抽選統計を見る", ko: "뽑기 통계 보기" },
   reroll: { ru: "Реролл", en: "Reroll", zh: "重新抽取", ja: "もう一度回す", ko: "다시 뽑기" },
   savedSquads: { ru: "Сохранённые отряды", en: "Saved squads", zh: "已保存队伍", ja: "保存済みチーム", ko: "저장된 파티" },
+  savedBosses: { ru: "Сохранённые боссы", en: "Saved bosses", zh: "已保存首领", ja: "保存済みボス", ko: "저장된 보스" },
+  noSavedBosses: { ru: "Пока нет сохранённых боссов.", en: "No saved bosses yet.", zh: "暂时没有保存的首领。", ja: "保存されたボスはまだありません。", ko: "저장된 보스가 없습니다." },
+  saveBoss: { ru: "Сохранить босса", en: "Save boss", zh: "保存首领", ja: "ボスを保存", ko: "보스 저장" },
+  bossSaved: { ru: "Босс сохранён", en: "Boss saved", zh: "首领已保存", ja: "ボスを保存しました", ko: "보스가 저장되었습니다" },
   noSavedSquads: { ru: "Пока нет сохранённых отрядов.", en: "No saved squads yet.", zh: "暂时没有保存的队伍。", ja: "保存されたチームはまだありません。", ko: "저장된 파티가 없습니다." },
   home: { ru: "Главная", en: "Home", zh: "主页", ja: "ホーム", ko: "홈" },
   spinCharacters: { ru: "Крутить персонажей", en: "Spin characters", zh: "抽取角色", ja: "キャラクターを回す", ko: "캐릭터 뽑기" },
@@ -87,6 +91,9 @@ const EXTRA_LABELS = {
   detailNotes: { ru: "Дополнительно", en: "Additional details", zh: "补充信息", ja: "追加情報", ko: "추가 정보" },
   detailMap: { ru: "Карта места", en: "Location map", zh: "位置地图", ja: "場所のマップ", ko: "위치 지도" },
   openMap: { ru: "Открыть карту на весь экран", en: "Open map full screen", zh: "全屏打开地图", ja: "地図を全画面で開く", ko: "지도를 전체 화면으로 열기" },
+  zoomIn: { ru: "Приблизить", en: "Zoom in", zh: "放大", ja: "拡大", ko: "확대" },
+  zoomOut: { ru: "Отдалить", en: "Zoom out", zh: "缩小", ja: "縮小", ko: "축소" },
+  resetZoom: { ru: "Исходный размер", en: "Reset zoom", zh: "重置缩放", ja: "ズームをリセット", ko: "확대 초기화" },
   detailMapUnavailable: { ru: "Скриншот карты для этого босса не найден.", en: "No map screenshot was found for this boss.", zh: "未找到该首领的地图截图。", ja: "このボスのマップ画像は見つかりませんでした。", ko: "이 보스의 지도 이미지를 찾지 못했습니다." },
 };
 const getExtraLabel = (key, lang) => EXTRA_LABELS[key]?.[lang] || EXTRA_LABELS[key]?.en || "";
@@ -160,6 +167,7 @@ const COOKIE_KEYS = {
   history: "gi_rl_history",
   historyFilters: "gi_rl_history_filters",
   savedSquads: "gi_rl_saved_squads",
+  savedBosses: "gi_rl_saved_bosses",
 };
 
 const ELEMENT_LABELS = {
@@ -481,6 +489,19 @@ const toSnapshotMember = (item) => ({
   })) : [],
 });
 
+const toSnapshotBoss = (boss) => ({
+  id: boss.id,
+  name: boss.name || "",
+  nameRu: boss.nameRu || "",
+  nameZh: boss.nameZh || "",
+  nameJa: boss.nameJa || "",
+  nameKo: boss.nameKo || "",
+  rarity: boss.rarity || 4,
+  group: boss.group || "",
+  image: boss.image || "",
+  imageFallbacks: Array.isArray(boss.imageFallbacks) ? boss.imageFallbacks.slice(0, 2) : [],
+});
+
 const normalizeSavedSquads = (value) => {
   if (!Array.isArray(value)) {
     return [];
@@ -521,6 +542,29 @@ const trimSavedSquadsForCookie = (entries) => {
     if (encoded.length <= COOKIE_HISTORY_SIZE_LIMIT) {
       return next;
     }
+    next.pop();
+  }
+  return [];
+};
+
+const normalizeSavedBosses = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value.map((entry) => {
+    if (!entry || typeof entry !== "object") return null;
+    const id = typeof entry.id === "string" ? entry.id : "";
+    const timestamp = typeof entry.timestamp === "string" ? entry.timestamp : "";
+    const boss = entry.boss && typeof entry.boss === "object" && typeof entry.boss.id === "string"
+      ? toSnapshotBoss(entry.boss)
+      : null;
+    if (!id || !timestamp || Number.isNaN(Date.parse(timestamp)) || !boss) return null;
+    return { id, timestamp, boss };
+  }).filter(Boolean).slice(0, 30);
+};
+
+const trimSavedBossesForCookie = (entries) => {
+  const next = [...entries].slice(0, 30);
+  while (next.length) {
+    if (encodeURIComponent(JSON.stringify(next)).length <= COOKIE_HISTORY_SIZE_LIMIT) return next;
     next.pop();
   }
   return [];
@@ -868,6 +912,7 @@ const loadInitialState = () => {
     settings.historyLimit
   );
   const savedSquads = normalizeSavedSquads(readCookieJson(COOKIE_KEYS.savedSquads, []));
+  const savedBosses = normalizeSavedBosses(readCookieJson(COOKIE_KEYS.savedBosses, []));
 
   const languageMode = settingsCookie.languageMode === "manual" ? "manual" : "auto";
   const lang = languageMode === "manual" && LANGS.includes(settingsCookie.lang)
@@ -892,6 +937,7 @@ const loadInitialState = () => {
     history,
     historyFilters,
     savedSquads,
+    savedBosses,
   };
 };
 
@@ -1889,6 +1935,10 @@ const HistoryPanel = ({
 const BossSplashDetails = ({ item, lang }) => {
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
+  const [mapScale, setMapScale] = useState(1);
+  const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
+  const [isDraggingMap, setIsDraggingMap] = useState(false);
+  const mapDragRef = useRef(null);
   const details = getLocalBossDetails(item, lang);
   const description = details?.description || item.description || "";
   const rows = [
@@ -1900,7 +1950,38 @@ const BossSplashDetails = ({ item, lang }) => {
   useEffect(() => {
     setMapFailed(false);
     setIsMapExpanded(false);
+    setMapScale(1);
+    setMapOffset({ x: 0, y: 0 });
   }, [item?.id]);
+
+  const openMap = () => {
+    setMapScale(1);
+    setMapOffset({ x: 0, y: 0 });
+    setIsMapExpanded(true);
+  };
+  const beginMapDrag = (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    mapDragRef.current = { x: event.clientX, y: event.clientY };
+    setIsDraggingMap(true);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const moveMap = (event) => {
+    if (!mapDragRef.current) return;
+    const dx = event.clientX - mapDragRef.current.x;
+    const dy = event.clientY - mapDragRef.current.y;
+    mapDragRef.current = { x: event.clientX, y: event.clientY };
+    setMapOffset((previous) => ({ x: previous.x + dx, y: previous.y + dy }));
+  };
+  const endMapDrag = () => {
+    mapDragRef.current = null;
+    setIsDraggingMap(false);
+  };
+  const closeMap = () => {
+    mapDragRef.current = null;
+    setIsDraggingMap(false);
+    setIsMapExpanded(false);
+  };
 
   return (
     <>
@@ -1913,7 +1994,7 @@ const BossSplashDetails = ({ item, lang }) => {
         <div className="boss-popup-map">
           <strong>{getExtraLabel("detailMap", lang)}</strong>
           {details?.mapImage && !mapFailed ? (
-            <button type="button" className="boss-popup-map-open" onClick={() => setIsMapExpanded(true)} aria-label={getExtraLabel("openMap", lang)} title={getExtraLabel("openMap", lang)}>
+            <button type="button" className="boss-popup-map-open" onClick={openMap} aria-label={getExtraLabel("openMap", lang)} title={getExtraLabel("openMap", lang)}>
               <img src={details.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} onError={() => setMapFailed(true)} />
               <span>{getExtraLabel("openMap", lang)}</span>
             </button>
@@ -1921,9 +2002,30 @@ const BossSplashDetails = ({ item, lang }) => {
         </div>
       </div>
       {isMapExpanded && details?.mapImage && typeof document !== "undefined" ? createPortal(
-        <div className="boss-map-lightbox" role="dialog" aria-modal="true" aria-label={getExtraLabel("detailMap", lang)} onClick={() => setIsMapExpanded(false)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setIsMapExpanded(false); } }} tabIndex={-1}>
-          <button type="button" className="boss-map-lightbox-close" onClick={() => setIsMapExpanded(false)} aria-label={getExtraLabel("close", lang)} autoFocus>×</button>
-          <img src={details.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} onClick={(event) => event.stopPropagation()} />
+        <div className="boss-map-lightbox" role="dialog" aria-modal="true" aria-label={getExtraLabel("detailMap", lang)} onClick={closeMap} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeMap(); } }} tabIndex={-1}>
+          <button type="button" className="boss-map-lightbox-close" onClick={closeMap} aria-label={getExtraLabel("close", lang)} autoFocus>×</button>
+          <div
+            className={`boss-map-image-stage ${isDraggingMap ? "is-dragging" : ""}`}
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={beginMapDrag}
+            onPointerMove={moveMap}
+            onPointerUp={endMapDrag}
+            onPointerCancel={endMapDrag}
+            onWheel={(event) => { event.preventDefault(); setMapScale((scale) => Math.max(1, Math.min(4, scale + (event.deltaY < 0 ? .15 : -.15)))); }}
+          >
+            <img src={details.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} draggable="false" style={{ transform: `translate3d(${mapOffset.x}px, ${mapOffset.y}px, 0) scale(${mapScale})` }} />
+          </div>
+          <div className="boss-map-controls" onClick={(event) => event.stopPropagation()}>
+            <button type="button" onClick={() => setMapScale((scale) => Math.min(4, scale + .25))} aria-label={getExtraLabel("zoomIn", lang)} title={getExtraLabel("zoomIn", lang)} disabled={mapScale >= 4}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6" /><path d="M16 16 21 21M10.8 7.8v6M7.8 10.8h6" /></svg>
+            </button>
+            <button type="button" onClick={() => setMapScale((scale) => Math.max(1, scale - .25))} aria-label={getExtraLabel("zoomOut", lang)} title={getExtraLabel("zoomOut", lang)} disabled={mapScale <= 1}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6" /><path d="M16 16 21 21M7.8 10.8h6" /></svg>
+            </button>
+            <button type="button" onClick={() => { setMapScale(1); setMapOffset({ x: 0, y: 0 }); }} aria-label={getExtraLabel("resetZoom", lang)} title={getExtraLabel("resetZoom", lang)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4m0 0h5M4 4l4 4a8 8 0 1 1-2 7" /><path d="M12 8v5l3 2" /></svg>
+            </button>
+          </div>
         </div>,
         document.body
       ) : null}
@@ -1931,7 +2033,7 @@ const BossSplashDetails = ({ item, lang }) => {
   );
 };
 
-const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult, onGoToHistory, onReroll, onHoverDetails, effectsEnabled }) => {
+const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveBoss, isBossSaved, onSaveResult, onGoToHistory, onReroll, onHoverDetails, effectsEnabled }) => {
   const modalRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const [savedToHistory, setSavedToHistory] = useState(false);
@@ -1999,7 +2101,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
           <h3 id="result-dialog-title">{hasSquad ? getTeamPopupSubtitle(lang) : getItemName(item, lang)}</h3>
         </div>
 
-        {!hasSquad ? <button type="button" className="splash-close-icon" onClick={onClose} aria-label={t.close} title={t.close}><span aria-hidden="true">✕</span></button> : null}
+        {!hasSquad && !isBossResult ? <button type="button" className="splash-close-icon" onClick={onClose} aria-label={t.close} title={t.close}><span aria-hidden="true">✕</span></button> : null}
 
         {hasSquad ? (
           <div className="squad-grid">
@@ -2068,6 +2170,9 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
 
         {hasSquad ? <div className="splash-actions">
           {!squadSaved ? <button type="button" className="btn-primary splash-save" onClick={() => { onSaveSquad?.(squad); setSquadSaved(true); }}>{getSaveSquadLabel(lang)}</button> : <p className="splash-save-confirmation" role="status">{getExtraLabel("squadSaved", lang)}</p>}
+          <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
+        </div> : isBossResult ? <div className="splash-actions">
+          {!isBossSaved ? <button type="button" className="btn-primary splash-save" onClick={() => onSaveBoss?.(item)}>{getExtraLabel("saveBoss", lang)}</button> : <p className="splash-save-confirmation" role="status">{getExtraLabel("bossSaved", lang)}</p>}
           <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
         </div> : (
           savedToHistory ? <div className="splash-actions"><button type="button" className="btn-primary" onClick={onGoToHistory}>{getExtraLabel("goToHistory", lang)}</button><button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button></div> : <div className="splash-actions">
@@ -2219,8 +2324,12 @@ const RouletteEngine = ({
     let lastTime = 0;
     const cycleDistance = uniqueItems.length * unit;
     const idleSpeed = mode === "vertical" ? 8 : 9;
+    const laneStarts = Array.from({ length: safeLaneCount }, (_, laneIndex) => {
+      const viewportWidth = viewportRefs.current[laneIndex]?.clientWidth || 0;
+      return mode === "horizontal" ? Math.max(0, (viewportWidth - cardWidth) / 2) : 0;
+    });
     for (let laneIndex = 0; laneIndex < safeLaneCount; laneIndex += 1) {
-      const start = 0;
+      const start = laneStarts[laneIndex];
       reelPositionRefs.current[laneIndex] = start;
       setTrackPosition(laneIndex, start);
     }
@@ -2230,7 +2339,7 @@ const RouletteEngine = ({
       lastTime = now;
       for (let laneIndex = 0; laneIndex < safeLaneCount; laneIndex += 1) {
         let next = reelPositionRefs.current[laneIndex] - (delta / 1000) * idleSpeed;
-        if (next <= -cycleDistance) next += cycleDistance;
+        if (next <= laneStarts[laneIndex] - cycleDistance) next += cycleDistance;
         setTrackPosition(laneIndex, next);
       }
       frameRef.current = window.requestAnimationFrame(animate);
@@ -2557,6 +2666,12 @@ const RouletteEngine = ({
                     <div className="wheel-disc" ref={(node) => (wheelRefs.current[0] = node)} style={{ transform: `rotate(${wheelRotationRefs.current[0] || 0}deg)` }}>
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
+                      <defs>
+                        <pattern id="wheel-sector-pattern" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+                          <path d="M0 0V5" fill="none" stroke="#fff0c5" strokeOpacity=".17" strokeWidth=".65" />
+                          <circle cx="2.5" cy="2.5" r=".38" fill="#fff4d2" fillOpacity=".32" />
+                        </pattern>
+                      </defs>
                       {wheelItems.map((item, index) => {
                         const angle = ((index + .5) / wheelItems.length) * 360 - 90;
                         const angleRadians = (angle * Math.PI) / 180;
@@ -2577,6 +2692,7 @@ const RouletteEngine = ({
                             onMouseLeave={() => onHoverDetails?.(null)}
                           >
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={detailType === "bosses" ? (index % 2 === 0 ? "#c8a85f" : "#9365b5") : getWheelRarityColor(item)} />
+                            <path d={wheelSlicePath(index, wheelItems.length)} fill="url(#wheel-sector-pattern)" stroke="none" pointerEvents="none" />
                             {item.image && arcWidth >= 1.6 && wheelItems.length <= 72 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
                             <circle className="wheel-sector-marker" cx={markerX} cy={markerY} r={wheelItems.length > 72 ? 0.75 : 1.05} />
                           </g>
@@ -2859,6 +2975,7 @@ function App() {
   const [selectedBossIds, setSelectedBossIds] = useState(new Set(boot.selectedBosses));
   const [rollHistory, setRollHistory] = useState(boot.history);
   const [savedSquads, setSavedSquads] = useState(boot.savedSquads || []);
+  const [savedBosses, setSavedBosses] = useState(boot.savedBosses || []);
 
   const hasPersistedCharacterSelectionRef = useRef(boot.hasCharacterSelection);
   const hasPersistedBossSelectionRef = useRef(boot.hasBossSelection);
@@ -3367,6 +3484,23 @@ function App() {
     setSavedSquads((prev) => prev.filter((entry) => entry.id !== id));
   }, []);
 
+  const saveCurrentBoss = useCallback((boss) => {
+    if (!boss?.id) return;
+    setSavedBosses((previous) => {
+      if (previous.some((entry) => entry.boss.id === boss.id)) return previous;
+      const entry = {
+        id: `boss-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        timestamp: new Date().toISOString(),
+        boss: toSnapshotBoss(boss),
+      };
+      return [entry, ...previous].slice(0, 30);
+    });
+  }, []);
+
+  const deleteSavedBoss = useCallback((id) => {
+    setSavedBosses((previous) => previous.filter((entry) => entry.id !== id));
+  }, []);
+
   const rerollFromSplash = useCallback(() => {
     const stage = splashResult?.stage || "characters";
     pendingSquadAppendRef.current = null;
@@ -3486,6 +3620,15 @@ function App() {
 
     setCookieJson(COOKIE_KEYS.savedSquads, trimSavedSquadsForCookie(compact));
   }, [savedSquads]);
+
+  useEffect(() => {
+    const compact = savedBosses.map((entry) => ({
+      id: entry.id,
+      timestamp: entry.timestamp,
+      boss: toSnapshotBoss(entry.boss),
+    }));
+    setCookieJson(COOKIE_KEYS.savedBosses, trimSavedBossesForCookie(compact));
+  }, [savedBosses]);
 
   const menuItems = [
     { id: "dashboard", label: getHomeMenuLabel(lang), icon: "dashboard" },
@@ -3785,6 +3928,35 @@ function App() {
                   )}
                 </div>
 
+                <div className="saved-bosses-panel">
+                  <h3>{getExtraLabel("savedBosses", lang)}</h3>
+                  {savedBosses.length ? (
+                    <div className="saved-bosses-grid">
+                      {savedBosses.map((entry) => {
+                        const boss = itemLookup.get(entry.boss.id) || entry.boss;
+                        return (
+                          <article key={entry.id} className="saved-boss-card">
+                            <div
+                              className="saved-boss-main"
+                              onMouseEnter={(event) => handleHoverDetails(boss, "bosses", event)}
+                              onMouseMove={(event) => handleHoverDetails(boss, "bosses", event)}
+                              onMouseLeave={() => handleHoverDetails(null)}
+                            >
+                              <ItemImage item={boss} alt={getItemName(boss, lang)} loading="lazy" />
+                              <div>
+                                <p>{getItemName(boss, lang)}</p>
+                                {boss.group ? <span className="type-chip">{formatBossType(boss.group, lang)}</span> : null}
+                                <small>{new Date(entry.timestamp).toLocaleDateString(getLocale(lang))}</small>
+                              </div>
+                            </div>
+                            <button type="button" className="btn-secondary" onClick={() => deleteSavedBoss(entry.id)}>{t.deleteOne}</button>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : <p className="empty-hint">{getExtraLabel("noSavedBosses", lang)}</p>}
+                </div>
+
                 <p className="source-note">
                   {t.sourceLabel}: {sourceCharacters}, {sourceLegends} (Fandom API)
                 </p>
@@ -3858,6 +4030,8 @@ function App() {
         lang={lang}
         onClose={closeSplash}
         onSaveSquad={saveCurrentSquad}
+        onSaveBoss={saveCurrentBoss}
+        isBossSaved={splashResult?.stage === "bosses" && savedBosses.some((entry) => entry.boss.id === splashResult.item?.id)}
         onSaveResult={saveRollResult}
         onGoToHistory={openRollHistory}
         onReroll={splashResult?.stage === "characters" && Array.isArray(splashResult.squad) && splashResult.squad.length ? rollNextSquadMember : rerollFromSplash}
