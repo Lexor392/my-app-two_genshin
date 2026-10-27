@@ -2939,7 +2939,8 @@ function App() {
         if (!hasPersistedBossSelectionRef.current) {
           return availableIds;
         }
-        return new Set([...prev].filter((id) => availableIds.has(id)));
+        const restoredIds = new Set([...prev].filter((id) => availableIds.has(id)));
+        return restoredIds.size ? restoredIds : availableIds;
       });
     } catch (loadError) {
       if (controller.signal.aborted) return;
