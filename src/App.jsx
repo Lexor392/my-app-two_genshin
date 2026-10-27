@@ -125,7 +125,7 @@ const DEFAULT_CHARACTER_FILTERS = {
   rarities: [],
   weapons: [],
   elements: [],
-  includeSpecial: false,
+  includeSpecial: true,
 };
 
 const DEFAULT_BOSS_FILTERS = {
