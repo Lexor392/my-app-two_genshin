@@ -44,6 +44,15 @@ const EXTRA_LABELS = {
   home: { ru: "Главная", en: "Home", zh: "主页", ja: "ホーム", ko: "홈" },
   spinCharacters: { ru: "Крутить персонажей", en: "Spin characters", zh: "抽取角色", ja: "キャラクターを回す", ko: "캐릭터 뽑기" },
   spinBosses: { ru: "Крутить боссов", en: "Spin bosses", zh: "抽取首领", ja: "ボスを回す", ko: "보스 뽑기" },
+  characterRoulette: { ru: "Рулетка персонажей", en: "Character roulette", zh: "角色轮盘", ja: "キャラクタールーレット", ko: "캐릭터 룰렛" },
+  bossRoulette: { ru: "Рулетка боссов", en: "Boss roulette", zh: "首领轮盘", ja: "ボスルーレット", ko: "보스 룰렛" },
+  rollSpeed: { ru: "Скорость ролла", en: "Roll speed", zh: "抽取速度", ja: "抽選速度", ko: "뽑기 속도" },
+  rollNext: { ru: "Крутить следующего", en: "Spin next", zh: "抽取下一位", ja: "次を回す", ko: "다음 뽑기" },
+  squadSaved: { ru: "Ваш отряд сохранён", en: "Your squad is saved", zh: "队伍已保存", ja: "チームを保存しました", ko: "파티가 저장되었습니다" },
+  speedVeryFast: { ru: "Очень быстро", en: "Very fast", zh: "非常快", ja: "とても速い", ko: "매우 빠름" },
+  speedFast: { ru: "Быстро", en: "Fast", zh: "快速", ja: "速い", ko: "빠름" },
+  speedNormal: { ru: "Обычно", en: "Normal", zh: "正常", ja: "普通", ko: "보통" },
+  speedSlow: { ru: "Медленно", en: "Slow", zh: "慢速", ja: "遅い", ko: "느림" },
   userStats: { ru: "Ваша статистика", en: "Your stats", zh: "你的统计", ja: "あなたの記録", ko: "내 통계" },
   totalRolls: { ru: "Всего рероллов", en: "Total rolls", zh: "抽取总数", ja: "合計回数", ko: "총 뽑기 횟수" },
   todayRolls: { ru: "Рероллов сегодня", en: "Rolls today", zh: "今日抽取", ja: "今日の回数", ko: "오늘 뽑기" },
@@ -100,7 +109,7 @@ const SECTION_IDS = [
   "settings",
   "donate",
 ];
-const ROLL_DURATION_OPTIONS = [3, 5, 8, 10];
+const ROLL_DURATION_OPTIONS = [1, 2, 3, 4];
 const HISTORY_LIMIT_OPTIONS = [30, 60, 90];
 
 const DEFAULT_CHARACTER_FILTERS = {
@@ -129,12 +138,12 @@ const DEFAULT_SETTINGS = {
   tickVolume: 0.5,
   splashEnabled: true,
   splashEffects: true,
-  rollDurationSeconds: 5,
+  rollDurationSeconds: 2,
   historyLimit: 60,
 };
 
-const ROLL_ACCELERATION_MS = 3000;
-const ROLL_DECELERATION_MS = 5000;
+const ROLL_ACCELERATION_MS = 1200;
+const ROLL_DECELERATION_MS = 1800;
 
 const COOKIE_DAYS = 365;
 const COOKIE_HISTORY_SIZE_LIMIT = 3300;
@@ -775,6 +784,16 @@ const normalizeHistoryEntries = (value) => {
     .filter(Boolean);
 };
 
+const groupHistoryByRoll = (entries) => {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = entry.rollId || entry.id;
+    if (!groups.has(key)) groups.set(key, { timestamp: entry.timestamp, entries: [] });
+    groups.get(key).entries.push(entry);
+  }
+  return [...groups.values()];
+};
+
 const trimHistoryForCookie = (entries) => {
   const next = [...entries];
   while (next.length) {
@@ -861,6 +880,7 @@ const loadInitialState = () => {
     activeSection: sectionFromPath(window.location.pathname) || (SECTION_IDS.includes(uiCookie.activeSection) ? uiCookie.activeSection : "dashboard"),
     isSidebarCollapsed: Boolean(uiCookie.isSidebarCollapsed),
     rouletteMode: ROULETTE_MODES.includes(uiCookie.rouletteMode) ? uiCookie.rouletteMode : "vertical",
+    characterLaneCount: Math.max(1, Math.min(4, Number(uiCookie.characterLaneCount) || 4)),
     characterFilters,
     bossFilters,
     selectedCharacters: uniqueStringArray(selectedCookie.characters),
@@ -1240,7 +1260,6 @@ const CharacterPoolPanel = ({
 
       <div className="filter-modal">
         <div className="filter-modal-head">
-          <h3>{t.poolSettings}</h3>
         </div>
 
         <div className="filter-toolbar">
@@ -1464,7 +1483,6 @@ const BossPoolPanel = ({
 
       <div className="filter-modal">
         <div className="filter-modal-head">
-          <h3>{t.poolSettings}</h3>
         </div>
 
         <div className="filter-toolbar">
@@ -1690,7 +1708,7 @@ const SettingsPanel = ({ t, lang, setLang, languageMode, setAutoLanguage, settin
       <article className="settings-card">
         <h3>{t.rollSettings}</h3>
         <div className="settings-block">
-          <p>{t.rollDuration}</p>
+          <p>{getExtraLabel("rollSpeed", lang)}</p>
           <div className="toggle-row">
             {ROLL_DURATION_OPTIONS.map((seconds) => (
               <button
@@ -1699,7 +1717,7 @@ const SettingsPanel = ({ t, lang, setLang, languageMode, setAutoLanguage, settin
                 className={settings.rollDurationSeconds === seconds ? "is-active" : ""}
                 onClick={() => setSettings((prev) => ({ ...prev, rollDurationSeconds: seconds }))}
               >
-                {seconds} {t.seconds}
+                {seconds === 1 ? getExtraLabel("speedVeryFast", lang) : seconds === 2 ? getExtraLabel("speedFast", lang) : seconds === 3 ? getExtraLabel("speedNormal", lang) : getExtraLabel("speedSlow", lang)}
               </button>
             ))}
           </div>
@@ -1812,8 +1830,12 @@ const HistoryPanel = ({
     </p>
 
     {filteredHistory.length ? (
-      <div className="history-list">
-        {filteredHistory.map((entry) => {
+      <div className="history-groups">
+        {groupHistoryByRoll(filteredHistory).map((group) => (
+          <section key={group.entries[0]?.rollId || group.entries[0]?.id} className="history-group">
+          <p className="history-group-date">{new Date(group.timestamp).toLocaleString(getLocale(lang), { dateStyle: "medium", timeStyle: "short" })}</p>
+          <div className="history-list">
+        {group.entries.map((entry) => {
           const knownItem = itemLookup.get(entry.itemId);
           const preview = knownItem?.image || "";
           const displayName =
@@ -1834,9 +1856,6 @@ const HistoryPanel = ({
                   {entry.rarity ? <ItemBadge text={`${entry.rarity}★`} /> : null}
                   {entry.group ? <ItemBadge text={formatBossType(entry.group, lang)} /> : null}
                 </div>
-            <p className="history-time">
-                  {new Date(entry.timestamp).toLocaleString(getLocale(lang))}
-                </p>
               </div>
 
               <button type="button" className="btn-secondary" onClick={() => onDeleteOne(entry.id)}>
@@ -1845,6 +1864,9 @@ const HistoryPanel = ({
             </article>
           );
         })}
+          </div>
+          </section>
+        ))}
       </div>
     ) : (
       <p className="empty-hint">{t.noHistoryItems}</p>
@@ -1854,17 +1876,17 @@ const HistoryPanel = ({
 
 const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult, onGoToHistory, onReroll, onHoverDetails, effectsEnabled }) => {
   const modalRef = useRef(null);
-  const closeButtonRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const [savedToHistory, setSavedToHistory] = useState(false);
+  const [squadSaved, setSquadSaved] = useState(false);
   onCloseRef.current = onClose;
 
-  useEffect(() => setSavedToHistory(false), [result?.timestamp]);
+  useEffect(() => { setSavedToHistory(false); setSquadSaved(false); }, [result?.timestamp]);
 
   useEffect(() => {
     if (!result) return undefined;
     const previousFocus = document.activeElement;
-    closeButtonRef.current?.focus();
+    modalRef.current?.focus();
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -1912,17 +1934,6 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
       >
-        <button
-          type="button"
-          className="splash-close-icon"
-          onClick={onClose}
-          ref={closeButtonRef}
-          aria-label={t.close}
-          title={t.close}
-        >
-          <span aria-hidden="true">✕</span>
-        </button>
-
         <div className="splash-content">
           <p className="splash-stage">
             {hasSquad ? getTeamPopupTitle(lang) : result.stage === "characters" ? t.characters : t.bosses}
@@ -1930,9 +1941,12 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
           <h3 id="result-dialog-title">{hasSquad ? getTeamPopupSubtitle(lang) : getItemName(item, lang)}</h3>
         </div>
 
+        {!hasSquad ? <button type="button" className="splash-close-icon" onClick={onClose} aria-label={t.close} title={t.close}><span aria-hidden="true">✕</span></button> : null}
+
         {hasSquad ? (
           <div className="squad-grid">
-            {squad.map((member, index) => (
+            {Array.from({ length: 4 }, (_, index) => squad[index] ? (
+              (() => { const member = squad[index]; return (
               <article
                 key={`${member.id}-${index}`}
                 className="squad-card"
@@ -1951,24 +1965,23 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
                   </div>
 
                   <p className="squad-attr">
-                    <span className="squad-attr-icon" aria-hidden="true">
-                      {WEAPON_ICONS[member.weapon] || "⚔"}
-                    </span>
                     <span>
                       {getWeaponLabel(lang)}: {formatWeapon(member.weapon, lang)}
                     </span>
                   </p>
 
                   <p className="squad-attr">
-                    <span className="squad-attr-icon" aria-hidden="true">
-                      <ElementIcon element={member.element} />
-                    </span>
                     <span>
                       {getElementLabel(lang)}: {formatElement(member.element, lang)}
                     </span>
                   </p>
                 </div>
               </article>
+              ); })()
+            ) : (
+              <button key={`next-squad-slot-${index}`} type="button" className="squad-card squad-add-slot" onClick={onReroll} aria-label={getExtraLabel("rollNext", lang)}>
+                <span aria-hidden="true">+</span><strong>{getExtraLabel("rollNext", lang)}</strong>
+              </button>
             ))}
           </div>
         ) : (
@@ -1994,30 +2007,13 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
           </div>
         )}
 
-        {savedToHistory ? (
-          <>
-            <p className="splash-save-confirmation" role="status">
-              {getExtraLabel(result.stage === "bosses" ? "bossRollSaved" : "characterRollSaved", lang)}
-            </p>
-            <div className="splash-actions">
-              <button type="button" className="btn-primary" onClick={onGoToHistory}>{getExtraLabel("goToHistory", lang)}</button>
-              <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
-            </div>
-          </>
-        ) : (
-          <div className="splash-actions">
-            <button type="button" className="btn-secondary splash-save" onClick={() => { onSaveResult?.(result); setSavedToHistory(true); }}>
-              {getExtraLabel("saveRoll", lang)}
-            </button>
-            {hasSquad ? (
-              <button type="button" className="btn-secondary splash-save" onClick={() => onSaveSquad?.(squad)}>
-                {getSaveSquadLabel(lang)}
-              </button>
-            ) : null}
+        {hasSquad ? <div className="splash-actions">
+          {!squadSaved ? <button type="button" className="btn-primary splash-save" onClick={() => { onSaveSquad?.(squad); setSquadSaved(true); }}>{getSaveSquadLabel(lang)}</button> : <p className="splash-save-confirmation" role="status">{getExtraLabel("squadSaved", lang)}</p>}
+        </div> : (
+          savedToHistory ? <div className="splash-actions"><button type="button" className="btn-primary" onClick={onGoToHistory}>{getExtraLabel("goToHistory", lang)}</button><button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button></div> : <div className="splash-actions">
+            <button type="button" className="btn-secondary splash-save" onClick={() => { onSaveResult?.(result); setSavedToHistory(true); }}>{getExtraLabel("saveRoll", lang)}</button>
             <button type="button" className="btn-secondary" onClick={onClose}>{t.close}</button>
-            <button type="button" className="btn-primary splash-reroll" onClick={onReroll}>
-              {result.stage === "bosses" ? t.rerollBoss : getRerollSquadLabel(lang)}
-            </button>
+            <button type="button" className="btn-primary splash-reroll" onClick={onReroll}>{t.rerollBoss}</button>
           </div>
         )}
       </div>
@@ -2030,9 +2026,9 @@ const RouletteModeIcon = ({ mode }) => {
     return <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="17" r="11" /><path d="M16 6v11l8 8M12 3h8M16 3v3" /><path d="m16 7 2.4 8.7 7-5.7" /></svg>;
   }
   if (mode === "horizontal") {
-    return <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="26" height="18" rx="2" /><path d="m11 7 3 18m5-18 3 18M7 16h18" /></svg>;
+    return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 16h20M6 16l6-6m-6 6 6 6M26 16l-6-6m6 6-6 6" /></svg>;
   }
-  return <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="3" width="18" height="26" rx="2" /><path d="m7 11 18 3m-18 5 18 3M16 3v26" /></svg>;
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 6v20m0-20-6 6m6-6 6 6m-6 14-6-6m6 6 6-6" /></svg>;
 };
 
 const wheelSlicePath = (index, count) => {
@@ -2056,6 +2052,8 @@ const RouletteEngine = ({
   mode,
   setMode,
   maxLanes = 1,
+  laneCount,
+  setLaneCount,
   t,
   lang,
   rollingLabel,
@@ -2066,7 +2064,7 @@ const RouletteEngine = ({
   onHoverDetails,
   detailType = "characters",
 }) => {
-  const [laneCount, setLaneCount] = useState(maxLanes);
+  const [localLaneCount, setLocalLaneCount] = useState(maxLanes);
   const [isEditingLaneCount, setIsEditingLaneCount] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [spinPlan, setSpinPlan] = useState(null);
@@ -2105,7 +2103,9 @@ const RouletteEngine = ({
     return [...ordered, ...uniqueItems.filter((item) => !included.has(item.id))];
   }, [uniqueItems, wheelOrderIds]);
 
-  const safeLaneCount = Math.max(1, Math.min(maxLanes, laneCount));
+  const activeLaneCount = laneCount ?? localLaneCount;
+  const updateLaneCount = setLaneCount ?? setLocalLaneCount;
+  const safeLaneCount = Math.max(1, Math.min(maxLanes, activeLaneCount));
   const canRoll = uniqueItems.length >= safeLaneCount;
   const vertical = mode === "vertical";
   const cardWidth = vertical ? 152 : 144;
@@ -2246,7 +2246,7 @@ const RouletteEngine = ({
         finalIndex,
         fromPosition: getCenteredReelPosition(fromIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
         toPosition: getCenteredReelPosition(finalIndex, viewportSize, vertical ? cardHeight : cardWidth, gap),
-        delay: getSequentialLaneDelay(index, ROLL_ACCELERATION_MS, durationPerStep, ROLL_DECELERATION_MS),
+        delay: index * 2000,
       };
     });
     const plan = { id, mode, lanes, durationPerStep, accelerationDuration: ROLL_ACCELERATION_MS, decelerationDuration: ROLL_DECELERATION_MS };
@@ -2408,7 +2408,7 @@ const RouletteEngine = ({
     <div className={`roulette-block roulette-engine roulette-mode-${mode}`}>
       <div className="roulette-shell">
         <div className="roulette-toolbar">
-          <span>{maxLanes > 1 ? `${getExtraLabel("spinCount", lang)}: ${safeLaneCount}` : modeLabels[mode]}</span>
+          <span className="roulette-mode-caption">{maxLanes === 1 ? modeLabels[mode] : ""}</span>
           {mode === "wheel" ? (
             <button type="button" className="roulette-refresh-button" onClick={shuffleWheel} disabled={isRolling || wheelItems.length < 2} aria-label={getExtraLabel("shuffleWheel", lang)} title={getExtraLabel("shuffleWheel", lang)}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2" /></svg>
@@ -2421,9 +2421,8 @@ const RouletteEngine = ({
           ) : null}
           {mode === "wheel" && maxLanes > 1 && isEditingLaneCount ? (
             <div className="wheel-count-controls" role="group" aria-label={getExtraLabel("spinCount", lang)}>
-              <button type="button" onClick={() => setLaneCount((count) => Math.max(1, count - 1))} disabled={safeLaneCount <= 1 || isRolling} aria-label="−">−</button>
-              <strong>×{safeLaneCount}</strong>
-              <button type="button" onClick={() => setLaneCount((count) => Math.min(maxLanes, count + 1))} disabled={safeLaneCount >= maxLanes || isRolling} aria-label="+">+</button>
+              <button type="button" onClick={() => updateLaneCount((count) => Math.max(1, count - 1))} disabled={safeLaneCount <= 1 || isRolling} aria-label="−">−</button>
+              <button type="button" onClick={() => updateLaneCount((count) => Math.min(maxLanes, count + 1))} disabled={safeLaneCount >= maxLanes || isRolling} aria-label="+">+</button>
             </div>
           ) : null}
         </div>
@@ -2438,9 +2437,18 @@ const RouletteEngine = ({
                     <div className="wheel-rim" />
                     <svg className="wheel-segments" viewBox="0 0 100 100" aria-label={getExtraLabel("rouletteWheel", lang)}>
                       {wheelItems.map((item, index) => (
-                        <path key={item.id} d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} onMouseEnter={(event) => showWheelItem(item, event)} onMouseMove={(event) => showWheelItem(item, event)} onMouseLeave={() => onHoverDetails?.(null)} onFocus={(event) => showWheelItem(item, event)} onBlur={() => onHoverDetails?.(null)} tabIndex={0} aria-label={getItemName(item, lang)}>
-                          <title>{getItemName(item, lang)}</title>
-                        </path>
+                        <g key={item.id} aria-hidden="true">
+                          <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
+                          {wheelItems.length <= 12 && getItemName(item, lang).length <= 12 ? (() => {
+                            const angle = ((index + .5) / wheelItems.length) * 360 - 90;
+                            const flip = angle > 90 && angle < 270 ? " rotate(180)" : "";
+                            const name = getItemName(item, lang);
+                            return <g transform={`rotate(${angle} 50 50) translate(50 50)${flip}`}>
+                              {wheelItems.length <= 8 && item.image ? <image href={item.image} x="-5.5" y="-43" width="11" height="11" preserveAspectRatio="xMidYMid slice" /> : null}
+                              <text x="0" y={wheelItems.length <= 8 && item.image ? "-28" : "-39"} textAnchor="middle" className="wheel-segment-label">{name}</text>
+                            </g>;
+                          })() : null}
+                        </g>
                       ))}
                     </svg>
                   </div>
@@ -2455,7 +2463,7 @@ const RouletteEngine = ({
                   return (
                     <div key={`wheel-result-${index}`} className={`wheel-result-slot ${result ? "has-result" : ""} ${isRolling && index === wheelResults.length ? "is-current" : ""}`}>
                       {result ? <ItemImage item={result} alt="" loading="eager" /> : <span className="wheel-result-index" aria-hidden="true">✦</span>}
-                      <div><strong>{result ? getItemName(result, lang) : "Ожидает выпадения"}</strong><p>{result ? (result.description || `${ELEMENT_LABELS[result.element]?.[lang] || ""}${result.rarity ? ` · ${result.rarity}★` : ""}`) : ""}</p></div>
+                      <div>{result ? <><strong>{getItemName(result, lang)}</strong><p>{result.description || `${ELEMENT_LABELS[result.element]?.[lang] || ""}${result.rarity ? ` · ${result.rarity}★` : ""}`}</p></> : null}</div>
                     </div>
                   );
                 })}
@@ -2469,7 +2477,7 @@ const RouletteEngine = ({
                 const winner = winnerById.get(spinLane?.winner?.id) || winnerById.get(lastWinners[laneIndex]?.id);
                 return (
                   <div key={`roulette-engine-lane-${laneIndex}`} className={`roulette-engine-lane ${isRolling ? "is-spinning" : ""}`}>
-                    {isEditingLaneCount && maxLanes > 1 ? <button type="button" className="lane-remove-button" onClick={() => setLaneCount((count) => Math.max(1, count - 1))} disabled={isRolling || safeLaneCount <= 1} aria-label={getExtraLabel("removeRoulette", lang)}>×</button> : null}
+                    {isEditingLaneCount && maxLanes > 1 ? <button type="button" className="lane-remove-button" onClick={() => updateLaneCount((count) => Math.max(1, count - 1))} disabled={isRolling || safeLaneCount <= 1} aria-label={getExtraLabel("removeRoulette", lang)}>×</button> : null}
                     <div className={`reel-viewport ${mode === "horizontal" ? "is-horizontal" : "is-vertical"}`} ref={(node) => (viewportRefs.current[laneIndex] = node)}>
                       <div className="reel-pointer" aria-hidden="true" />
                       <div className={`reel-track ${mode === "horizontal" ? "is-horizontal" : "is-vertical"}`} ref={(node) => (trackRefs.current[laneIndex] = node)} style={{ gap: `${gap}px`, transform: vertical ? `translate3d(0, ${reelPositionRefs.current[laneIndex] || 0}px, 0)` : `translate3d(${reelPositionRefs.current[laneIndex] || 0}px, 0, 0)` }}>
@@ -2486,7 +2494,7 @@ const RouletteEngine = ({
                   </div>
                 );
               })}
-              {isEditingLaneCount && safeLaneCount < maxLanes ? <button type="button" className="lane-add-button" onClick={() => setLaneCount((count) => Math.min(maxLanes, count + 1))} disabled={isRolling} aria-label={getExtraLabel("addRoulette", lang)}>+</button> : null}
+              {isEditingLaneCount && safeLaneCount < maxLanes ? <button type="button" className="lane-add-button" onClick={() => updateLaneCount((count) => Math.min(maxLanes, count + 1))} disabled={isRolling} aria-label={getExtraLabel("addRoulette", lang)}>+</button> : null}
             </div>
           )}
         </div>
@@ -2515,13 +2523,13 @@ const MENU_ICON_PATHS = {
   characters: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0",
   characterPool: "M4 4h11v14H4zM8 7h3M8 10h3M8 13h3M17 7h3v13h-9",
   bosses: "M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3ZM9 12h6M12 9v6",
-  bossPool: "M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4M15 9l6-6M9 15l-6 6",
+  bossPool: "M12 3 20 7v5c0 4.7-3.2 7.6-8 9-4.8-1.4-8-4.3-8-9V7l8-4ZM8 13h8M9.5 10h.1M14.5 10h.1",
   history: "M4 19V5M4 19h17M8 16v-5M13 16V7M18 16V3",
   settings: "M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.07-.94l2.03-1.58-2-3.46-2.39.96a7.02 7.02 0 0 0-1.63-.94L14.78 3h-4l-.36 3.04c-.59.23-1.14.55-1.63.94L6.4 6.02l-2 3.46 2.03 1.58a6.6 6.6 0 0 0 0 1.88L4.4 14.52l2 3.46 2.39-.96c.49.39 1.04.71 1.63.94L10.78 21h4l.36-3.04c.59-.23 1.14-.55 1.63-.94l2.39.96 2-3.46-2.02-1.58ZM12.78 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z",
   donate: "M12 3v18M17 7.5c0-1.4-2.2-2.5-5-2.5S7 6.1 7 7.5 9.2 10 12 10s5 1.1 5 2.5-2.2 2.5-5 2.5-5 1.1-5 2.5S9.2 20 12 20s5-1.1 5-2.5",
 };
 
-const MenuIcon = ({ name }) => name === "support" ? (
+const MenuIcon = ({ name }) => name === "donate" ? <span className="donate-icon-dollar" aria-hidden="true">$</span> : name === "support" ? (
   <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2" />
     <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9 9 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.4 10.4 0 0 1-.524 2.318l-.003.011a11 11 0 0 1-.244.637c-.079.186.074.394.273.362a22 22 0 0 0 .693-.125m.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6-3.004 6-7 6a8 8 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a11 11 0 0 0 .398-2" />
@@ -2665,6 +2673,7 @@ function App() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(boot.isSidebarCollapsed);
   const [rouletteMode, setRouletteMode] = useState(boot.rouletteMode || "vertical");
+  const [characterLaneCount, setCharacterLaneCount] = useState(boot.characterLaneCount || 4);
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     mediaQueryMatches("(max-width: 900px)")
   );
@@ -3256,10 +3265,11 @@ function App() {
       activeSection,
       isSidebarCollapsed,
       rouletteMode,
+      characterLaneCount,
       characterPoolViewMode: characterFilters.viewMode,
       bossPoolViewMode: bossFilters.viewMode,
     });
-  }, [activeSection, isSidebarCollapsed, rouletteMode, characterFilters.viewMode, bossFilters.viewMode]);
+  }, [activeSection, isSidebarCollapsed, rouletteMode, characterLaneCount, characterFilters.viewMode, bossFilters.viewMode]);
 
   useEffect(() => {
     setCookieJson(COOKIE_KEYS.characterFilters, characterFilters);
@@ -3313,9 +3323,9 @@ function App() {
 
   const menuItems = [
     { id: "dashboard", label: getHomeMenuLabel(lang), icon: "dashboard" },
-    { id: "characters", label: t.characters, icon: "characters" },
+    { id: "characters", label: getExtraLabel("characterRoulette", lang), icon: "characters" },
     { id: "characterPool", label: t.characterPoolMenu, icon: "characterPool" },
-    { id: "bosses", label: t.bosses, icon: "bosses" },
+    { id: "bosses", label: getExtraLabel("bossRoulette", lang), icon: "bosses" },
     { id: "bossPool", label: t.bossPoolMenu, icon: "bossPool" },
     { id: "history", label: t.historyMenu, icon: "history" },
     { id: "settings", label: t.settingsMenu, icon: "settings" },
@@ -3381,6 +3391,8 @@ function App() {
             mode={rouletteMode}
             setMode={setRouletteMode}
             maxLanes={isCharacterStage ? 4 : 1}
+            laneCount={isCharacterStage ? characterLaneCount : 1}
+            setLaneCount={isCharacterStage ? setCharacterLaneCount : undefined}
             t={t}
             lang={lang}
             rollingLabel={t.rolling}
@@ -3393,24 +3405,6 @@ function App() {
           />
         )}
 
-        <div className="stage-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setSelectedItem(null)}
-            disabled={!selectedItem}
-          >
-            {isCharacterStage ? t.rerollCharacter : t.rerollBoss}
-          </button>
-
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => setActiveSection(isCharacterStage ? "bosses" : "characters")}
-          >
-            {isCharacterStage ? t.goToBosses : t.goToCharacters}
-          </button>
-        </div>
       </section>
     );
   };
