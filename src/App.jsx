@@ -2684,8 +2684,10 @@ const RouletteEngine = ({
                         const imageX = 50 + imageRadius * Math.cos(angleRadians) - imageSize / 2;
                         const imageY = 50 + imageRadius * Math.sin(angleRadians) - imageSize / 2;
                         const markerRadius = 47;
-                        const markerX = 50 + markerRadius * Math.cos(angleRadians);
-                        const markerY = 50 + markerRadius * Math.sin(angleRadians);
+                        const markerAngle = (index / wheelItems.length) * 360 - 90;
+                        const markerRadians = (markerAngle * Math.PI) / 180;
+                        const markerX = 50 + markerRadius * Math.cos(markerRadians);
+                        const markerY = 50 + markerRadius * Math.sin(markerRadians);
                         return (
                           <g
                             key={item.id}
