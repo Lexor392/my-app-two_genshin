@@ -3361,7 +3361,7 @@ function App() {
     const setSelectedItem = isCharacterStage ? setSelectedCharacter : setSelectedBoss;
 
     return (
-      <section className="stage-panel" id={stage}>
+      <section className="stage-panel roulette-stage-panel" id={stage}>
         <div className="panel-head">
           <h2>{isCharacterStage ? t.characters : t.bosses}</h2>
           <p>{isCharacterStage ? t.stageHintCharacters : t.stageHintBosses}</p>
