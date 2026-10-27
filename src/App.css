@@ -2967,14 +2967,14 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
 .splash-modal::-webkit-scrollbar-thumb, .boss-popup-description::-webkit-scrollbar-thumb, .boss-popup-notes::-webkit-scrollbar-thumb { border: 2px solid rgba(8, 17, 24, .72); border-radius: 8px; background: linear-gradient(180deg, #d7c18f, #90784b); }
 .saved-bosses-panel { margin-top: 16px; display: grid; gap: 10px; padding: 15px 18px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg-panel); }
 .saved-bosses-panel h3 { margin: 0 0 2px; color: var(--text-main); }
-.saved-bosses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 10px; }
-.saved-boss-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg-soft); }
-.saved-boss-main { display: flex; align-items: center; gap: 10px; min-width: 0; cursor: help; }
-.saved-boss-main > img, .saved-boss-main > .image-fallback { flex: 0 0 56px; width: 56px; height: 56px; border: 1px solid rgba(225, 201, 150, .28); border-radius: 3px; object-fit: cover; }
+.saved-bosses-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; width: 100%; }
+.saved-boss-card { display: grid; gap: 8px; width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg-soft); }
+.saved-boss-members { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; justify-content: start; gap: 10px; }
+.saved-boss-main { display: grid; grid-template-columns: 56px minmax(0,1fr); align-items: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--line); background: var(--bg-panel); cursor: help; }
+.saved-boss-main > img, .saved-boss-main > .image-fallback { width: 56px; height: 64px; border: 1px solid rgba(225, 201, 150, .28); border-radius: 2px; object-fit: cover; }
 .saved-boss-main > div { display: grid; gap: 4px; min-width: 0; }
 .saved-boss-main p { overflow: hidden; margin: 0; color: var(--text-main); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.saved-boss-main small { color: var(--text-muted); font-size: .72rem; }
-.saved-boss-card > button { min-height: 34px; padding: 5px 9px; }
+.option-item, .history-item, .squad-card:not(.squad-add-slot):not(.boss-splash-card), .wheel-result-slot.has-result, .wheel-segments g, .saved-squad-member, .saved-boss-main { cursor: help; }
 .saved-squads-grid { width: 100%; grid-template-columns: minmax(0, 1fr); align-items: start; }
 .saved-squad-card { width: 100%; min-width: 0; }
 .wheel-segments path:not([stroke="none"]) { stroke: rgba(241, 222, 176, .72); }
@@ -2986,6 +2986,7 @@ button, a, input, select, textarea, [tabindex]:not([tabindex="-1"]) { outline-of
   .boss-map-lightbox { padding: 58px 12px 12px; }
   .boss-map-image-stage { height: calc(100dvh - 112px); }
   .saved-bosses-panel { padding: 12px; }
+  .saved-boss-members { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .roulette-engine .wheel-pointer.is-hitting { animation-duration: 280ms; }

@@ -3939,20 +3939,24 @@ function App() {
                         const boss = itemLookup.get(entry.boss.id) || entry.boss;
                         return (
                           <article key={entry.id} className="saved-boss-card">
-                            <div
-                              className="saved-boss-main"
-                              onMouseEnter={(event) => handleHoverDetails(boss, "bosses", event)}
-                              onMouseMove={(event) => handleHoverDetails(boss, "bosses", event)}
-                              onMouseLeave={() => handleHoverDetails(null)}
-                            >
-                              <ItemImage item={boss} alt={getItemName(boss, lang)} loading="lazy" />
-                              <div>
-                                <p>{getItemName(boss, lang)}</p>
-                                {boss.group ? <span className="type-chip">{formatBossType(boss.group, lang)}</span> : null}
-                                <small>{new Date(entry.timestamp).toLocaleDateString(getLocale(lang))}</small>
+                            <div className="saved-squad-head">
+                              <p>{new Date(entry.timestamp).toLocaleString(getLocale(lang))}</p>
+                              <button type="button" className="btn-secondary" onClick={() => deleteSavedBoss(entry.id)}>{t.deleteOne}</button>
+                            </div>
+                            <div className="saved-boss-members">
+                              <div
+                                className="saved-boss-main"
+                                onMouseEnter={(event) => handleHoverDetails(boss, "bosses", event)}
+                                onMouseMove={(event) => handleHoverDetails(boss, "bosses", event)}
+                                onMouseLeave={() => handleHoverDetails(null)}
+                              >
+                                <ItemImage item={boss} alt={getItemName(boss, lang)} loading="lazy" />
+                                <div>
+                                  <p>{getItemName(boss, lang)}</p>
+                                  {boss.group ? <span className="type-chip">{formatBossType(boss.group, lang)}</span> : null}
+                                </div>
                               </div>
                             </div>
-                            <button type="button" className="btn-secondary" onClick={() => deleteSavedBoss(entry.id)}>{t.deleteOne}</button>
                           </article>
                         );
                       })}
