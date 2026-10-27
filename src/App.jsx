@@ -86,6 +86,7 @@ const EXTRA_LABELS = {
   detailElement: { ru: "Стихия", en: "Element", zh: "元素", ja: "元素", ko: "원소" },
   detailNotes: { ru: "Дополнительно", en: "Additional details", zh: "补充信息", ja: "追加情報", ko: "추가 정보" },
   detailMap: { ru: "Карта места", en: "Location map", zh: "位置地图", ja: "場所のマップ", ko: "위치 지도" },
+  openMap: { ru: "Открыть карту на весь экран", en: "Open map full screen", zh: "全屏打开地图", ja: "地図を全画面で開く", ko: "지도를 전체 화면으로 열기" },
   detailMapUnavailable: { ru: "Скриншот карты для этого босса не найден.", en: "No map screenshot was found for this boss.", zh: "未找到该首领的地图截图。", ja: "このボスのマップ画像は見つかりませんでした。", ko: "이 보스의 지도 이미지를 찾지 못했습니다." },
 };
 const getExtraLabel = (key, lang) => EXTRA_LABELS[key]?.[lang] || EXTRA_LABELS[key]?.en || "";
@@ -1885,6 +1886,51 @@ const HistoryPanel = ({
   </section>
 );
 
+const BossSplashDetails = ({ item, lang }) => {
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [mapFailed, setMapFailed] = useState(false);
+  const details = getLocalBossDetails(item, lang);
+  const description = details?.description || item.description || "";
+  const rows = [
+    [getExtraLabel("detailRegion", lang), details?.region],
+    [getExtraLabel("detailArea", lang), details?.area],
+    [getExtraLabel("detailSubarea", lang), details?.subarea],
+  ].filter(([, value]) => value);
+
+  useEffect(() => {
+    setMapFailed(false);
+    setIsMapExpanded(false);
+  }, [item?.id]);
+
+  return (
+    <>
+      <div className="boss-popup-details">
+        <div className="boss-popup-copy">
+          {description ? <p className="boss-popup-description">{description}</p> : null}
+          {details?.additionalInfo ? <p className="boss-popup-notes">{details.additionalInfo}</p> : null}
+          {rows.length ? <dl className="boss-popup-location">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
+        </div>
+        <div className="boss-popup-map">
+          <strong>{getExtraLabel("detailMap", lang)}</strong>
+          {details?.mapImage && !mapFailed ? (
+            <button type="button" className="boss-popup-map-open" onClick={() => setIsMapExpanded(true)} aria-label={getExtraLabel("openMap", lang)} title={getExtraLabel("openMap", lang)}>
+              <img src={details.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} onError={() => setMapFailed(true)} />
+              <span>{getExtraLabel("openMap", lang)}</span>
+            </button>
+          ) : <p className="boss-popup-map-unavailable">{getExtraLabel("detailMapUnavailable", lang)}</p>}
+        </div>
+      </div>
+      {isMapExpanded && details?.mapImage && typeof document !== "undefined" ? createPortal(
+        <div className="boss-map-lightbox" role="dialog" aria-modal="true" aria-label={getExtraLabel("detailMap", lang)} onClick={() => setIsMapExpanded(false)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setIsMapExpanded(false); } }} tabIndex={-1}>
+          <button type="button" className="boss-map-lightbox-close" onClick={() => setIsMapExpanded(false)} aria-label={getExtraLabel("close", lang)} autoFocus>×</button>
+          <img src={details.mapImage} alt={`${getItemName(item, lang)} — ${getExtraLabel("detailMap", lang)}`} onClick={(event) => event.stopPropagation()} />
+        </div>,
+        document.body
+      ) : null}
+    </>
+  );
+};
+
 const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult, onGoToHistory, onReroll, onHoverDetails, effectsEnabled }) => {
   const modalRef = useRef(null);
   const onCloseRef = useRef(onClose);
@@ -1930,6 +1976,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
   const item = result.item;
   const squad = Array.isArray(result.squad) ? result.squad : [];
   const hasSquad = result.stage === "characters" && squad.length > 0;
+  const isBossResult = result.stage === "bosses";
 
   return (
     <div
@@ -1998,13 +2045,13 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
         ) : (
           <div className="squad-grid single-item">
             <article
-              className="squad-card"
+              className={`squad-card ${isBossResult ? "boss-splash-card" : ""}`}
               tabIndex={0}
-              onMouseEnter={(event) => onHoverDetails?.(item, result.stage, event)}
-              onMouseMove={(event) => onHoverDetails?.(item, result.stage, event)}
-              onMouseLeave={() => onHoverDetails?.(null)}
-              onFocus={(event) => onHoverDetails?.(item, result.stage, event)}
-              onBlur={() => onHoverDetails?.(null)}
+              onMouseEnter={!isBossResult ? (event) => onHoverDetails?.(item, result.stage, event) : undefined}
+              onMouseMove={!isBossResult ? (event) => onHoverDetails?.(item, result.stage, event) : undefined}
+              onMouseLeave={!isBossResult ? () => onHoverDetails?.(null) : undefined}
+              onFocus={!isBossResult ? (event) => onHoverDetails?.(item, result.stage, event) : undefined}
+              onBlur={!isBossResult ? () => onHoverDetails?.(null) : undefined}
             >
               <ItemImage item={item} alt={getItemName(item, lang)} loading="lazy" />
               <div className="squad-card-body">
@@ -2013,6 +2060,7 @@ const ResultSplashModal = ({ result, t, lang, onClose, onSaveSquad, onSaveResult
                   {item.rarity ? <span className="type-chip">{item.rarity}★</span> : null}
                   {item.group ? <span className="type-chip">{formatBossType(item.group, lang)}</span> : null}
                 </div>
+                {isBossResult ? <BossSplashDetails item={item} lang={lang} /> : null}
               </div>
             </article>
           </div>
@@ -2512,7 +2560,7 @@ const RouletteEngine = ({
                             onMouseMove={(event) => showWheelItem(item, event)}
                             onMouseLeave={() => onHoverDetails?.(null)}
                           >
-                            <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
+                            <path d={wheelSlicePath(index, wheelItems.length)} fill={detailType === "bosses" ? (index % 2 === 0 ? "#c8a85f" : "#9365b5") : getWheelRarityColor(item)} />
                             {item.image && arcWidth >= 1.6 && wheelItems.length <= 72 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
                           </g>
                         );
