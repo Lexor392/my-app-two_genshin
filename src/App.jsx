@@ -1771,6 +1771,7 @@ const HistoryPanel = ({
   onDeleteFiltered,
   onClearAll,
   itemLookup,
+  onHoverDetails,
 }) => (
   <section className="stage-panel history-panel" id="history">
     <div className="panel-head">
@@ -1846,7 +1847,13 @@ const HistoryPanel = ({
             lang === "ru" ? entry.itemNameRu || entry.itemName || entry.itemId : entry.itemName || entry.itemId;
 
           return (
-            <article key={entry.id} className="history-item">
+            <article
+              key={entry.id}
+              className="history-item"
+              onMouseEnter={(event) => knownItem && onHoverDetails?.(knownItem, entry.stage, event)}
+              onMouseMove={(event) => knownItem && onHoverDetails?.(knownItem, entry.stage, event)}
+              onMouseLeave={() => onHoverDetails?.(null)}
+            >
               {preview ? (
                 knownItem ? <ItemImage item={knownItem} alt={displayName} loading="lazy" /> : <ImageWithFallback src={preview} alt={displayName} loading="lazy" />
               ) : (
@@ -2420,14 +2427,15 @@ const RouletteEngine = ({
   useEffect(() => {
     if (rouletteResetTrigger === rouletteResetRef.current) return;
     rouletteResetRef.current = rouletteResetTrigger;
+    const wasRolling = rollingRef.current;
     rollingRef.current = false;
     sessionRef.current += 1;
     animationSessionRef.current = null;
     animationStartTimeRef.current = null;
     animationPreparedSessionRef.current = null;
     completedWheelStepRef.current = -1;
-    if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
-    frameRef.current = 0;
+    if (wasRolling && frameRef.current) window.cancelAnimationFrame(frameRef.current);
+    if (wasRolling) frameRef.current = 0;
     setSpinPlan(null);
     setIsRolling(false);
     setIsEditingLaneCount(false);
@@ -2497,7 +2505,13 @@ const RouletteEngine = ({
                         const imageX = 50 + imageRadius * Math.cos(angleRadians) - imageSize / 2;
                         const imageY = 50 + imageRadius * Math.sin(angleRadians) - imageSize / 2;
                         return (
-                          <g key={item.id} aria-hidden="true">
+                          <g
+                            key={item.id}
+                            aria-hidden="true"
+                            onMouseEnter={(event) => showWheelItem(item, event)}
+                            onMouseMove={(event) => showWheelItem(item, event)}
+                            onMouseLeave={() => onHoverDetails?.(null)}
+                          >
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={getWheelRarityColor(item)} />
                             {item.image && arcWidth >= 1.6 && wheelItems.length <= 72 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
                           </g>
@@ -2514,7 +2528,13 @@ const RouletteEngine = ({
                 {Array.from({ length: safeLaneCount }, (_, index) => {
                   const result = wheelResults[index];
                   return (
-                    <div key={`wheel-result-${index}`} className={`wheel-result-slot ${result ? "has-result" : ""} ${isRolling && index === wheelResults.length ? "is-current" : ""}`}>
+                    <div
+                      key={`wheel-result-${index}`}
+                      className={`wheel-result-slot ${result ? "has-result" : ""} ${isRolling && index === wheelResults.length ? "is-current" : ""}`}
+                      onMouseEnter={(event) => result && showWheelItem(result, event)}
+                      onMouseMove={(event) => result && showWheelItem(result, event)}
+                      onMouseLeave={() => onHoverDetails?.(null)}
+                    >
                       {result ? <ItemImage item={result} alt="" loading="eager" /> : <span className="wheel-result-index" aria-hidden="true">✦</span>}
                       <div>{result ? <><strong>{getItemName(result, lang)}</strong><p>{result.description || `${ELEMENT_LABELS[result.element]?.[lang] || ""}${result.rarity ? ` · ${result.rarity}★` : ""}`}</p></> : null}</div>
                     </div>
@@ -3675,7 +3695,13 @@ function App() {
                           </div>
                           <div className="saved-squad-members">
                             {entry.members.map((member, index) => (
-                              <div key={`${entry.id}-${member.id}-${index}`} className="saved-squad-member">
+                              <div
+                                key={`${entry.id}-${member.id}-${index}`}
+                                className="saved-squad-member"
+                                onMouseEnter={(event) => handleHoverDetails(member, "characters", event)}
+                                onMouseMove={(event) => handleHoverDetails(member, "characters", event)}
+                                onMouseLeave={() => handleHoverDetails(null)}
+                              >
                                 <ItemImage item={member} alt={getItemName(member, lang)} loading="lazy" />
                                 <div>
                                   <p>{getItemName(member, lang)}</p>
@@ -3742,6 +3768,7 @@ function App() {
                 onDeleteFiltered={deleteFilteredHistory}
                 onClearAll={clearAllHistory}
                 itemLookup={itemLookup}
+                onHoverDetails={handleHoverDetails}
               />
             )}
             {activeSection === "settings" && (
