@@ -2672,7 +2672,7 @@ const RouletteEngine = ({
                       <defs>
                         <pattern id="wheel-sector-pattern" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
                           <path d="M0 0V5" fill="none" stroke="#fff0c5" strokeOpacity=".17" strokeWidth=".65" />
-                          <circle cx="2.5" cy="2.5" r=".38" fill="#fff4d2" fillOpacity=".32" />
+                          <path d="M2.5 .55 2.96 2.04 4.45 2.5 2.96 2.96 2.5 4.45 2.04 2.96 .55 2.5 2.04 2.04Z" fill="#fff4d2" fillOpacity=".42" />
                         </pattern>
                       </defs>
                       {wheelItems.map((item, index) => {
@@ -2696,7 +2696,7 @@ const RouletteEngine = ({
                           >
                             <path d={wheelSlicePath(index, wheelItems.length)} fill={detailType === "bosses" ? (index % 2 === 0 ? "#c8a85f" : "#9365b5") : getWheelRarityColor(item)} />
                             <path d={wheelSlicePath(index, wheelItems.length)} fill="url(#wheel-sector-pattern)" stroke="none" pointerEvents="none" />
-                            {item.image && arcWidth >= 1.6 && wheelItems.length <= 72 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
+                            {item.image && arcWidth >= 1.6 ? <image href={item.image} x={imageX} y={imageY} width={imageSize} height={imageSize} transform={`rotate(${angle + 90} ${imageX + imageSize / 2} ${imageY + imageSize / 2})`} preserveAspectRatio="xMidYMid slice" /> : null}
                             <circle className="wheel-sector-marker" cx={markerX} cy={markerY} r={wheelItems.length > 72 ? 0.75 : 1.05} />
                           </g>
                         );
