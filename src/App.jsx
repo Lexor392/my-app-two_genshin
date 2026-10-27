@@ -2537,7 +2537,7 @@ const RouletteEngine = ({
       </div>
 
       <div className="roulette-actions">
-        <button type="button" className="btn-primary" onClick={roll} disabled={!canRoll || isRolling}>{isRolling ? rollingLabel : t.letsGo}</button>
+        <button type="button" className="btn-primary" onClick={() => roll()} disabled={!canRoll || isRolling}>{isRolling ? rollingLabel : t.letsGo}</button>
         {isRolling ? <button type="button" className="btn-secondary" onClick={stopRoll}>{getExtraLabel("stop", lang)}</button> : null}
       </div>
       {!canRoll ? <p className="roulette-hint">{getExtraLabel("needLanes", lang).replaceAll("{count}", safeLaneCount)}</p> : null}
